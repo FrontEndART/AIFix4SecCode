@@ -1,8 +1,8 @@
 package eu.assuremoss;
 
+import com.github.difflib.patch.Patch;
 import eu.assuremoss.framework.api.*;
 import eu.assuremoss.framework.model.CodeModel;
-import eu.assuremoss.framework.model.Patch;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
 import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
@@ -30,13 +30,13 @@ public class VulnRepairDriver
         List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation());
         VulnerabilityRepairer vr = new ASGTransformRepair();
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
-            List<Patch> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
+            List<Patch<String>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
             System.out.println(patches);
             PatchCompiler comp = new MavenPatchCompiler();
-            List<Patch> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
+            List<Patch<String>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
             PatchValidator pv = new OpenStaticAnalyzer(".");
-            List<Patch> candidatePatches = new ArrayList<>();
-            for (Patch patch : filteredPatches) {
+            List<Patch<String>> candidatePatches = new ArrayList<>();
+            for (Patch<String> patch : filteredPatches) {
                 comp.applyPatch(patch, scc.getSourceCodeLocation());
                 if (pv.validatePatch(scc.getSourceCodeLocation(), ve, patch)) {
                     candidatePatches.add(patch);

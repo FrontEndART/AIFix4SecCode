@@ -1,15 +1,15 @@
 package eu.assuremoss.framework.api;
 
-import eu.assuremoss.framework.model.Patch;
+import com.github.difflib.patch.Patch;
 
 import java.io.File;
 import java.util.List;
 
 public interface PatchCompiler {
 
-    public List<Patch> applyAndCompile(File srcLocation, List<Patch> patches, boolean runTests);
+    public List<Patch<String>> applyAndCompile(File srcLocation, List<Patch<String>> patches, boolean runTests);
 
-    public void revertPatch(Patch patch, File srcLocation);
+    public void revertPatch(Patch<String> patch, File srcLocation);
 
-    public void applyPatch(Patch patch, File srcLocation);
+    public void applyPatch(Patch<String> patch, File srcLocation);
 }

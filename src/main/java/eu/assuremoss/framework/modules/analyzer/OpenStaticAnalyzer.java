@@ -1,14 +1,13 @@
 package eu.assuremoss.framework.modules.analyzer;
 
+import com.github.difflib.patch.Patch;
 import eu.assuremoss.framework.api.CodeAnalyzer;
 import eu.assuremoss.framework.api.PatchValidator;
 import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
-import eu.assuremoss.framework.model.Patch;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 
 import java.io.*;
-import java.nio.Buffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +65,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     }
 
     @Override
-    public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Patch patch) {
+    public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Patch<String> patch) {
         analyzeSourceCode(srcLocation);
         List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation);
         return !vulnerabilities.contains(ve);
