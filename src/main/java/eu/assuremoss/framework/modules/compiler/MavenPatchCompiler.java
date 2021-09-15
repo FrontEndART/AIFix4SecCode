@@ -1,6 +1,7 @@
 package eu.assuremoss.framework.modules.compiler;
 
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.utils.Pair;
 import org.apache.maven.cli.MavenCli;
 
 import java.io.File;
@@ -9,7 +10,7 @@ import java.util.List;
 
 public class MavenPatchCompiler extends GenericPatchCompiler {
     @Override
-    public List<Patch<String>> applyAndCompile(File srcLocation, List<Patch<String>> patches, boolean runTests) {
+    public List<Pair<File, Patch<String>>> applyAndCompile(File srcLocation, List<Pair<File, Patch<String>>> patches, boolean runTests) {
         MavenCli cli = new MavenCli();
         List<String> argList = new ArrayList<>();
         System.setProperty("maven.multiModuleProjectDirectory", srcLocation.getAbsolutePath());
@@ -20,7 +21,7 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
         argList.add("package");
         String [] args = new String[argList.size()];
         argList.toArray(args);
-        for (Patch<String> patch : patches) {
+        for (Pair<File, Patch<String>> patch : patches) {
             applyPatch(patch, srcLocation);
             cli.doMain(args, srcLocation.getAbsolutePath(), System.out, System.out);
             revertPatch(patch, srcLocation);
