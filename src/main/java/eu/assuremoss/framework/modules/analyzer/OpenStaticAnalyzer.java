@@ -15,8 +15,8 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
     private File OSAPath;
 
-    public OpenStaticAnalyzer(String pathToOSA) {
-        OSAPath = new File(pathToOSA);
+    public OpenStaticAnalyzer(String osaPath) {
+        OSAPath = new File(osaPath);
     }
 
     @Override
