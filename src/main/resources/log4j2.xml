@@ -1,0 +1,16 @@
+<Configuration status="all" name="VulnRepairDriver" packages="">
+    <Appenders>
+        <Console name="stdout" target="system_out">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n"/>
+        </Console>
+        <File name="fout" fileName="main.log" append="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="all">
+            <AppenderRef ref="stdout"/>
+            <AppenderRef ref="fout"/>
+        </Root>
+    </Loggers>
+</Configuration>
