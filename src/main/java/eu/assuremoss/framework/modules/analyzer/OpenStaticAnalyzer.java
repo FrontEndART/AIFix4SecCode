@@ -1,6 +1,7 @@
 package eu.assuremoss.framework.modules.analyzer;
 
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.CodeAnalyzer;
 import eu.assuremoss.framework.api.PatchValidator;
 import eu.assuremoss.framework.api.VulnerabilityDetector;
@@ -23,17 +24,37 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     public List<CodeModel> analyzeSourceCode(File srcLocation) {
         List<CodeModel> resList = new ArrayList<>();
 
-        // TODO: call SM toolchain to build the ASG and produce proper output files
+        String[] command = new String[] {
+                OSAPath.getPath(),
+                "-resultsDir=" + VulnRepairDriver.getPatchSavePath(),
+                "-projectName=" + VulnRepairDriver.getProjectName(),
+                "-projectBaseDir=" + srcLocation,
+                "-cleanResults=0",
+                "-currentDate=0"
+        };
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
         try {
-            PrintWriter pw = new PrintWriter(new FileWriter(new File(OSAPath, "pmd.txt")));
-            pw.println("fake/path/A.java;1;2;3;4;PMD_XYZ;Vuln1");
-            pw.println("fake/path/B.java;1;2;3;4;PMD_W;Vuln2");
-            pw.close();
+            Process process = processBuilder.start();
+            BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            String line;
+            while ((line = out.readLine()) != null) {
+                System.out.println(line);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(".")));
+        resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(
+                VulnRepairDriver.getPatchSavePath(),
+                VulnRepairDriver.getProjectName() + File.separator +
+                        "java" + File.separator +
+                        "0" + File.separator +
+                        "openstaticanalyzer" + File.separator +
+                        "asg"
+        )));
         return resList;
     }
 
