@@ -8,6 +8,8 @@ import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
 import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
 import eu.assuremoss.framework.modules.repair.ASGTransformRepair;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import eu.assuremoss.utils.Pair;
 
 import java.io.*;
@@ -21,6 +23,8 @@ import java.util.Properties;
  */
 public class VulnRepairDriver
 {
+    private static final Logger logger = LogManager.getLogger(VulnRepairDriver.class);
+
     private static final String CONFIG_FILE_NAME = "config.properties";
     private static final String PROJECT_NAME_KEY = "project_name";
     private static String projectName = "";
@@ -33,15 +37,20 @@ public class VulnRepairDriver
 
     public static void main( String[] args )
     {
+        logger.info("Start!");
+
         Properties properties = new Properties();
         try {
+            logger.info("Attempting to load data from config.properties.");
             properties.load(new BufferedReader(new FileReader(CONFIG_FILE_NAME)));
             projectName = (String) properties.get(PROJECT_NAME_KEY);
             sourceCodePath = (String) properties.get(PROJECT_PATH_KEY);
             osaPath = (String) properties.get(OSA_PATH);
             patchSavePath = (String) properties.get(PATCH_SAVE_PATH_KEY);
+            logger.info("Successfully loaded data.");
         } catch (IOException e) {
             try {
+                logger.info("Could not find config.properties. Creating file.");
                 properties.setProperty(PROJECT_NAME_KEY, "");
                 properties.setProperty(PROJECT_PATH_KEY, "");
                 properties.setProperty(OSA_PATH, "");
@@ -49,6 +58,7 @@ public class VulnRepairDriver
                 properties.store(new FileWriter(CONFIG_FILE_NAME), "");
                 return;
             } catch (IOException ioException) {
+                logger.error("Error during file creation.");
                 ioException.printStackTrace();
             }
         }
