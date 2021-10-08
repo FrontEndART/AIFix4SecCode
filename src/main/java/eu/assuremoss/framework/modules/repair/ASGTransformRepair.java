@@ -6,24 +6,37 @@ import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.utils.Pair;
+import lombok.AllArgsConstructor;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.io.*;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ASGTransformRepair implements VulnerabilityRepairer {
 
     @Override
     public List<Pair<File, Patch<String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
         List<Pair<File, Patch<String>>> resList = new ArrayList<>();
-        List<String> text1=Arrays.asList("this is a test","a test");
-        List<String> text2= Arrays.asList("this is a testfile","a test");
+        // for testing purposes load log4j file and create diff with a modified version in the resources folder
+        File asyncAppenderOrig = new File(srcLocation, String.valueOf(Paths.get("main", "java", "org", "apache", "log4j", "AsyncAppender.java")));
+        List<String> text1 = new ArrayList<>();
+        List<String> text2 = new ArrayList<>();
+        try {
+            text1 = new BufferedReader(new FileReader(asyncAppenderOrig)).lines()
+                    .collect(Collectors.toList());
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            InputStream resourceStream = loader.getResourceAsStream("AsyncAppender.java");
+            text2 = new BufferedReader(new InputStreamReader(resourceStream)).lines()
+                    .collect(Collectors.toList());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
         //generating diff information.
         Patch<String> patch = DiffUtils.diff(text1, text2);
-        resList.add(new Pair<>(new File("test"), patch));
+        System.out.println(patch.toString());
+        resList.add(new Pair<>(asyncAppenderOrig, patch));
 
         return resList;
     }

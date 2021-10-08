@@ -8,27 +8,41 @@ import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.utils.Pair;
+import lombok.AllArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
+@AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
 
-    private File OSAPath;
-
-    public OpenStaticAnalyzer(String osaPath) {
-        OSAPath = new File(osaPath);
-    }
+    private String osaPath;
+    private String osaEdition;
+    private String resultsDir;
+    private String projectName;
+    private String patchSavePath;
 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation) {
         List<CodeModel> resList = new ArrayList<>();
 
-        String[] command = new String[] {
-                OSAPath.getPath(),
-                "-resultsDir=" + VulnRepairDriver.getPatchSavePath(),
-                "-projectName=" + VulnRepairDriver.getProjectName(),
+        String[] command = new String[]{
+                new File(osaPath, osaEdition + "Java.exe").getAbsolutePath(),
+                "-resultsDir=" + resultsDir,
+                "-projectName=" + projectName,
                 "-projectBaseDir=" + srcLocation,
                 "-cleanResults=0",
                 "-currentDate=0"
@@ -48,14 +62,14 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             e.printStackTrace();
         }
 
-        resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(
-                VulnRepairDriver.getPatchSavePath(),
-                VulnRepairDriver.getProjectName() + File.separator +
-                        "java" + File.separator +
-                        "0" + File.separator +
-                        "openstaticanalyzer" + File.separator +
-                        "asg"
-        )));
+        String asgPath = String.valueOf(Paths.get(resultsDir,
+                projectName,
+                "java",
+                "0",
+                osaEdition.toLowerCase(Locale.ROOT),
+                projectName + ".ljsi"));
+        resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
+
         return resList;
     }
 
@@ -63,27 +77,57 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation) {
         List<VulnerabilityEntry> resList = new ArrayList<>();
 
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
         try {
-            BufferedReader br = new BufferedReader(new FileReader(new File(OSAPath, "pmd.txt")));
-            String line;
-            while ((line = br.readLine()) != null) {
-                VulnerabilityEntry ve = new VulnerabilityEntry();
-                String[] lineParts = line.split(";");
-                ve.setPath(lineParts[0]);
-                ve.setStartLine(Integer.parseInt(lineParts[1]));
-                ve.setStartCol(Integer.parseInt(lineParts[2]));
-                ve.setEndLine(Integer.parseInt(lineParts[3]));
-                ve.setEndCol(Integer.parseInt(lineParts[4]));
-                ve.setType(lineParts[5]);
-                resList.add(ve);
+            // process XML securely, avoid attacks like XML External Entities (XXE)
+            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(new File(String.valueOf(Paths.get(resultsDir, projectName, "java", "0", projectName + ".xml"))));
+            NodeList attributes = doc.getElementsByTagName("attribute");
+            for (int i = 0; i < attributes.getLength(); i++) {
+                if ("warning".equals(attributes.item(i).getAttributes().getNamedItem("context").getNodeValue())) {
+                    NodeList warnAttributes = attributes.item(i).getChildNodes();
+                    VulnerabilityEntry ve = new VulnerabilityEntry();
+                    for (int j = 0; i < warnAttributes.getLength(); j++) {
+                        String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
+                        String attrVal = warnAttributes.item(j).getAttributes().getNamedItem("value").getNodeValue();
+                        switch (attrType) {
+                            case "Path":
+                                ve.setPath(attrVal);
+                                break;
+                            case "Line":
+                                ve.setStartLine(Integer.parseInt(attrVal));
+                                break;
+                            case "Column":
+                                ve.setStartCol(Integer.parseInt(attrVal));
+                                break;
+                            case "EndLine":
+                                ve.setEndLine(Integer.parseInt(attrVal));
+                                break;
+                            case "EndColumn":
+                                ve.setEndCol(Integer.parseInt(attrVal));
+                                break;
+                            case "WarningText":
+                                ve.setType(attrVal);
+                                break;
+                        }
+                    }
+                    resList.add(ve);
+                }
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+        } catch (SAXException e) {
+            e.printStackTrace();
         }
 
-        return resList;
+        // for now, return only the first element to make the testing easier
+        return resList.stream().findFirst().stream().collect(Collectors.toList());
     }
 
     @Override

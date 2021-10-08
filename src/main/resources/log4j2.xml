@@ -1,4 +1,4 @@
-<Configuration status="all" name="VulnRepairDriver" packages="">
+<Configuration status="info" name="VulnRepairDriver" packages="">
     <Appenders>
         <Console name="stdout" target="system_out">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n"/>
