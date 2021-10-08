@@ -10,6 +10,7 @@ import eu.assuremoss.framework.modules.repair.ASGTransformRepair;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import eu.assuremoss.utils.Pair;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -74,13 +75,13 @@ public class VulnRepairDriver
 
         VulnerabilityRepairer vr = new ASGTransformRepair();
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
-            List<Patch<String>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
+            List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
             System.out.println(patches);
             PatchCompiler comp = new MavenPatchCompiler();
-            List<Patch<String>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
+            List<Pair<File, Patch<String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
             PatchValidator pv = new OpenStaticAnalyzer(osaPath);
-            List<Patch<String>> candidatePatches = new ArrayList<>();
-            for (Patch<String> patch : filteredPatches) {
+            List<Pair<File, Patch<String>>> candidatePatches = new ArrayList<>();
+            for (Pair<File, Patch<String>> patch : filteredPatches) {
                 comp.applyPatch(patch, scc.getSourceCodeLocation());
                 if (pv.validatePatch(scc.getSourceCodeLocation(), ve, patch)) {
                     candidatePatches.add(patch);
