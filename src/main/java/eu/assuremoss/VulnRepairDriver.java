@@ -1,6 +1,8 @@
 package eu.assuremoss;
 
+import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
+import com.google.common.base.Joiner;
 import eu.assuremoss.framework.api.*;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
@@ -15,7 +17,12 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -76,9 +83,10 @@ public class VulnRepairDriver {
         List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation());
 
         VulnerabilityRepairer vr = new ASGTransformRepair();
+        int patchCounter = 1;
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
-            System.out.println(patches);
+            logger.debug(patches);
             PatchCompiler comp = new MavenPatchCompiler();
             List<Pair<File, Patch<String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
             PatchValidator pv = new OpenStaticAnalyzer(osaPath,
@@ -94,7 +102,19 @@ public class VulnRepairDriver {
                 }
                 comp.revertPatch(patch, scc.getSourceCodeLocation());
             }
-            // TODO: print out patches to files or pass them to a Visualizer
+            for (var patch : candidatePatches) {
+                // TODO: generate the necessary meta-info json as well with vulnerability/patch candidate mapping (see #7)
+                try (PrintWriter pw = new PrintWriter(String.valueOf(Paths.get(patchSavePath, "patch" + patchCounter++)))) {
+                    var diff = patch.getB();
+                    List<String> unifiedDiff =
+                            UnifiedDiffUtils.generateUnifiedDiff(patch.getA().getPath(), patch.getA().getPath(),
+                                    Arrays.asList(Files.readString(Path.of(patch.getA().getAbsolutePath())).split("\n")), diff, 2);
+                    String diffString = Joiner.on("\n").join(unifiedDiff) + "\n";
+                    pw.write(diffString);
+                } catch (IOException e) {
+                    logger.error("Failed to save candidate patch: " + patch);
+                }
+            }
         }
     }
 }

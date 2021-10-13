@@ -83,34 +83,36 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             // process XML securely, avoid attacks like XML External Entities (XXE)
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(new File(String.valueOf(Paths.get(resultsDir, projectName, "java", "0", projectName + ".xml"))));
+            Document doc = db.parse(new File(String.valueOf(Paths.get(resultsDir, projectName, "java", "0", projectName + ".xml"))).getAbsolutePath());
             NodeList attributes = doc.getElementsByTagName("attribute");
             for (int i = 0; i < attributes.getLength(); i++) {
                 if ("warning".equals(attributes.item(i).getAttributes().getNamedItem("context").getNodeValue())) {
                     NodeList warnAttributes = attributes.item(i).getChildNodes();
                     VulnerabilityEntry ve = new VulnerabilityEntry();
-                    for (int j = 0; i < warnAttributes.getLength(); j++) {
-                        String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
-                        String attrVal = warnAttributes.item(j).getAttributes().getNamedItem("value").getNodeValue();
-                        switch (attrType) {
-                            case "Path":
-                                ve.setPath(attrVal);
-                                break;
-                            case "Line":
-                                ve.setStartLine(Integer.parseInt(attrVal));
-                                break;
-                            case "Column":
-                                ve.setStartCol(Integer.parseInt(attrVal));
-                                break;
-                            case "EndLine":
-                                ve.setEndLine(Integer.parseInt(attrVal));
-                                break;
-                            case "EndColumn":
-                                ve.setEndCol(Integer.parseInt(attrVal));
-                                break;
-                            case "WarningText":
-                                ve.setType(attrVal);
-                                break;
+                    for (int j = 0; j < warnAttributes.getLength(); j++) {
+                        if (warnAttributes.item(j).getAttributes() != null) {
+                            String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
+                            String attrVal = warnAttributes.item(j).getAttributes().getNamedItem("value").getNodeValue();
+                            switch (attrType) {
+                                case "Path":
+                                    ve.setPath(attrVal);
+                                    break;
+                                case "Line":
+                                    ve.setStartLine(Integer.parseInt(attrVal));
+                                    break;
+                                case "Column":
+                                    ve.setStartCol(Integer.parseInt(attrVal));
+                                    break;
+                                case "EndLine":
+                                    ve.setEndLine(Integer.parseInt(attrVal));
+                                    break;
+                                case "EndColumn":
+                                    ve.setEndCol(Integer.parseInt(attrVal));
+                                    break;
+                                case "WarningText":
+                                    ve.setType(attrVal);
+                                    break;
+                            }
                         }
                     }
                     resList.add(ve);
