@@ -2,4 +2,4 @@
 target/
 
 main.log
-config.properties
+src/main/resources/config.properties

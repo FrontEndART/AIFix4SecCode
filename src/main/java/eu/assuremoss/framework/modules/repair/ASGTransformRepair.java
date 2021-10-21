@@ -6,7 +6,6 @@ import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.utils.Pair;
-import lombok.AllArgsConstructor;
 
 import java.io.*;
 import java.nio.file.Paths;
