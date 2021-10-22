@@ -33,21 +33,23 @@ import java.util.Properties;
  * The main driver class that runs the vulnerability repair workflow
  */
 public class VulnRepairDriver {
-    private static final Logger logger = LogManager.getLogger(VulnRepairDriver.class);
+    public static final Logger LOGGER = LogManager.getLogger(VulnRepairDriver.class);
 
     private static final String CONFIG_FILE_NAME = "config.properties";
     private static final String PROJECT_NAME_KEY = "project_name";
     private static final String PROJECT_PATH_KEY = "project_path";
     private static final String OSA_PATH_KEY = "osa_path";
     private static final String OSA_EDITION_KEY = "osa_edition";
-    private static final String OSA_RES_PATH_KEY = "osa_results_dir";
+    private static final String OSA_RESULTS_PATH_KEY = "osa_results_path";
+    private static final String OSA_DESCRIPTION_PATH_KEY = "osa_description_path";
     private static final String PATCH_SAVE_PATH_KEY = "patch_save_path";
     private String projectName = "";
-    private String sourceCodePath = "";
+    private String projectPath = "";
     private String osaPath = "";
     private String osaEdition = "";
+    private String osaResultsPath = "";
+    private static String osaDescriptionPath = "";
     private String patchSavePath = "";
-    private String resultsDir = "";
 
     public static void main(String[] args) {
         VulnRepairDriver driver = new VulnRepairDriver();
@@ -55,47 +57,49 @@ public class VulnRepairDriver {
     }
 
     public void bootstrap() {
-
-        logger.info("Start!");
+        LOGGER.info("Start!");
 
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Properties properties = new Properties();
         try (InputStream resourceStream = loader.getResourceAsStream(CONFIG_FILE_NAME)) {
-            logger.info("Attempting to load data from config.properties.");
+            LOGGER.info("Attempting to load data from config.properties.");
             properties.load(resourceStream);
             projectName = (String) properties.get(PROJECT_NAME_KEY);
-            sourceCodePath = (String) properties.get(PROJECT_PATH_KEY);
+            projectPath = (String) properties.get(PROJECT_PATH_KEY);
             osaPath = (String) properties.get(OSA_PATH_KEY);
             osaEdition = (String) properties.get(OSA_EDITION_KEY);
+            osaResultsPath = (String) properties.get(OSA_RESULTS_PATH_KEY);
+            osaDescriptionPath = (String) properties.get(OSA_DESCRIPTION_PATH_KEY);
             patchSavePath = (String) properties.get(PATCH_SAVE_PATH_KEY);
-            resultsDir = (String) properties.get(OSA_RES_PATH_KEY);
-            logger.info("Successfully loaded data.");
+            LOGGER.info("Successfully loaded data.");
         } catch (IOException e) {
-            logger.info("Could not find config.properties. Exiting.");
+            LOGGER.info("Could not find config.properties. Exiting.");
             System.exit(-1);
         }
 
-        SourceCodeCollector scc = new LocalSourceFolder(sourceCodePath);
+        SourceCodeCollector scc = new LocalSourceFolder(projectPath);
         scc.collectSourceCode();
 
-        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, resultsDir, projectName, patchSavePath);
+        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, osaResultsPath, projectName, patchSavePath);
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation());
-        codeModels.stream().forEach(cm -> logger.debug(cm.getType() + ":" + cm.getModelPath()));
+        codeModels.stream().forEach(cm -> LOGGER.debug(cm.getType() + ":" + cm.getModelPath()));
 
-        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, resultsDir, projectName, patchSavePath);
+        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, osaResultsPath, projectName, patchSavePath);
         List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation());
 
         VulnerabilityRepairer vr = new ASGTransformRepair();
+        vr.generateDescription(new File(osaDescriptionPath), vulnerabilityLocations);
+
         int patchCounter = 1;
         int jsonCounter = 1;
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
-            logger.debug(patches);
+            LOGGER.debug(patches);
             PatchCompiler comp = new MavenPatchCompiler();
             List<Pair<File, Patch<String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
             PatchValidator pv = new OpenStaticAnalyzer(osaPath,
                     osaEdition,
-                    resultsDir,
+                    osaResultsPath,
                     projectName,
                     patchSavePath);
             List<Pair<File, Patch<String>>> candidatePatches = new ArrayList<>();
@@ -111,7 +115,7 @@ public class VulnRepairDriver {
                 try {
                     Files.createDirectory(Paths.get(patchSavePath));
                 } catch (IOException e) {
-                    logger.error("Failed to create directory for patches.");
+                    LOGGER.error("Failed to create directory for patches.");
                 }
             }
             JSONArray patchesArray = new JSONArray();
@@ -132,7 +136,7 @@ public class VulnRepairDriver {
                     patchObject.put("score", 10);
                     patchesArray.add(patchObject);
                 } catch (IOException e) {
-                    logger.error("Failed to save candidate patch: " + patch);
+                    LOGGER.error("Failed to save candidate patch: " + patch);
                 }
             }
             JSONObject object = new JSONObject();

@@ -39,8 +39,16 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     public List<CodeModel> analyzeSourceCode(File srcLocation) {
         List<CodeModel> resList = new ArrayList<>();
 
+        String extension = "";
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Windows")) {
+            extension = ".exe";
+        } else if (osName.contains("Linux")) {
+            extension = "";
+        }
+
         String[] command = new String[]{
-                new File(osaPath, osaEdition + "Java.exe").getAbsolutePath(),
+                new File(osaPath, osaEdition + "Java" + extension).getAbsolutePath(),
                 "-resultsDir=" + resultsDir,
                 "-projectName=" + projectName,
                 "-projectBaseDir=" + srcLocation,
@@ -56,7 +64,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
             String line;
             while ((line = out.readLine()) != null) {
-                System.out.println(line);
+                VulnRepairDriver.LOGGER.info(line);
             }
         } catch (IOException e) {
             e.printStackTrace();
