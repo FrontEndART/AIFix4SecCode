@@ -3,6 +3,10 @@ package eu.assuremoss;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
 import com.google.common.base.Joiner;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import eu.assuremoss.framework.api.*;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
@@ -13,11 +17,10 @@ import eu.assuremoss.framework.modules.src.LocalSourceFolder;
 import eu.assuremoss.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,6 +87,7 @@ public class VulnRepairDriver {
 
         VulnerabilityRepairer vr = new ASGTransformRepair();
         int patchCounter = 1;
+        int jsonCounter = 1;
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
             logger.debug(patches);
@@ -102,18 +106,55 @@ public class VulnRepairDriver {
                 }
                 comp.revertPatch(patch, scc.getSourceCodeLocation());
             }
-            for (var patch : candidatePatches) {
+            File patchSavePathDir = new File(patchSavePath);
+            if (!patchSavePathDir.exists()) {
+                try {
+                    Files.createDirectory(Paths.get(patchSavePath));
+                } catch (IOException e) {
+                    logger.error("Failed to create directory for patches.");
+                }
+            }
+            JSONArray patchesArray = new JSONArray();
+            for (int i = 0; i < candidatePatches.size(); i++) {
+                File path = candidatePatches.get(i).getA();
+                Patch<String> patch = candidatePatches.get(i).getB();
                 // TODO: generate the necessary meta-info json as well with vulnerability/patch candidate mapping (see #7)
-                try (PrintWriter pw = new PrintWriter(String.valueOf(Paths.get(patchSavePath, "patch" + patchCounter++)))) {
-                    var diff = patch.getB();
+                try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath, "patch" + patchCounter)))) {
                     List<String> unifiedDiff =
-                            UnifiedDiffUtils.generateUnifiedDiff(patch.getA().getPath(), patch.getA().getPath(),
-                                    Arrays.asList(Files.readString(Path.of(patch.getA().getAbsolutePath())).split("\n")), diff, 2);
+                            UnifiedDiffUtils.generateUnifiedDiff(path.getPath(), path.getPath(),
+                                    Arrays.asList(Files.readString(Path.of(path.getAbsolutePath())).split("\n")), patch, 2);
                     String diffString = Joiner.on("\n").join(unifiedDiff) + "\n";
-                    pw.write(diffString);
+                    patchWriter.write(diffString);
+
+                    JSONObject patchObject = new JSONObject();
+                    patchObject.put("path", Paths.get(patchSavePath, "patch" + patchCounter).toString());
+                    patchObject.put("explanation", "");
+                    patchObject.put("score", 10);
+                    patchesArray.add(patchObject);
                 } catch (IOException e) {
                     logger.error("Failed to save candidate patch: " + patch);
                 }
+            }
+            JSONObject object = new JSONObject();
+            JSONObject issueObject = new JSONObject();
+
+            JSONObject textRangeObject = new JSONObject();
+            textRangeObject.put("startLine", ve.getStartLine());
+            textRangeObject.put("endLine", ve.getEndLine());
+            textRangeObject.put("startColumn", ve.getStartCol());
+            textRangeObject.put("endColumn", ve.getEndCol());
+
+            issueObject.put("patches", patchesArray);
+            issueObject.put("textRange", textRangeObject);
+
+            object.put("Issue", issueObject);
+
+            try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "patch" + jsonCounter++ + ".json")))) {
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                JsonElement element = JsonParser.parseString(object.toJSONString());
+                fw.write(gson.toJson(element));
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

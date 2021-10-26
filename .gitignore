@@ -1,5 +1,6 @@
 .idea/
 target/
+*.iml
 
 main.log
-config.properties
+src/main/resources/config.properties
