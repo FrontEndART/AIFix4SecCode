@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
+    private static final Logger LOG = LogManager.getLogger(OpenStaticAnalyzer.class);
 
     private String osaPath;
     private String osaEdition;
@@ -64,7 +65,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
             String line;
             while ((line = out.readLine()) != null) {
-                VulnRepairDriver.LOGGER.info(line);
+                LOG.info(line);
             }
         } catch (IOException e) {
             e.printStackTrace();

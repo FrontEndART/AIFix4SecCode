@@ -6,7 +6,10 @@ import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
 import eu.assuremoss.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.output.Format;
@@ -19,35 +22,52 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ASGTransformRepair implements VulnerabilityRepairer {
+    private static final Logger LOG = LogManager.getLogger(ASGTransformRepair.class);
+
     @Override
     public File generateDescription(File descriptionLocation, List<VulnerabilityEntry> vulnerabilityLocations) {
         File descriptionFile = new File(descriptionLocation.getPath(), "description.xml");
 
+        Map<String, List<VulnerabilityEntry>> vulnerabilityEntries = new HashMap<>();
+        for (VulnerabilityEntry ve : vulnerabilityLocations) {
+            if (vulnerabilityEntries.containsKey(ve.getType())) {
+                vulnerabilityEntries.get(ve.getType()).add(ve);
+            } else {
+                List<VulnerabilityEntry> vulnerabilityEntryList = new ArrayList<>();
+                vulnerabilityEntryList.add(ve);
+                vulnerabilityEntries.put(ve.getType(), vulnerabilityEntryList);
+            }
+        }
+
         Document document = new Document();
         Element root = new Element("linked-hash-map");
 
-        Element entry1 = createEntryElement();
-        entry1.addContent(createStringElement().addContent("coderepair.algs.problemType"));
-        entry1.addContent(createStringElement().addContent("PMD_PLFIC"));
+        for (String type : vulnerabilityEntries.keySet()) {
+            List<VulnerabilityEntry> vulnerabilityEntryList = vulnerabilityEntries.get(type);
 
-        Element entry2 = createEntryElement();
-        entry2.addContent(createStringElement().addContent("coderepair.algs.problemLocations"));
-        Element list = new Element("list");
-        for (VulnerabilityEntry ve : vulnerabilityLocations) {
-            list.addContent(createProblemToRepairElement(ve));
+            Element entry1 = createEntryElement();
+            entry1.addContent(createStringElement().addContent("coderepair.algs.problemType"));
+            entry1.addContent(createStringElement().addContent(type));
+
+            Element entry2 = createEntryElement();
+            entry2.addContent(createStringElement().addContent("coderepair.algs.problemLocations"));
+            Element list = new Element("list");
+            for (VulnerabilityEntry ve : vulnerabilityEntryList) {
+                list.addContent(createProblemToRepairElement(ve));
+            }
+            entry2.addContent(list);
+
+            root.addContent(entry1);
+            root.addContent(entry2);
         }
 
-        entry2.addContent(list);
-
-        root.addContent(entry1);
-        root.addContent(entry2);
         document.setRootElement(root);
 
         if (!descriptionLocation.exists()) {
             try {
                 Files.createDirectory(Paths.get(descriptionLocation.getPath()));
             } catch (IOException e) {
-                VulnRepairDriver.LOGGER.error("Failed to create directory for the description.");
+                LOG.error("Failed to create directory for the description.");
             }
         }
         XMLOutputter out = new XMLOutputter();
@@ -55,7 +75,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         try {
             out.output(document, new FileWriter(descriptionFile));
         } catch (IOException e) {
-            VulnRepairDriver.LOGGER.error("Failed to save the description.");
+            LOG.error("Failed to save the description.");
         }
 
         return descriptionFile;
