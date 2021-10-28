@@ -2,17 +2,106 @@ package eu.assuremoss.framework.modules.repair;
 
 import com.github.difflib.DiffUtils;
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
 import eu.assuremoss.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ASGTransformRepair implements VulnerabilityRepairer {
+    private static final Logger LOG = LogManager.getLogger(ASGTransformRepair.class);
+
+    @Override
+    public File generateDescription(File descriptionLocation, List<VulnerabilityEntry> vulnerabilityLocations) {
+        File descriptionFile = new File(descriptionLocation.getPath(), "description.xml");
+
+        Map<String, List<VulnerabilityEntry>> vulnerabilityEntries = new HashMap<>();
+        for (VulnerabilityEntry ve : vulnerabilityLocations) {
+            if (vulnerabilityEntries.containsKey(ve.getType())) {
+                vulnerabilityEntries.get(ve.getType()).add(ve);
+            } else {
+                List<VulnerabilityEntry> vulnerabilityEntryList = new ArrayList<>();
+                vulnerabilityEntryList.add(ve);
+                vulnerabilityEntries.put(ve.getType(), vulnerabilityEntryList);
+            }
+        }
+
+        Document document = new Document();
+        Element root = new Element("linked-hash-map");
+
+        for (String type : vulnerabilityEntries.keySet()) {
+            List<VulnerabilityEntry> vulnerabilityEntryList = vulnerabilityEntries.get(type);
+
+            Element entry1 = createEntryElement();
+            entry1.addContent(createStringElement().addContent("coderepair.algs.problemType"));
+            entry1.addContent(createStringElement().addContent(type));
+
+            Element entry2 = createEntryElement();
+            entry2.addContent(createStringElement().addContent("coderepair.algs.problemLocations"));
+            Element list = new Element("list");
+            for (VulnerabilityEntry ve : vulnerabilityEntryList) {
+                list.addContent(createProblemToRepairElement(ve));
+            }
+            entry2.addContent(list);
+
+            root.addContent(entry1);
+            root.addContent(entry2);
+        }
+
+        document.setRootElement(root);
+
+        if (!descriptionLocation.exists()) {
+            try {
+                Files.createDirectory(Paths.get(descriptionLocation.getPath()));
+            } catch (IOException e) {
+                LOG.error("Failed to create directory for the description.");
+            }
+        }
+        XMLOutputter out = new XMLOutputter();
+        out.setFormat(Format.getPrettyFormat());
+        try {
+            out.output(document, new FileWriter(descriptionFile));
+        } catch (IOException e) {
+            LOG.error("Failed to save the description.");
+        }
+
+        return descriptionFile;
+    }
+    private Element createEntryElement() {
+        return new Element("entry");
+    }
+    private Element createStringElement() {
+        return new Element("string");
+    }
+    private Element createProblemToRepairElement(VulnerabilityEntry ve) {
+        Element problemToRepair = new Element("coderepair.repairtools.base.ProblemToRepair");
+        Element positions = new Element("positions");
+
+        Element problemPosition = new Element("coderepair.repairtools.base.ProblemPosition");
+        problemPosition.addContent(new Element("path").addContent(ve.getPath()));
+        problemPosition.addContent(new Element("startLine").addContent(ve.getStartLine() + ""));
+        problemPosition.addContent(new Element("startCol").addContent(ve.getStartCol() + ""));
+        problemPosition.addContent(new Element("endLine").addContent(ve.getEndLine() + ""));
+        problemPosition.addContent(new Element("endCol").addContent(ve.getEndCol() + ""));
+
+        positions.addContent(problemPosition);
+        problemToRepair.addContent(positions);
+
+        return problemToRepair;
+    }
 
     @Override
     public List<Pair<File, Patch<String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
