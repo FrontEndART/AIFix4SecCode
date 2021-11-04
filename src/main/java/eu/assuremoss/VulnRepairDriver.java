@@ -24,6 +24,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -92,6 +93,7 @@ public class VulnRepairDriver {
 
         int patchCounter = 1;
         int jsonCounter = 1;
+        JSONObject vsCodeConfig = new JSONObject();
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
             LOG.debug(patches);
@@ -118,12 +120,18 @@ public class VulnRepairDriver {
                     LOG.error("Failed to create directory for patches.");
                 }
             }
+            LOG.debug(candidatePatches);
+            if (candidatePatches.isEmpty()) {
+                continue;
+            }
             JSONArray patchesArray = new JSONArray();
             for (int i = 0; i < candidatePatches.size(); i++) {
                 File path = candidatePatches.get(i).getA();
                 Patch<String> patch = candidatePatches.get(i).getB();
-                // TODO: generate the necessary meta-info json as well with vulnerability/patch candidate mapping (see #7)
-                try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath, "patch" + patchCounter)))) {
+
+                // Dump the patch and generate the necessary meta-info json as well with vulnerability/patch candidate mapping for the VS Code plug-in
+                String patchName = MessageFormat.format("patch_{0}_{1}_{2}_{3}_{4}_{5}", patchCounter++, ve.getType(), ve.getStartLine(), ve.getEndLine(), ve.getStartCol(), ve.getEndCol());
+                try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath, patchName)))) {
                     List<String> unifiedDiff =
                             UnifiedDiffUtils.generateUnifiedDiff(path.getPath(), path.getPath(),
                                     Arrays.asList(Files.readString(Path.of(path.getAbsolutePath())).split("\n")), patch, 2);
@@ -131,7 +139,7 @@ public class VulnRepairDriver {
                     patchWriter.write(diffString);
 
                     JSONObject patchObject = new JSONObject();
-                    patchObject.put("path", Paths.get(patchSavePath, "patch" + patchCounter).toString());
+                    patchObject.put("path", Paths.get(patchSavePath, patchName).toString());
                     patchObject.put("explanation", "");
                     patchObject.put("score", 10);
                     patchesArray.add(patchObject);
@@ -139,7 +147,6 @@ public class VulnRepairDriver {
                     LOG.error("Failed to save candidate patch: " + patch);
                 }
             }
-            JSONObject object = new JSONObject();
             JSONObject issueObject = new JSONObject();
 
             JSONObject textRangeObject = new JSONObject();
@@ -151,15 +158,15 @@ public class VulnRepairDriver {
             issueObject.put("patches", patchesArray);
             issueObject.put("textRange", textRangeObject);
 
-            object.put("Issue", issueObject);
+            vsCodeConfig.put(ve.getType(), issueObject);
+        }
 
-            try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "patch" + jsonCounter++ + ".json")))) {
-                Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                JsonElement element = JsonParser.parseString(object.toJSONString());
-                fw.write(gson.toJson(element));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "vscode-config.json")))) {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonElement element = JsonParser.parseString(vsCodeConfig.toJSONString());
+            fw.write(gson.toJson(element));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

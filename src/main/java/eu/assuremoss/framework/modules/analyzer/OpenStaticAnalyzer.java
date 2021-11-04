@@ -95,9 +95,13 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             Document doc = db.parse(new File(String.valueOf(Paths.get(resultsDir, projectName, "java", "0", projectName + ".xml"))).getAbsolutePath());
             NodeList attributes = doc.getElementsByTagName("attribute");
             for (int i = 0; i < attributes.getLength(); i++) {
-                if ("warning".equals(attributes.item(i).getAttributes().getNamedItem("context").getNodeValue())) {
+                String nodeName = attributes.item(i).getAttributes().getNamedItem("name").getNodeValue();
+                String nodeContext = attributes.item(i).getAttributes().getNamedItem("context").getNodeValue();
+                if ("warning".equals(nodeContext) &&
+                        (nodeName.startsWith("PMD_") || nodeName.startsWith("FH_"))) {
                     NodeList warnAttributes = attributes.item(i).getChildNodes();
                     VulnerabilityEntry ve = new VulnerabilityEntry();
+                    ve.setType(nodeName);
                     for (int j = 0; j < warnAttributes.getLength(); j++) {
                         if (warnAttributes.item(j).getAttributes() != null) {
                             String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
@@ -119,7 +123,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                                     ve.setEndCol(Integer.parseInt(attrVal));
                                     break;
                                 case "WarningText":
-                                    ve.setType(attrVal);
+                                    ve.setDescription(attrVal);
                                     break;
                             }
                         }
@@ -137,8 +141,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             e.printStackTrace();
         }
 
-        // for now, return only the first element to make the testing easier
-        return resList.stream().findFirst().stream().collect(Collectors.toList());
+        return resList;
     }
 
     @Override
