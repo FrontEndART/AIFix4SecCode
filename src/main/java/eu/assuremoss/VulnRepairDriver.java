@@ -21,14 +21,12 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * The main driver class that runs the vulnerability repair workflow
@@ -135,12 +133,28 @@ public class VulnRepairDriver {
                     List<String> unifiedDiff =
                             UnifiedDiffUtils.generateUnifiedDiff(path.getPath(), path.getPath(),
                                     Arrays.asList(Files.readString(Path.of(path.getAbsolutePath())).split("\n")), patch, 2);
+
+                    // make the path in the patch file relative to the project path
+                    for (int j = 0; j < 2; j++) {
+                        String line = unifiedDiff.get(j);
+
+                        String regex = projectPath;
+                        regex = regex.replaceAll("\\\\", "\\\\\\\\");
+
+                        String[] lineParts = line.split(regex);
+                        if (lineParts[1].charAt(0) =='\\' || lineParts[1].charAt(0) =='/') {
+                            lineParts[1] = lineParts[1].substring(1);
+                        }
+
+                        unifiedDiff.set(j, lineParts[0] + lineParts[1]);
+                    }
+
                     String diffString = Joiner.on("\n").join(unifiedDiff) + "\n";
                     patchWriter.write(diffString);
 
                     JSONObject patchObject = new JSONObject();
-                    patchObject.put("path", Paths.get(patchSavePath, patchName).toString());
-                    patchObject.put("explanation", "");
+                    patchObject.put("path", patchName);
+                    patchObject.put("explanation", "Fix");
                     patchObject.put("score", 10);
                     patchesArray.add(patchObject);
                 } catch (IOException e) {
