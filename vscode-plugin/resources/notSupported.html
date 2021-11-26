@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    window.addEventListener('message', ({data: {key, payload}}) => {
+      switch (key) {
+        case 'data':
+          render(payload);
+          break;
+      }
+    });
+    const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : window;
+    vscode.postMessage({
+      command: 'load',
+    });
+
+    function render({content}) {
+      document.body.innerHTML = content;
+    }
+  </script>
+</body>
+</html>
