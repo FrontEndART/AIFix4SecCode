@@ -22,17 +22,23 @@ export function initActionCommands(context: vscode.ExtensionContext) {
             language: 'typescript'
         };
 
+        // if we only want to apply actions to java files.
+        let javaSelector = {
+            scheme: 'file',
+            language: 'java'
+        };
+
         context.subscriptions.push(
-            vscode.languages.registerCodeActionsProvider(typescriptSelector, new Analyzer(), {
+            vscode.languages.registerCodeActionsProvider(javaSelector, new Analyzer(), {
                 providedCodeActionKinds: Analyzer.providedCodeActionKinds
             }));
 
         context.subscriptions.push(
-            vscode.languages.registerCodeActionsProvider(typescriptSelector, new AnalyzerInfo(), {
+            vscode.languages.registerCodeActionsProvider(javaSelector, new AnalyzerInfo(), {
                 providedCodeActionKinds: AnalyzerInfo.providedCodeActionKinds
             })
         );
-    });
+    }); 
 }
 
 export class Analyzer implements vscode.CodeActionProvider {
