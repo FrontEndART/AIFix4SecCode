@@ -1,0 +1,226 @@
+{
+  "name": "aifix4seccode-vscode",
+  "displayName": "AIFix4SecCode",
+  "description": "Fixes security vulnerabilities with the help of AI in your code.",
+  "version": "0.1.1",
+  "license": "",
+  "keywords": [
+    "vulnerability",
+    "security",
+    "ai"
+  ],
+  "galleryBanner": {
+    "color": "#f5f5f5",
+    "theme": "light"
+  },
+  "publisher": "yigsoft",
+  "author": {
+    "name": "Yigsoft LLC",
+    "email": "admin@yigsoft.dev",
+    "url": "https://yigsoft.dev"
+  },
+  "engines": {
+    "vscode": "^1.58.2"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "monaco": "http-server -p 12345 resources/monaco",
+    "vscode:prepublish": "yarn run compile",
+    "compile": "tsc -p ./",
+    "webview:watch": "cd resources/monaco && yarn build:dev",
+    "watch": "tsc -watch -p ./",
+    "pretest": "yarn run compile",
+    "test:unit": "ts-mocha src/**/*.spec.ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "bash scripts/package.sh",
+    "deploy:openvsx": "yarn package && sh scripts/deploy-openvsx.sh",
+    "deploy": "yarn package && vsce publish -p"
+  },
+  "dependencies": {
+    "@types/glob": "^7.1.1",
+    "@types/istextorbinary": "^2.3.0",
+    "@types/lodash": "^4.14.140",
+    "@types/mocha": "^5.2.6",
+    "@types/node": "^10.12.21",
+    "@types/vscode": "^1.38.0",
+    "glob": "^7.1.4",
+    "istextorbinary": "^3.0.0",
+    "json-stringify": "^1.0.0",
+    "jsonc-parser": "^3.0.0",
+    "mocha": "^6.1.4",
+    "parse-diff": "^0.8.1",
+    "parse-json": "^5.2.0",
+    "ts-md5": "^1.2.9",
+    "ts-mocha": "^8.0.0",
+    "tslint": "^5.12.1",
+    "typescript": "^3.3.1",
+    "vsce": "^1.95.1",
+    "vscode-test": "^1.0.2",
+    "what-the-diff": "^0.6.0"
+  },
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "jsonOutline",
+          "name": "Json Outline",
+          "when": "jsonOutlineEnabled"
+        },
+        {
+          "id": "testView",
+          "name": "ANALYSIS OUTPUT"
+        }
+      ]
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "aifix4seccode-vscode.applyPatch",
+          "group": "navigation@-100",
+          "when": "patchApplyEnabled"
+        },
+        {
+          "command": "aifix4seccode-vscode.declinePatch",
+          "group": "navigation@-99",
+          "when": "patchApplyEnabled"
+        },
+        {
+          "command": "aifix4seccode-vscode.nextDiff",
+          "group": "navigation@-101",
+          "when": "patchApplyEnabled"
+        },
+        {
+          "command": "aifix4seccode-vscode.prevDiff",
+          "group": "navigation@-102",
+          "when": "patchApplyEnabled"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "aifix4seccode-vscode.refreshEntry",
+        "title": "Refresh",
+        "icon": {
+          "light": "resources/icons/light/refresh.svg",
+          "dark": "resources/icons/dark/refresh.svg"
+        }
+      },
+      {
+        "title": "[AIFix4SecCode] Show blank page",
+        "command": "aifix4seccode-vscode.blank"
+      },
+      {
+        "title": "[AIFix4SecCode] Refresh Diagnostics",
+        "command": "aifix4seccode-vscode.refreshDiagnostics"
+      },
+      {
+        "title": "[AIFix4SecCode] Get Output From Analyzer",
+        "command": "aifix4seccode-vscode.getOutputFromAnalyzer"
+      },
+      {
+        "title": "[AIFix4SecCode] Open Up File",
+        "command": "aifix4seccode-vscode.OpenUpFile"
+      },
+      {
+        "title": "[AIFix4SecCode] Load Patch file",
+        "command": "aifix4seccode-vscode.loadPatchFile"
+      },
+      {
+        "title": "[AIFix4SecCode] Apply Patch",
+        "command": "aifix4seccode-vscode.applyPatch",
+        "icon": {
+          "dark": "resources/icons/dark/tick-mark.svg",
+          "light": "resources/icons/dark/tick-mark.svg"
+        }
+      },
+      {
+        "title": "[AIFix4SecCode] Decline Patch",
+        "command": "aifix4seccode-vscode.declinePatch",
+        "icon": {
+          "dark": "resources/icons/dark/x-mark.svg",
+          "light": "resources/icons/dark/x-mark.svg"
+        }
+      },
+      {
+        "title": "[AIFix4SecCode] Next Fix",
+        "command": "aifix4seccode-vscode.nextDiff",
+        "icon": {
+          "dark": "resources/icons/dark/down-arrow.svg",
+          "light": "resources/icons/light/arrow-down.svg"
+        }
+      },
+      {
+        "title": "[AIFix4SecCode] Previous Fix",
+        "command": "aifix4seccode-vscode.prevDiff",
+        "icon": {
+          "dark": "resources/icons/dark/up-arrow.svg",
+          "light": "resources/icons/light/arrow-up.svg"
+        }
+      },
+      {
+        "command": "jsonOutline.refresh",
+        "title": "Refresh",
+        "icon": {
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "jsonOutline.refreshNode",
+        "title": "Refresh",
+        "icon": {
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "jsonOutline.renameNode",
+        "title": "Rename"
+      },
+      {
+        "command": "testView.reveal",
+        "title": "Test View: Reveal"
+      },
+      {
+        "command": "testView.changeTitle",
+        "title": "Test View: Change Title"
+      }
+    ],
+    "configuration": {
+      "title": "AIFix4SecCode",
+      "properties": {
+        "aifix4seccode.analyzer.executablePath": {
+          "type": "string",
+          "default": "",
+          "description": "Specifies the analyzer tool's folder where the executable (.jar, .exe, ...) is located."
+        },
+        "aifix4seccode.analyzer.executableParameters": {
+          "type": "string",
+          "default": "",
+          "description": "Specifies the analyzer tool's executable parameters. (f.e.: java -jar Main.jar)"
+        },
+        "aifix4seccode.analyzer.issuesPath": {
+          "type": "string",
+          "default": "",
+          "description": "Specifies the issues generated by the analyzer."
+        },
+        "aifix4seccode.analyzer.subjectProjectPath": {
+          "type": "string",
+          "default": "",
+          "description": "The path of the project where the analyzation will take place."
+        },
+        "aifix4seccode.analyzer.generatedPatchesPath": {
+          "type": "string",
+          "default": "",
+          "description": "The path of the patch files that will be generated as analysis output."
+        }
+      }
+    }
+  }
+}
