@@ -220,8 +220,7 @@ export function init(
           testView = new TestView(context);
 
           let issuesFilePath = vscode.workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath')
-          // Initialize action commands of diagnostics made after analysis:
-          initActionCommands(context);
+          
 
           resolve();
           logging.LogInfoAndShowInformationMessage("===== Finished analysis. =====", "Finished analysis of project!");

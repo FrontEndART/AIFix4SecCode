@@ -27,7 +27,7 @@ export function initActionCommands(context: vscode.ExtensionContext) {
             scheme: 'file',
             language: 'java'
         };
-
+        
         context.subscriptions.push(
             vscode.languages.registerCodeActionsProvider(javaSelector, new Analyzer(), {
                 providedCodeActionKinds: Analyzer.providedCodeActionKinds
