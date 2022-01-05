@@ -11,7 +11,6 @@ import eu.assuremoss.framework.api.*;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
-import eu.assuremoss.framework.modules.analyzer.SpotBugsAnalyzer;
 import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
 import eu.assuremoss.framework.modules.repair.ASGTransformRepair;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
@@ -22,7 +21,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,17 +38,15 @@ public class VulnRepairDriver {
     private static final String PROJECT_PATH_KEY = "project_path";
     private static final String OSA_PATH_KEY = "osa_path";
     private static final String OSA_EDITION_KEY = "osa_edition";
-    private static final String SPOTBUGS_PATH_KEY = "spotbugs_path";
-    private static final String OSA_RESULTS_PATH_KEY = "osa_results_path";
-    private static final String OSA_DESCRIPTION_PATH_KEY = "osa_description_path";
+    private static final String RESULTS_PATH_KEY = "results_path";
+    private static final String DESCRIPTION_PATH_KEY = "description_path";
     private static final String PATCH_SAVE_PATH_KEY = "patch_save_path";
     private String projectName = "";
     private String projectPath = "";
     private String osaPath = "";
     private String osaEdition = "";
-    private String spotbugsPath = "";
-    private String osaResultsPath = "";
-    private static String osaDescriptionPath = "";
+    private String resultsPath = "";
+    private static String descriptionPath = "";
     private String patchSavePath = "";
 
     public static void main(String[] args) {
@@ -70,9 +66,8 @@ public class VulnRepairDriver {
             projectPath = (String) properties.get(PROJECT_PATH_KEY);
             osaPath = (String) properties.get(OSA_PATH_KEY);
             osaEdition = (String) properties.get(OSA_EDITION_KEY);
-            spotbugsPath = (String) properties.get(SPOTBUGS_PATH_KEY);
-            osaResultsPath = (String) properties.get(OSA_RESULTS_PATH_KEY);
-            osaDescriptionPath = (String) properties.get(OSA_DESCRIPTION_PATH_KEY);
+            resultsPath = (String) properties.get(RESULTS_PATH_KEY);
+            descriptionPath = (String) properties.get(DESCRIPTION_PATH_KEY);
             patchSavePath = (String) properties.get(PATCH_SAVE_PATH_KEY);
             LOG.info("Successfully loaded data.");
         } catch (IOException e) {
@@ -80,7 +75,7 @@ public class VulnRepairDriver {
             System.exit(-1);
         }
         try {
-            Files.createDirectory(Paths.get(osaResultsPath));
+            Files.createDirectory(Paths.get(resultsPath));
         } catch (IOException e) {
             LOG.info("Unable to create results folder.");
         }
@@ -88,24 +83,15 @@ public class VulnRepairDriver {
         SourceCodeCollector scc = new LocalSourceFolder(projectPath);
         scc.collectSourceCode();
 
-        MavenPatchCompiler mpc = new MavenPatchCompiler();
-        mpc.compile(new File(projectPath), true);
-
-        SpotBugsAnalyzer sba = new SpotBugsAnalyzer(projectName, spotbugsPath, osaResultsPath);
-        List<CodeModel> codeModels = sba.analyzeSourceCode(new File(projectPath));
+        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, resultsPath, projectName, patchSavePath);
+        List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation());
         codeModels.stream().forEach(cm -> LOG.debug(cm.getType() + ":" + cm.getModelPath()));
 
-        List<VulnerabilityEntry> vulnerabilityLocations = sba.getVulnerabilityLocations(new File(projectPath));
-
-        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, osaResultsPath, projectName, patchSavePath);
-        codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation());
-        codeModels.stream().forEach(cm -> LOG.debug(cm.getType() + ":" + cm.getModelPath()));
-
-        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, osaResultsPath, projectName, patchSavePath);
-        vulnerabilityLocations.addAll(vd.getVulnerabilityLocations(scc.getSourceCodeLocation()));
+        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, resultsPath, projectName, patchSavePath);
+        List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation());
 
         VulnerabilityRepairer vr = new ASGTransformRepair();
-        vr.generateDescription(new File(osaDescriptionPath), vulnerabilityLocations);
+        vr.generateDescription(new File(descriptionPath), vulnerabilityLocations);
 
         int patchCounter = 1;
         JSONObject vsCodeConfig = new JSONObject();
@@ -116,7 +102,7 @@ public class VulnRepairDriver {
             List<Pair<File, Patch<String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
             PatchValidator pv = new OpenStaticAnalyzer(osaPath,
                     osaEdition,
-                    osaResultsPath,
+                    resultsPath,
                     projectName,
                     patchSavePath);
             List<Pair<File, Patch<String>>> candidatePatches = new ArrayList<>();
