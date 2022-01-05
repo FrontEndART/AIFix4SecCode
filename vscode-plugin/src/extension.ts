@@ -16,6 +16,8 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.window.registerTreeDataProvider('jsonOutline', jsonOutlineProvider);
   
   init(context, jsonOutlineProvider);
+  // Initialize action commands of diagnostics made after analysis:
+  initActionCommands(context);
   log(process.env);
 
   // status bar item

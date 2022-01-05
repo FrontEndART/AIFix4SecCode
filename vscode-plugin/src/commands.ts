@@ -219,8 +219,8 @@ export function init(
           // tslint:disable-next-line: no-unused-expression
           testView = new TestView(context);
 
-          // Initialize action commands of diagnostics made after analysis:
-          initActionCommands(context);
+          let issuesFilePath = vscode.workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath')
+          
 
           resolve();
           logging.LogInfoAndShowInformationMessage("===== Finished analysis. =====", "Finished analysis of project!");
@@ -254,12 +254,14 @@ export function init(
       logging.LogErrorAndShowErrorMessage("Unable to find source file in '" + patchPath + "'", "Unable to find source file in '" + patchPath + "'");
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
+    let projectFolder = PROJECT_FOLDER
     var openFilePath = vscode.Uri.file(PROJECT_FOLDER + "/" + sourceFile);
     //var openFilePath = vscode.Uri.parse("file:///" + PROJECT_FOLDER + '/' + sourceFile); // not working on MacOS...
     
     logging.LogInfo("Running diagnosis in opened file...")
     vscode.workspace.openTextDocument(openFilePath).then((document) => {
-      vscode.window.showTextDocument(document).then(() => {
+      // ==== showTextDocument should trigger providecodeActions function, if not something is wrong with the path... ====
+      vscode.window.showTextDocument(document).then(() => { 
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,

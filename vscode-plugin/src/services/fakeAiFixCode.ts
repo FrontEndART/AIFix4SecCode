@@ -15,8 +15,8 @@ export async function getIssues() {
 
     const readFile = util.promisify(fs.readFile);
     let issuesPath: string | undefined = '';
-    if (workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')) {
-        issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');
+    if (workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath')) {
+        issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath');
     }
 
     async function loadIssues() {
@@ -40,8 +40,8 @@ export async function getIssues() {
 export function getIssuesSync() {
 
     let issuesPath: string | undefined = '';
-    if (workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')) {
-        issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');
+    if (workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath')) {
+        issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath');
     }
 
     let result = fs.readFileSync(issuesPath!, utf8Stream);
