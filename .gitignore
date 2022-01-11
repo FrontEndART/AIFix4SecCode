@@ -1,12 +1,3 @@
-.idea/
-target/
-*.iml
-
-main.log
-src/main/resources/config.properties
-
-test-project/.classpath
-test-project/.columbus_java
-test-project/.project
-test-project/.settings
-test-project/target
+﻿aifixcodeplugin/dist
+node_modules/
+out/
