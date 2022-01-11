@@ -16,25 +16,27 @@ export function initActionCommands(context: vscode.ExtensionContext) {
         // java, c#, c
         // WIP
 
-        // if we only want to apply actions to typescript files.
+        // if we only want to apply actions to only typescript files.
         let typescriptSelector = {
             scheme: 'file',
             language: 'typescript'
         };
 
-        // if we only want to apply actions to java files.
+        // if we only want to apply actions to only java files.
         let javaSelector = {
             scheme: 'file',
             language: 'java'
         };
-        
+
+        // use "*" as DocumentSelector argument otherwise...
+
         context.subscriptions.push(
-            vscode.languages.registerCodeActionsProvider(javaSelector, new Analyzer(), {
+            vscode.languages.registerCodeActionsProvider("*", new Analyzer(), {
                 providedCodeActionKinds: Analyzer.providedCodeActionKinds
             }));
 
         context.subscriptions.push(
-            vscode.languages.registerCodeActionsProvider(javaSelector, new AnalyzerInfo(), {
+            vscode.languages.registerCodeActionsProvider("*", new AnalyzerInfo(), {
                 providedCodeActionKinds: AnalyzerInfo.providedCodeActionKinds
             })
         );
