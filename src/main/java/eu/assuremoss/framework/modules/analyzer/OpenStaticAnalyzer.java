@@ -23,6 +23,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,7 +40,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation) {
         MavenPatchCompiler mpc = new MavenPatchCompiler();
-        mpc.compile(srcLocation, true);
+        mpc.compile(srcLocation, true, true);
 
         String fbFileListPath = String.valueOf(Paths.get(resultsPath, "fb_file_list.txt"));
         try (FileWriter fw = new FileWriter(fbFileListPath);) {
@@ -66,9 +67,9 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-cleanResults=0",
                 "-currentDate=0",
                 "-FBFileList=" + fbFileListPath,
-                "-runFB=true"
+                "-runFB=true",
+                "-FBOptions=-auxclasspath " + String.valueOf(Paths.get(srcLocation.getAbsolutePath(), "target", "dependency"))
         };
-
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         try {
