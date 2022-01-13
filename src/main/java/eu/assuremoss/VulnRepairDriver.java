@@ -21,7 +21,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,15 +38,15 @@ public class VulnRepairDriver {
     private static final String PROJECT_PATH_KEY = "project_path";
     private static final String OSA_PATH_KEY = "osa_path";
     private static final String OSA_EDITION_KEY = "osa_edition";
-    private static final String OSA_RESULTS_PATH_KEY = "osa_results_path";
-    private static final String OSA_DESCRIPTION_PATH_KEY = "osa_description_path";
+    private static final String RESULTS_PATH_KEY = "results_path";
+    private static final String DESCRIPTION_PATH_KEY = "description_path";
     private static final String PATCH_SAVE_PATH_KEY = "patch_save_path";
     private String projectName = "";
     private String projectPath = "";
     private String osaPath = "";
     private String osaEdition = "";
-    private String osaResultsPath = "";
-    private static String osaDescriptionPath = "";
+    private String resultsPath = "";
+    private static String descriptionPath = "";
     private String patchSavePath = "";
 
     public static void main(String[] args) {
@@ -67,30 +66,34 @@ public class VulnRepairDriver {
             projectPath = (String) properties.get(PROJECT_PATH_KEY);
             osaPath = (String) properties.get(OSA_PATH_KEY);
             osaEdition = (String) properties.get(OSA_EDITION_KEY);
-            osaResultsPath = (String) properties.get(OSA_RESULTS_PATH_KEY);
-            osaDescriptionPath = (String) properties.get(OSA_DESCRIPTION_PATH_KEY);
+            resultsPath = (String) properties.get(RESULTS_PATH_KEY);
+            descriptionPath = (String) properties.get(DESCRIPTION_PATH_KEY);
             patchSavePath = (String) properties.get(PATCH_SAVE_PATH_KEY);
             LOG.info("Successfully loaded data.");
         } catch (IOException e) {
             LOG.info("Could not find config.properties. Exiting.");
             System.exit(-1);
         }
+        try {
+            Files.createDirectory(Paths.get(resultsPath));
+        } catch (IOException e) {
+            LOG.info("Unable to create results folder.");
+        }
 
         SourceCodeCollector scc = new LocalSourceFolder(projectPath);
         scc.collectSourceCode();
 
-        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, osaResultsPath, projectName, patchSavePath);
+        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, resultsPath, projectName, patchSavePath);
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation());
         codeModels.stream().forEach(cm -> LOG.debug(cm.getType() + ":" + cm.getModelPath()));
 
-        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, osaResultsPath, projectName, patchSavePath);
+        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, resultsPath, projectName, patchSavePath);
         List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation());
 
         VulnerabilityRepairer vr = new ASGTransformRepair();
-        vr.generateDescription(new File(osaDescriptionPath), vulnerabilityLocations);
+        vr.generateDescription(new File(descriptionPath), vulnerabilityLocations);
 
         int patchCounter = 1;
-        int jsonCounter = 1;
         JSONObject vsCodeConfig = new JSONObject();
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
@@ -99,7 +102,7 @@ public class VulnRepairDriver {
             List<Pair<File, Patch<String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
             PatchValidator pv = new OpenStaticAnalyzer(osaPath,
                     osaEdition,
-                    osaResultsPath,
+                    resultsPath,
                     projectName,
                     patchSavePath);
             List<Pair<File, Patch<String>>> candidatePatches = new ArrayList<>();
