@@ -7,6 +7,7 @@ import eu.assuremoss.framework.api.PatchValidator;
 import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
 import eu.assuremoss.utils.Pair;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
@@ -32,12 +32,22 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
     private String osaPath;
     private String osaEdition;
-    private String resultsDir;
+    private String resultsPath;
     private String projectName;
     private String patchSavePath;
 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation) {
+        MavenPatchCompiler mpc = new MavenPatchCompiler();
+        mpc.compile(srcLocation, true);
+
+        String fbFileListPath = String.valueOf(Paths.get(resultsPath, "fb_file_list.txt"));
+        try (FileWriter fw = new FileWriter(fbFileListPath);) {
+            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), "target", "classes")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         List<CodeModel> resList = new ArrayList<>();
 
         String extension = "";
@@ -50,11 +60,13 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
         String[] command = new String[]{
                 new File(osaPath, osaEdition + "Java" + extension).getAbsolutePath(),
-                "-resultsDir=" + resultsDir,
+                "-resultsDir=" + resultsPath,
                 "-projectName=" + projectName,
                 "-projectBaseDir=" + srcLocation,
                 "-cleanResults=0",
-                "-currentDate=0"
+                "-currentDate=0",
+                "-FBFileList=" + fbFileListPath,
+                "-runFB=true"
         };
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -71,7 +83,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             e.printStackTrace();
         }
 
-        String asgPath = String.valueOf(Paths.get(resultsDir,
+        String asgPath = String.valueOf(Paths.get(resultsPath,
                 projectName,
                 "java",
                 "0",
@@ -92,19 +104,22 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             // process XML securely, avoid attacks like XML External Entities (XXE)
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(new File(String.valueOf(Paths.get(resultsDir, projectName, "java", "0", projectName + ".xml"))).getAbsolutePath());
+            Document doc = db.parse(new File(String.valueOf(Paths.get(resultsPath, projectName, "java", "0", projectName + ".xml"))).getAbsolutePath());
             NodeList attributes = doc.getElementsByTagName("attribute");
             for (int i = 0; i < attributes.getLength(); i++) {
                 String nodeName = attributes.item(i).getAttributes().getNamedItem("name").getNodeValue();
                 String nodeContext = attributes.item(i).getAttributes().getNamedItem("context").getNodeValue();
                 if ("warning".equals(nodeContext) &&
-                        (nodeName.startsWith("PMD_") || nodeName.startsWith("FH_"))) {
+                        (nodeName.startsWith("PMD_") || nodeName.startsWith("FH_") || nodeName.startsWith("FB_"))) {
                     NodeList warnAttributes = attributes.item(i).getChildNodes();
                     VulnerabilityEntry ve = new VulnerabilityEntry();
                     ve.setType(nodeName);
                     for (int j = 0; j < warnAttributes.getLength(); j++) {
                         if (warnAttributes.item(j).getAttributes() != null) {
                             String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
+                            if ("ExtraInfo".equals(attrType)) {
+                                continue;
+                            }
                             String attrVal = warnAttributes.item(j).getAttributes().getNamedItem("value").getNodeValue();
                             switch (attrType) {
                                 case "Path":
