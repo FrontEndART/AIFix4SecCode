@@ -40,7 +40,7 @@ export function initActionCommands(context: vscode.ExtensionContext) {
                 providedCodeActionKinds: AnalyzerInfo.providedCodeActionKinds
             })
         );
-    }); 
+    });
 }
 
 export class Analyzer implements vscode.CodeActionProvider {

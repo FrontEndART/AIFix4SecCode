@@ -10,23 +10,31 @@ import * as logging from './services/logging';
 export let analysisDiagnostics = vscode.languages.createDiagnosticCollection('aifix4seccode');
 
 let analysisStatusBarItem : vscode.StatusBarItem;
+let redoFixStatusBarItem : vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
   const jsonOutlineProvider = new JsonOutlineProvider(context);
 	vscode.window.registerTreeDataProvider('jsonOutline', jsonOutlineProvider);
   
   init(context, jsonOutlineProvider);
-  // Initialize action commands of diagnostics made after analysis:
-  initActionCommands(context);
   log(process.env);
 
-  // status bar item
+  // status bar items:
+  // Start analysis status bar item:
   analysisStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   analysisStatusBarItem.command = 'aifix4seccode-vscode.getOutputFromAnalyzer';
   context.subscriptions.push(analysisStatusBarItem);
   
-  analysisStatusBarItem.text = "$(symbol-misc) Start Analysis"
-  analysisStatusBarItem.show()
+  analysisStatusBarItem.text = "$(symbol-misc) Start Analysis";
+  analysisStatusBarItem.show();
+
+  // Redo last fix:
+  redoFixStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  redoFixStatusBarItem.command = 'aifix4seccode-vscode.redoLastFix';
+  context.subscriptions.push(redoFixStatusBarItem);
+  
+  redoFixStatusBarItem.text = "$(redo) Undo Last Fix";
+  redoFixStatusBarItem.show();
   
   // Start up log:
   logging.LogInfo("Extension started!");

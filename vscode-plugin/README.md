@@ -1,14 +1,5 @@
 # AIFix4SecCode-VSCode
 
-## Setup:
-
-Open up a vscode internal terminal and run:
-```bash
-npm i
-```
-
-If a popup says that it's unable to attach a watch debugger, just click on the debug anyway button.
-
 ## Packaging, publishing:
 
 We need to install vsce package manager:
