@@ -6,6 +6,8 @@ import { getIssues } from '../services/fakeAiFixCode';
 var path = require('path');
 
 let issues: Iissue | undefined;
+let disposableAnalyzerProvider : vscode.Disposable;
+let disposableAnalyzerInfoProvider : vscode.Disposable;
 
 async function initIssues() {
     issues = await getIssues();
@@ -28,15 +30,25 @@ export function initActionCommands(context: vscode.ExtensionContext) {
             language: 'java'
         };
 
-        // use "*" as DocumentSelector argument otherwise...
+        
+        // Dispose already created providers to avoid duplication issues:
+        if(disposableAnalyzerProvider){
+            disposableAnalyzerProvider.dispose()
+        }
 
+        if(disposableAnalyzerInfoProvider){
+            disposableAnalyzerInfoProvider.dispose()
+        }
+
+
+        // use "*" as DocumentSelector argument otherwise...
         context.subscriptions.push(
-            vscode.languages.registerCodeActionsProvider("*", new Analyzer(), {
+            disposableAnalyzerProvider = vscode.languages.registerCodeActionsProvider("*", new Analyzer(), {
                 providedCodeActionKinds: Analyzer.providedCodeActionKinds
             }));
 
         context.subscriptions.push(
-            vscode.languages.registerCodeActionsProvider("*", new AnalyzerInfo(), {
+            disposableAnalyzerInfoProvider = vscode.languages.registerCodeActionsProvider("*", new AnalyzerInfo(), {
                 providedCodeActionKinds: AnalyzerInfo.providedCodeActionKinds
             })
         );
