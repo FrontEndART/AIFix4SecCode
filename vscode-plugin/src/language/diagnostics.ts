@@ -63,6 +63,12 @@ export async function refreshDiagnostics(
   }
 }
 
+// const isChildOf = (child : string, parent : string) => {
+//   if (child === parent) return false
+//   const parentTokens = parent.split(path.sep).filter(i => i.length)
+//   return parentTokens.every((t, i) => child.split(path.sep)[i] === t)
+// }
+
 function createDiagnostic(
   doc: vscode.TextDocument,
   lineOfText: string,

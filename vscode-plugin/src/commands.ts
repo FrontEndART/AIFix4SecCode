@@ -46,41 +46,53 @@ var path = require("path");
 
 let activeDiffPanelWebviews = getActiveDiffPanelWebviews();
 
-export let testView : TestView;
+export let testView: TestView;
 
 export function updateUserDecisions(
   decision: string,
   patchPath: string,
   leftPath: string
 ) {
-  let patchRoot = PATCH_FOLDER;
-  if (patchRoot) {
-    let date = new Date();
-    let dateStr =
-      date.getFullYear().toString() +
-      "/" +
-      (date.getMonth() + 1).toString() +
-      "/" +
-      date.getDate().toString() +
-      " " +
-      date.getHours().toString() +
-      ":" +
-      date.getMinutes().toString();
+  // Ask user's choice for accepting / declining the fix:
+  logging.LogInfo("===== Executing showPopup command. =====");
 
-    appendFileSync(
-      getSafeFsPath(path.join(patchRoot, "user_decisions.txt")),
-      dateStr +
-        " == " +
-        leftPath +
-        " original File <-> " +
-        patchPath +
-        " patch" +
-        ", decision: " +
-        decision +
-        "\n",
-      utf8Stream
-    );
-  }
+  let inputOptions: vscode.InputBoxOptions = {
+    prompt: "Please specify the reason for your choice: ",
+    placeHolder: "I accepted / declined this fix because ...",
+  };
+
+  return vscode.window.showInputBox(inputOptions).then((value) => {
+    let patchRoot = PATCH_FOLDER;
+    if (patchRoot) {
+      let date = new Date();
+      let dateStr =
+        date.getFullYear().toString() +
+        "/" +
+        (date.getMonth() + 1).toString() +
+        "/" +
+        date.getDate().toString() +
+        " " +
+        date.getHours().toString() +
+        ":" +
+        date.getMinutes().toString();
+
+      appendFileSync(
+        getSafeFsPath(path.join(patchRoot, "user_decisions.txt")),
+        dateStr +
+          " == " +
+          leftPath +
+          " original File <-> " +
+          patchPath +
+          " patch" +
+          ", decision: " +
+          decision +
+          ", reason: " +
+          value +
+          "\n",
+        utf8Stream
+      );
+    }
+  });
 }
 
 export function init(
@@ -91,9 +103,15 @@ export function init(
   if (!PROJECT_FOLDER) {
     if (vscode.workspace.workspaceFolders!.length > 0) {
       SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
-      logging.LogInfoAndShowInformationMessage("No project folder was given, setting opened workspace as project folder.", "No project folder was given, setting opened workspace as project folder.");
+      logging.LogInfoAndShowInformationMessage(
+        "No project folder was given, setting opened workspace as project folder.",
+        "No project folder was given, setting opened workspace as project folder."
+      );
     } else {
-      logging.LogErrorAndShowErrorMessage("No workspace directory found! Open up a workspace directory or give a project path in config.", "No workspace directory found! Open up a workspace directory or give a project path in config.");
+      logging.LogErrorAndShowErrorMessage(
+        "No workspace directory found! Open up a workspace directory or give a project path in config.",
+        "No workspace directory found! Open up a workspace directory or give a project path in config."
+      );
     }
 
     // Filter out first backslash from project path:
@@ -129,6 +147,10 @@ export function init(
       getOutputFromAnalyzer
     ),
     vscode.commands.registerCommand(
+      "aifix4seccode-vscode.redoLastFix",
+      redoLastFix
+    ),
+    vscode.commands.registerCommand(
       "aifix4seccode-vscode.openUpFile",
       openUpFile
     ),
@@ -155,7 +177,9 @@ export function init(
   }
 
   async function refreshAnalysisDiagnostics() {
-    logging.LogInfo("===== Executing refreshAnalysisDiagnostics command. =====")
+    logging.LogInfo(
+      "===== Executing refreshAnalysisDiagnostics command. ====="
+    );
     vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -184,13 +208,59 @@ export function init(
     );
   }
 
+  async function redoLastFix() {
+    logging.LogInfo("===== Redo Last Fix started from command. =====");
+
+    var lastFilePath = JSON.parse(
+      context.workspaceState.get<string>("lastFilePath")!
+    );
+    var lastFileContent = JSON.parse(
+      context.workspaceState.get<string>("lastFileContent")!
+    );
+    var lastIssuesPath = JSON.parse(
+      context.workspaceState.get<string>("lastIssuesPath")!
+    );
+    var lastIssuesContent = JSON.parse(
+      context.workspaceState.get<string>("lastIssuesContent")!
+    );
+
+    // Set content of issues:
+    writeFileSync(lastIssuesPath, lastIssuesContent);
+
+    // Set content of edited file and focus on it:
+    writeFileSync(lastFilePath, lastFileContent);
+
+    vscode.workspace.openTextDocument(lastFilePath).then((document) => {
+      vscode.window.showTextDocument(document).then(() => {
+        var webview = getActiveDiffPanelWebview();
+        if ("patchPath" in webview.params) {
+          // Update user decisions of the revert fix:
+          updateUserDecisions(
+            "Undo was requested by user.",
+            webview.params.patchPath!,
+            lastFilePath
+          );
+        }
+        getOutputFromAnalyzer();
+      });
+    });
+
+    logging.LogInfo("===== Redo Last Fix command finished executing. =====");
+  }
+
   function startAnalyzingProjectSync() {
     return new Promise((resolve) => {
       if (!ANALYZER_EXE_PATH) {
-        logging.LogErrorAndShowErrorMessage("Unable to run analyzer! Analyzer executable path is missing.", "Unable to run analyzer! Analyzer executable path is missing.");
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to run analyzer! Analyzer executable path is missing.",
+          "Unable to run analyzer! Analyzer executable path is missing."
+        );
         resolve();
       } else if (!ANALYZER_PARAMETERS) {
-        logging.LogErrorAndShowErrorMessage("Unable to run analyzer! Analyzer parameters are missing.", "Unable to run analyzer! Analyzer parameters are missing.");
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to run analyzer! Analyzer parameters are missing.",
+          "Unable to run analyzer! Analyzer parameters are missing."
+        );
         resolve();
       } else {
         // run analyzer with terminal (read params and analyzer path from config):
@@ -202,7 +272,10 @@ export function init(
           { cwd: ANALYZER_EXE_PATH },
           (error) => {
             if (error) {
-              logging.LogErrorAndShowErrorMessage(error.toString(), "Unable to run analyzer! " + error.toString());
+              logging.LogErrorAndShowErrorMessage(
+                error.toString(),
+                "Unable to run analyzer! " + error.toString()
+              );
             }
           }
         );
@@ -213,17 +286,22 @@ export function init(
           logging.LogInfo("Analyzer executable finished.");
           // Get Output from analyzer:
           let output = fakeAiFixCode.getIssuesSync();
-          logging.LogInfo("issues got from analyzer output: " + JSON.stringify(output));
-          
+          logging.LogInfo(
+            "issues got from analyzer output: " + JSON.stringify(output)
+          );
+
           // Show issues treeView:
           // tslint:disable-next-line: no-unused-expression
           testView = new TestView(context);
 
-          let issuesFilePath = vscode.workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath')
-          
+          // Initialize action commands of diagnostics made after analysis:
+          initActionCommands(context);
 
           resolve();
-          logging.LogInfoAndShowInformationMessage("===== Finished analysis. =====", "Finished analysis of project!");
+          logging.LogInfoAndShowInformationMessage(
+            "===== Finished analysis. =====",
+            "Finished analysis of project!"
+          );
 
           process.exit();
         });
@@ -240,10 +318,13 @@ export function init(
 
     var patch = "";
     try {
-      logging.LogInfo("Reading patch from " + PATCH_FOLDER + "/" + patchPath)
+      logging.LogInfo("Reading patch from " + PATCH_FOLDER + "/" + patchPath);
       patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
     } catch (err) {
-      logging.LogErrorAndShowErrorMessage(err, "Unable to read in patch file: " + err);
+      logging.LogErrorAndShowErrorMessage(
+        err,
+        "Unable to read in patch file: " + err
+      );
     }
 
     var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
@@ -251,17 +332,18 @@ export function init(
     if (sourceFileMatch && sourceFileMatch[1]) {
       sourceFile = sourceFileMatch[1];
     } else {
-      logging.LogErrorAndShowErrorMessage("Unable to find source file in '" + patchPath + "'", "Unable to find source file in '" + patchPath + "'");
+      logging.LogErrorAndShowErrorMessage(
+        "Unable to find source file in '" + patchPath + "'",
+        "Unable to find source file in '" + patchPath + "'"
+      );
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
-    let projectFolder = PROJECT_FOLDER
     var openFilePath = vscode.Uri.file(PROJECT_FOLDER + "/" + sourceFile);
     //var openFilePath = vscode.Uri.parse("file:///" + PROJECT_FOLDER + '/' + sourceFile); // not working on MacOS...
-    
-    logging.LogInfo("Running diagnosis in opened file...")
+
+    logging.LogInfo("Running diagnosis in opened file...");
     vscode.workspace.openTextDocument(openFilePath).then((document) => {
-      // ==== showTextDocument should trigger providecodeActions function, if not something is wrong with the path... ====
-      vscode.window.showTextDocument(document).then(() => { 
+      vscode.window.showTextDocument(document).then(() => {
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
@@ -289,7 +371,10 @@ export function init(
     try {
       patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
     } catch (err) {
-      logging.LogErrorAndShowErrorMessage(err, "Unable to read patch file: " + err);
+      logging.LogErrorAndShowErrorMessage(
+        err,
+        "Unable to read patch file: " + err
+      );
     }
 
     var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
@@ -297,7 +382,10 @@ export function init(
     if (sourceFileMatch && sourceFileMatch[1]) {
       sourceFile = sourceFileMatch[1];
     } else {
-      logging.LogErrorAndShowErrorMessage("Unable to find source file in '" + patchPath + "'", "Unable to find source file in '" + patchPath + "'");
+      logging.LogErrorAndShowErrorMessage(
+        "Unable to find source file in '" + patchPath + "'",
+        "Unable to find source file in '" + patchPath + "'"
+      );
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
     var destinationFileMatch = /\+\+\+ ([^ \n\r\t]+).*/.exec(patch);
@@ -305,7 +393,10 @@ export function init(
     if (destinationFileMatch && destinationFileMatch[1]) {
       destinationFile = destinationFileMatch[1];
     } else {
-      logging.LogErrorAndShowErrorMessage("Unable to find destination file in '" + patchPath + "'", "Unable to find destination file in '" + patchPath + "'");
+      logging.LogErrorAndShowErrorMessage(
+        "Unable to find destination file in '" + patchPath + "'",
+        "Unable to find destination file in '" + patchPath + "'"
+      );
       throw Error("Unable to find destination file in '" + patchPath + "'");
     }
 
@@ -327,12 +418,23 @@ export function init(
     }
 
     if (patched === false) {
-      logging.LogErrorAndShowErrorMessage("Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'", "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'");
+      logging.LogErrorAndShowErrorMessage(
+        "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'",
+        "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'"
+      );
       throw Error(
         "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'"
       );
     } else if (sourceFile !== destinationFile) {
-      logging.LogInfo("Applied '" + patchPath + "' to '" + sourceFile + "' and stored it as '" + destinationFile + "'");
+      logging.LogInfo(
+        "Applied '" +
+          patchPath +
+          "' to '" +
+          sourceFile +
+          "' and stored it as '" +
+          destinationFile +
+          "'"
+      );
     } else {
       logging.LogInfo("Applied '" + patchPath + "' to '" + sourceFile + "'");
     }
@@ -388,10 +490,16 @@ export function init(
     let patchPath = "";
     const webview = getActiveDiffPanelWebview();
     //let wasM = getPatchedContent(webview.params.leftContent, webview.params);
+
+    // Saving issues.json and file contents in state,
+    // so later the changes can be reverted if user asks for it:
+    if ("leftPath" in webview.params) {
+      saveFileAndFixesToState(webview.params.leftPath!);
+    }
+
     webview.api.applyPatch();
 
     if ("leftPath" in webview.params && "patchPath" in webview.params) {
-      //var openFilePath = vscode.Uri.parse("file:///" + PROJECT_FOLDER + '/' + webview.params.leftPath); // not working on MacOS...
       var openFilePath = vscode.Uri.file(
         PROJECT_FOLDER + "/" + webview.params.leftPath
       );
@@ -422,6 +530,7 @@ export function init(
       patchPath = webview.params.patchPath;
     }
     testView.treeDataProvider?.refresh(patchPath);
+
     logging.LogInfo("===== Finished applyPatch command. =====");
   }
 
@@ -467,6 +576,36 @@ export function init(
     testView.treeDataProvider?.refresh(patchPath);
 
     webview.webViewPanel.dispose();
+  }
+
+  function saveFileAndFixesToState(filePath: string) {
+    logging.LogInfo(filePath);
+
+    let issuesPath: string | undefined = "";
+    if (
+      vscode.workspace
+        .getConfiguration()
+        .get<string>("aifix4seccode.analyzer.issuesPath")
+    ) {
+      issuesPath = vscode.workspace
+        .getConfiguration()
+        .get<string>("aifix4seccode.analyzer.issuesPath");
+    }
+
+    var originalFileContent = readFileSync(filePath!, "utf8");
+    var originalIssuesContent = readFileSync(issuesPath!, "utf8");
+    context.workspaceState.update(
+      "lastFileContent",
+      JSON.stringify(originalFileContent)
+    );
+    context.workspaceState.update("lastFilePath", JSON.stringify(filePath));
+
+    context.workspaceState.update(
+      "lastIssuesContent",
+      JSON.stringify(originalIssuesContent)
+    );
+    context.workspaceState.update("lastIssuesPath", JSON.stringify(issuesPath));
+    logging.LogInfo(filePath);
   }
 
   let currentFixId = 0;

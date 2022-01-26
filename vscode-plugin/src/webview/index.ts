@@ -94,8 +94,8 @@ export async function showDiff({ patchPath, leftContent, rightContent, leftPath,
             //writeFileSync('C:/Projects/dummyAnalyzerService/dummyAnalyzer/AnalysisOutput/issues.json', issuesStr, utf8Stream);
             //writeFileSync('E:/Projects/AIFixCode/vscode_plugin_20210804/required/dummyAnalyzerService/dummyAnalyzer/AnalysisOutput/issues.json', issuesStr, utf8Stream);
             let issuesPath : string | undefined = '';
-            if(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath')){
-              issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesFilePath');
+            if(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')){
+              issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');
             }
             writeFileSync(issuesPath!, issuesStr, utf8Stream);
 
