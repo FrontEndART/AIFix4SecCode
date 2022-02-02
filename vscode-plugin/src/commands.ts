@@ -8,6 +8,7 @@ import {
   watch,
   constants,
   appendFileSync,
+  readdirSync,
 } from "fs";
 import * as vscode from "vscode";
 import {
@@ -19,10 +20,11 @@ import {
   PATCH_FOLDER,
   PROJECT_FOLDER,
   ANALYZER_PARAMETERS,
+  ANALYZER_USE_DIFF_MODE,
   SetProjectFolder,
   utf8Stream,
 } from "./constants";
-import { IChange, IProjectAnalysis } from "./interfaces";
+import { IChange, IFix, Iissue, IProjectAnalysis } from "./interfaces";
 import {
   ExtendedWebview,
   ExtendedWebviewEnv,
@@ -35,6 +37,7 @@ import * as fakeAiFixCode from "./services/fakeAiFixCode";
 import * as logging from "./services/logging";
 import { SymbolDisplayPartKind, WatchDirectoryFlags } from "typescript";
 import { basename, dirname } from "path";
+import { applyPatchToFile } from "./patch";
 import { getSafeFsPath } from "./path";
 import { initActionCommands } from "./language/codeActions";
 import * as cp from "child_process";
@@ -58,7 +61,7 @@ export function updateUserDecisions(
 
   let inputOptions: vscode.InputBoxOptions = {
     prompt: "Please specify the reason for your choice: ",
-    placeHolder: "I accepted / declined this fix because ...",
+    placeHolder: "I accepted / declined / reverted this fix because ...",
   };
 
   return vscode.window.showInputBox(inputOptions).then((value) => {
@@ -232,16 +235,29 @@ export function init(
 
     vscode.workspace.openTextDocument(lastFilePath).then((document) => {
       vscode.window.showTextDocument(document).then(() => {
-        var webview = getActiveDiffPanelWebview();
-        if ("patchPath" in webview.params) {
+        if (ANALYZER_USE_DIFF_MODE == "view Diffs") {
+          var webview = getActiveDiffPanelWebview();
+          if ("patchPath" in webview.params) {
+            // Update user decisions of the revert fix:
+            updateUserDecisions(
+              "Undo was requested by user.",
+              webview.params.patchPath!,
+              lastFilePath
+            );
+          }
+          getOutputFromAnalyzer();
+        } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
+          var patchFilepath = JSON.parse(
+            context.workspaceState.get<string>("openedPatchPath")!
+          );
+
           // Update user decisions of the revert fix:
           updateUserDecisions(
             "Undo was requested by user.",
-            webview.params.patchPath!,
+            patchFilepath,
             lastFilePath
           );
         }
-        getOutputFromAnalyzer();
       });
     });
 
@@ -249,7 +265,7 @@ export function init(
   }
 
   function startAnalyzingProjectSync() {
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       if (!ANALYZER_EXE_PATH) {
         logging.LogErrorAndShowErrorMessage(
           "Unable to run analyzer! Analyzer executable path is missing.",
@@ -322,7 +338,7 @@ export function init(
       patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
     } catch (err) {
       logging.LogErrorAndShowErrorMessage(
-        err,
+        String(err),
         "Unable to read in patch file: " + err
       );
     }
@@ -363,93 +379,110 @@ export function init(
 
   function loadPatch(patchPath: string) {
     logging.LogInfo("===== Executing loadPatch command. =====");
-    if (!PROJECT_FOLDER) {
-      SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
-    }
 
-    var patch = "";
-    try {
-      patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
-    } catch (err) {
-      logging.LogErrorAndShowErrorMessage(
-        err,
-        "Unable to read patch file: " + err
-      );
-    }
-
-    var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
-    var sourceFile: string;
-    if (sourceFileMatch && sourceFileMatch[1]) {
-      sourceFile = sourceFileMatch[1];
-    } else {
-      logging.LogErrorAndShowErrorMessage(
-        "Unable to find source file in '" + patchPath + "'",
-        "Unable to find source file in '" + patchPath + "'"
-      );
-      throw Error("Unable to find source file in '" + patchPath + "'");
-    }
-    var destinationFileMatch = /\+\+\+ ([^ \n\r\t]+).*/.exec(patch);
-    var destinationFile;
-    if (destinationFileMatch && destinationFileMatch[1]) {
-      destinationFile = destinationFileMatch[1];
-    } else {
-      logging.LogErrorAndShowErrorMessage(
-        "Unable to find destination file in '" + patchPath + "'",
-        "Unable to find destination file in '" + patchPath + "'"
-      );
-      throw Error("Unable to find destination file in '" + patchPath + "'");
-    }
-
-    var original = readFileSync(PROJECT_FOLDER + "/" + sourceFile, "utf8");
-    var patched = diff.applyPatch(original, patch);
-    if (isPatchAlreadyOpened(sourceFile)) {
-      let requiredWebview = activeDiffPanelWebviews.find((webview) => {
-        if ("leftPath" in webview.params) {
-          if (webview.params.leftPath! === PATCH_FOLDER + "/" + sourceFile) {
-            return webview;
-          }
-        }
-      });
-
-      if (requiredWebview) {
-        requiredWebview!.webViewPanel.reveal(vscode.ViewColumn.One, false);
+    // ==== LOAD PATCH IN "view Patch files" MODE: ====
+    if (ANALYZER_USE_DIFF_MODE == "view Diffs") {
+      if (!PROJECT_FOLDER) {
+        SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
       }
-      return;
-    }
 
-    if (patched === false) {
-      logging.LogErrorAndShowErrorMessage(
-        "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'",
-        "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'"
-      );
-      throw Error(
-        "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'"
-      );
-    } else if (sourceFile !== destinationFile) {
-      logging.LogInfo(
-        "Applied '" +
-          patchPath +
-          "' to '" +
-          sourceFile +
-          "' and stored it as '" +
-          destinationFile +
-          "'"
-      );
-    } else {
-      logging.LogInfo("Applied '" + patchPath + "' to '" + sourceFile + "'");
-    }
+      var patch = "";
+      try {
+        patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
+      } catch (err) {
+        logging.LogErrorAndShowErrorMessage(
+          String(err),
+          "Unable to read patch file: " + err
+        );
+      }
 
-    logging.LogInfo("Opening Diff view.");
-    showDiff({
-      patchPath: patchPath,
-      leftContent: original,
-      rightContent: patched,
-      leftPath: PATCH_FOLDER + "/" + sourceFile,
-      rightPath: "",
-      context,
-      theme: vscode.window.activeColorTheme.kind.toString(),
-    });
-    vscode.commands.executeCommand("setContext", "patchApplyEnabled", true);
+      var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
+      var sourceFile: string;
+      if (sourceFileMatch && sourceFileMatch[1]) {
+        sourceFile = sourceFileMatch[1];
+      } else {
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to find source file in '" + patchPath + "'",
+          "Unable to find source file in '" + patchPath + "'"
+        );
+        throw Error("Unable to find source file in '" + patchPath + "'");
+      }
+      var destinationFileMatch = /\+\+\+ ([^ \n\r\t]+).*/.exec(patch);
+      var destinationFile;
+      if (destinationFileMatch && destinationFileMatch[1]) {
+        destinationFile = destinationFileMatch[1];
+      } else {
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to find destination file in '" + patchPath + "'",
+          "Unable to find destination file in '" + patchPath + "'"
+        );
+        throw Error("Unable to find destination file in '" + patchPath + "'");
+      }
+
+      var original = readFileSync(PROJECT_FOLDER + "/" + sourceFile, "utf8");
+      var patched = diff.applyPatch(original, patch);
+      if (isPatchAlreadyOpened(sourceFile)) {
+        let requiredWebview = activeDiffPanelWebviews.find((webview) => {
+          if ("leftPath" in webview.params) {
+            if (webview.params.leftPath! === PATCH_FOLDER + "/" + sourceFile) {
+              return webview;
+            }
+          }
+        });
+
+        if (requiredWebview) {
+          requiredWebview!.webViewPanel.reveal(vscode.ViewColumn.One, false);
+        }
+        return;
+      }
+
+      if (patched === false) {
+        logging.LogErrorAndShowErrorMessage(
+          "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'",
+          "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'"
+        );
+        throw Error(
+          "Failed to apply patch '" + patchPath + "' to '" + sourceFile + "'"
+        );
+      } else if (sourceFile !== destinationFile) {
+        logging.LogInfo(
+          "Applied '" +
+            patchPath +
+            "' to '" +
+            sourceFile +
+            "' and stored it as '" +
+            destinationFile +
+            "'"
+        );
+      } else {
+        logging.LogInfo("Applied '" + patchPath + "' to '" + sourceFile + "'");
+      }
+
+      logging.LogInfo("Opening Diff view.");
+      showDiff({
+        patchPath: patchPath,
+        leftContent: original,
+        rightContent: patched,
+        leftPath: PATCH_FOLDER + "/" + sourceFile,
+        rightPath: "",
+        context,
+        theme: vscode.window.activeColorTheme.kind.toString(),
+      });
+      vscode.commands.executeCommand("setContext", "patchApplyEnabled", true);
+      // ==== LOAD PATCH IN "view Patch files" MODE: ====
+    } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
+      vscode.workspace
+        .openTextDocument(PATCH_FOLDER + "/" + patchPath)
+        .then((document) => {
+          context.workspaceState.update(
+            "openedPatchPath",
+            JSON.stringify(PATCH_FOLDER + "/" + patchPath)
+          );
+          vscode.window.showTextDocument(document);
+        });
+
+      vscode.commands.executeCommand("setContext", "patchApplyEnabled", true);
+    }
     logging.LogInfo("===== Finished loadPatch command. =====");
   }
 
@@ -487,95 +520,202 @@ export function init(
 
   function applyPatch() {
     logging.LogInfo("===== Executing applyPatch command. =====");
-    let patchPath = "";
-    const webview = getActiveDiffPanelWebview();
-    //let wasM = getPatchedContent(webview.params.leftContent, webview.params);
 
-    // Saving issues.json and file contents in state,
-    // so later the changes can be reverted if user asks for it:
-    if ("leftPath" in webview.params) {
-      saveFileAndFixesToState(webview.params.leftPath!);
-    }
+    if (ANALYZER_USE_DIFF_MODE == "view Diffs") {
+      let patchPath = "";
+      const webview = getActiveDiffPanelWebview();
+      //let wasM = getPatchedContent(webview.params.leftContent, webview.params);
 
-    webview.api.applyPatch();
+      // Saving issues.json and file contents in state,
+      // so later the changes can be reverted if user asks for it:
+      if ("leftPath" in webview.params) {
+        saveFileAndFixesToState(webview.params.leftPath!);
+      }
 
-    if ("leftPath" in webview.params && "patchPath" in webview.params) {
-      var openFilePath = vscode.Uri.file(
-        PROJECT_FOLDER + "/" + webview.params.leftPath
-      );
-      vscode.workspace.openTextDocument(openFilePath).then((document) => {
-        vscode.window.showTextDocument(document).then(() => {
-          vscode.window.withProgress(
-            {
-              location: vscode.ProgressLocation.Notification,
-              title: "Loading Diagnostics...",
-            },
-            async () => {
-              await refreshDiagnostics(
-                vscode.window.activeTextEditor!.document,
-                analysisDiagnostics
-              );
-            }
-          );
+      webview.api.applyPatch();
+
+      if ("leftPath" in webview.params && "patchPath" in webview.params) {
+        var openFilePath = vscode.Uri.file(
+          PROJECT_FOLDER + "/" + webview.params.leftPath
+        );
+        vscode.workspace.openTextDocument(openFilePath).then((document) => {
+          vscode.window.showTextDocument(document).then(() => {
+            vscode.window.withProgress(
+              {
+                location: vscode.ProgressLocation.Notification,
+                title: "Loading Diagnostics...",
+              },
+              async () => {
+                await refreshDiagnostics(
+                  vscode.window.activeTextEditor!.document,
+                  analysisDiagnostics
+                );
+              }
+            );
+          });
         });
-      });
-    }
+      }
 
-    activeDiffPanelWebviews.splice(activeDiffPanelWebviews.indexOf(webview), 1);
-    if (activeDiffPanelWebviews.length < 1) {
+      activeDiffPanelWebviews.splice(
+        activeDiffPanelWebviews.indexOf(webview),
+        1
+      );
+      if (activeDiffPanelWebviews.length < 1) {
+        vscode.commands.executeCommand(
+          "setContext",
+          "patchApplyEnabled",
+          false
+        );
+      }
+
+      if ("patchPath" in webview.params && webview.params.patchPath) {
+        patchPath = webview.params.patchPath;
+      }
+      testView.treeDataProvider?.refresh(patchPath);
+    } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
+      // 1. Get the content of the original file
+      // 2. Apply the patch to it's content.
+      // 3. Overwrite at the original file path with the patched content.
+      // 4. Hide navbar buttons (applyPatch, declinePatch, nextDiff, prevDiff).
+
+      // 1.
+      var patchFilepath = JSON.parse(
+        context.workspaceState.get<string>("openedPatchPath")!
+      );
+      var patchFileContent = readFileSync(patchFilepath, "utf8");
+      var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
+      var sourceFile: string;
+      if (sourceFileMatch && sourceFileMatch[1]) {
+        sourceFile = sourceFileMatch[1];
+      } else {
+        throw Error("Unable to find source file in '" + patchFilepath + "'");
+      }
+      var sourceFileContent = readFileSync(
+        path.join(PROJECT_FOLDER, sourceFile),
+        "utf8"
+      );
+
+      // 2.
+      var destinationFileMatch = /\+\+\+ ([^ \n\r\t]+).*/.exec(
+        patchFileContent
+      );
+      var destinationFile;
+      if (destinationFileMatch && destinationFileMatch[1]) {
+        destinationFile = destinationFileMatch[1];
+      } else {
+        throw Error(
+          "Unable to find destination file in '" + patchFilepath + "'"
+        );
+      }
+      var patched = diff.applyPatch(sourceFileContent, patchFileContent);
+
+      console.log(patched);
+
+      // 3.
+      applyPatchToFile(
+        path.join(PROJECT_FOLDER, sourceFile),
+        patched,
+        patchFilepath
+      );
+
+      // 4.
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
     }
-
-    if ("patchPath" in webview.params && webview.params.patchPath) {
-      patchPath = webview.params.patchPath;
-    }
-    testView.treeDataProvider?.refresh(patchPath);
-
     logging.LogInfo("===== Finished applyPatch command. =====");
   }
 
   function declinePatch() {
-    let patchPath = "";
-    const webview = getActiveDiffPanelWebview();
-    activeDiffPanelWebviews.splice(activeDiffPanelWebviews.indexOf(webview), 1);
+    if (ANALYZER_USE_DIFF_MODE == "view Diffs") {
+      let patchPath = "";
+      const webview = getActiveDiffPanelWebview();
+      activeDiffPanelWebviews.splice(
+        activeDiffPanelWebviews.indexOf(webview),
+        1
+      );
 
-    if ("leftPath" in webview.params && "patchPath" in webview.params) {
-      updateUserDecisions(
-        "declined",
-        webview.params.patchPath!,
-        webview.params.leftPath!
-      );
-      var openFilePath = vscode.Uri.parse(
-        "file:///" + PROJECT_FOLDER + "/" + webview.params.leftPath
-      );
-      vscode.workspace.openTextDocument(openFilePath).then((document) => {
-        vscode.window.showTextDocument(document).then(() => {
-          vscode.window.withProgress(
-            {
-              location: vscode.ProgressLocation.Notification,
-              title: "Loading Diagnostics...",
-            },
-            async () => {
-              await refreshDiagnostics(
-                vscode.window.activeTextEditor!.document,
-                analysisDiagnostics
-              );
-            }
-          );
+      if ("leftPath" in webview.params && "patchPath" in webview.params) {
+        updateUserDecisions(
+          "declined",
+          webview.params.patchPath!,
+          webview.params.leftPath!
+        );
+        var openFilePath = vscode.Uri.parse(
+          "file:///" + PROJECT_FOLDER + "/" + webview.params.leftPath
+        );
+        vscode.workspace.openTextDocument(openFilePath).then((document) => {
+          vscode.window.showTextDocument(document).then(() => {
+            vscode.window.withProgress(
+              {
+                location: vscode.ProgressLocation.Notification,
+                title: "Loading Diagnostics...",
+              },
+              async () => {
+                await refreshDiagnostics(
+                  vscode.window.activeTextEditor!.document,
+                  analysisDiagnostics
+                );
+              }
+            );
+          });
         });
-      });
-    }
+      }
 
-    if (activeDiffPanelWebviews.length < 1) {
+      if (activeDiffPanelWebviews.length < 1) {
+        vscode.commands.executeCommand(
+          "setContext",
+          "patchApplyEnabled",
+          false
+        );
+      }
+
+      if ("patchPath" in webview.params && webview.params.patchPath) {
+        patchPath = webview.params.patchPath;
+      }
+      testView.treeDataProvider?.refresh(patchPath);
+
+      webview.webViewPanel.dispose();
+    } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
+      // TODO: DO it with patch file
+      let activeEditor = vscode.window.activeTextEditor!.document.uri.fsPath;
+      var patchFilepath = JSON.parse(
+        context.workspaceState.get<string>("openedPatchPath")!
+      );
+      var patchFileContent = readFileSync(patchFilepath, "utf8");
+      var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
+      var sourceFile: string;
+      if (sourceFileMatch && sourceFileMatch[1]) {
+        sourceFile = sourceFileMatch[1];
+      } else {
+        throw Error("Unable to find source file in '" + patchFilepath + "'");
+      }
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
-    }
+      testView.treeDataProvider?.refresh(patchFilepath);
+      vscode.workspace
+        .openTextDocument(path.join(PROJECT_FOLDER, sourceFile))
+        .then((document) => {
+          vscode.window.showTextDocument(document).then(() => {
+            vscode.window.withProgress(
+              {
+                location: vscode.ProgressLocation.Notification,
+                title: "Loading Diagnostics...",
+              },
+              async () => {
+                // 4.
+                await refreshDiagnostics(
+                  vscode.window.activeTextEditor!.document,
+                  analysisDiagnostics
+                );
 
-    if ("patchPath" in webview.params && webview.params.patchPath) {
-      patchPath = webview.params.patchPath;
+                updateUserDecisions(
+                  "declined",
+                  patchFilepath,
+                  path.join(PROJECT_FOLDER, sourceFile)
+                );
+              }
+            );
+          });
+        });
     }
-    testView.treeDataProvider?.refresh(patchPath);
-
-    webview.webViewPanel.dispose();
   }
 
   function saveFileAndFixesToState(filePath: string) {
@@ -611,42 +751,74 @@ export function init(
   let currentFixId = 0;
 
   async function navigateDiff(step: number) {
-    let activeWebview = getActiveDiffPanelWebview();
-    let origPath = "";
-    if ("leftPath" in activeWebview.params) {
-      origPath = activeWebview.params.leftPath!;
-    }
-
-    let fixes = await fakeAiFixCode.getFixes(origPath);
-    let nextFixId = currentFixId + step;
-    if (!fixes[nextFixId]) {
-      nextFixId = nextFixId > 0 ? 0 : fixes.length - 1;
-    }
-
-    let sourceFile = "";
-    let requiredWebview = activeDiffPanelWebviews.find((webview) => {
-      if ("patchPath" in webview.params) {
-        if (webview.params.patchPath! === fixes[nextFixId].path) {
-          return webview;
-        }
+    if (ANALYZER_USE_DIFF_MODE == "view Diffs") {
+      let activeWebview = getActiveDiffPanelWebview();
+      let origPath = "";
+      if ("leftPath" in activeWebview.params) {
+        origPath = activeWebview.params.leftPath!;
       }
-    });
 
-    if (requiredWebview) {
-      requiredWebview!.webViewPanel.reveal(vscode.ViewColumn.One, false);
-    } else {
-      let leftContent = getLeftContent(fixes[nextFixId].path);
-      let rightContent = getRightContent(fixes[nextFixId].path, leftContent);
-      showDiff({
-        patchPath: fixes[nextFixId].path,
-        leftContent: leftContent,
-        rightContent: rightContent,
-        leftPath: origPath,
-        rightPath: "",
-        context,
+      let fixes = await fakeAiFixCode.getFixes(origPath);
+      let nextFixId = currentFixId + step;
+      if (!fixes[nextFixId]) {
+        nextFixId = nextFixId > 0 ? 0 : fixes.length - 1;
+      }
+
+      let sourceFile = "";
+      let requiredWebview = activeDiffPanelWebviews.find((webview) => {
+        if ("patchPath" in webview.params) {
+          if (webview.params.patchPath! === fixes[nextFixId].path) {
+            return webview;
+          }
+        }
       });
+
+      if (requiredWebview) {
+        requiredWebview!.webViewPanel.reveal(vscode.ViewColumn.One, false);
+      } else {
+        let leftContent = getLeftContent(fixes[nextFixId].path);
+        let rightContent = getRightContent(fixes[nextFixId].path, leftContent);
+        showDiff({
+          patchPath: fixes[nextFixId].path,
+          leftContent: leftContent,
+          rightContent: rightContent,
+          leftPath: origPath,
+          rightPath: "",
+          context,
+        });
+      }
+      currentFixId = nextFixId;
+    } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
+      var patchFilepath = JSON.parse(
+        context.workspaceState.get<string>("openedPatchPath")!
+      );
+      var patchFileContent = readFileSync(patchFilepath, "utf8");
+      var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
+      var sourceFile: string;
+      if (sourceFileMatch && sourceFileMatch[1]) {
+        sourceFile = sourceFileMatch[1];
+      } else {
+        throw Error("Unable to find source file in '" + patchFilepath + "'");
+      }
+      var leftPath = path.join(PROJECT_FOLDER, sourceFile);
+
+      let fixes = await fakeAiFixCode.getFixes(leftPath);
+      console.log(fixes);
+      let nextFixId = currentFixId + step;
+      if (!fixes[nextFixId]) {
+        nextFixId = nextFixId > 0 ? 0 : fixes.length - 1;
+      }
+
+      vscode.workspace.openTextDocument(path.join(PATCH_FOLDER, fixes[nextFixId].path)).then((document) => {
+        vscode.window.showTextDocument(document).then(() => {
+          context.workspaceState.update(
+            "openedPatchPath",
+            JSON.stringify(path.join(PATCH_FOLDER, fixes[nextFixId].path))
+          );
+        });
+      });
+      currentFixId = nextFixId;
     }
-    currentFixId = nextFixId;
   }
 
   function nextDiff() {
