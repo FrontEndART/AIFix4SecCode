@@ -16,11 +16,5 @@ $ vsce package
 # myExtension.vsix generated
 ```
 
-## Pusblishing extension to marketplace:
-
-```bash
-$ vsce publish
-# <publisherID>.myExtension published to VS Code Marketplace
-```
-
-
+## Example of usage on a demo project:
+Try the Patch_Validation.zip
