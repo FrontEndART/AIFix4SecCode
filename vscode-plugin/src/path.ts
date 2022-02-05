@@ -13,6 +13,7 @@ export function getFilePath(path: string): string {
 }
 
 export function getSafeFsPath(path: string): string {
+  path = path.replace(/\//g, '\\')
   if (isAbsolute(path)) {
     return path;
   }

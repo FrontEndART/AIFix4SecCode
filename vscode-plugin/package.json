@@ -199,6 +199,19 @@
     "configuration": {
       "title": "AIFix4SecCode",
       "properties": {
+        "aifix4seccode.analyzer.useDiffMode": {
+          "type": "string",
+          "default": "view Diffs",
+          "description": "Change the mode of showing patches in the editor. (Reload required)",
+          "enum": [
+            "view Diffs",
+            "view Patch files"
+          ],
+          "enumDescriptions": [
+            "Choosing a fix will show a side-to-side diff view of the original content and the content that the fix would give.",
+            "Choosing a fix will show the patch file's content of the fix."
+          ]
+        },
         "aifix4seccode.analyzer.executablePath": {
           "type": "string",
           "default": "",
@@ -226,5 +239,8 @@
         }
       }
     }
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.10.1"
   }
 }

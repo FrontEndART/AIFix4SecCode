@@ -119,7 +119,7 @@ function getNode(key: any): { key: string } {
 
 function filterTree(patchPath: string) {
 	Object.keys(tree).forEach(key => {
-		if (tree[key].patches.some((x: any) => x.path === patchPath)) {
+		if (tree[key].patches.some((x: any) => x.path === patchPath || patchPath.includes(x.path))) {
 			delete tree[key];
 		}
 	});
