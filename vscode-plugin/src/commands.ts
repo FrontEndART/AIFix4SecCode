@@ -104,7 +104,7 @@ export function init(
 ) {
   // Set working directory as PROJECT_FOLDER if no path was given in config:
   if (!PROJECT_FOLDER) {
-    if (vscode.workspace.workspaceFolders!.length > 0) {
+    if (vscode.workspace.workspaceFolders! && vscode.workspace.workspaceFolders!.length > 0) {
       SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
       logging.LogInfoAndShowInformationMessage(
         "No project folder was given, setting opened workspace as project folder.",

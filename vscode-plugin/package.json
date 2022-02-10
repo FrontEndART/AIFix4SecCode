@@ -13,11 +13,11 @@
     "color": "#f5f5f5",
     "theme": "light"
   },
-  "publisher": "yigsoft",
+  "publisher": "searchlab",
   "author": {
-    "name": "Yigsoft LLC",
-    "email": "admin@yigsoft.dev",
-    "url": "https://yigsoft.dev"
+    "name": "SEARCH-LAB Ltd",
+    "email": "research@search-lab.hu",
+    "url": "http://www.search-lab.hu"
   },
   "engines": {
     "vscode": "^1.58.2"

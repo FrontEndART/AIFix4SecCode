@@ -36,6 +36,22 @@ export function activate(context: vscode.ExtensionContext) {
   redoFixStatusBarItem.text = "$(redo) Undo Last Fix";
   redoFixStatusBarItem.show();
   
+  // On settings change restart prompt:
+  vscode.workspace.onDidChangeConfiguration(event => {
+    const action = 'Reload';
+
+    vscode.window
+      .showInformationMessage(
+        `Reload window in order for change in extension AIFix4SecCode configuration to take effect.`,
+        action
+      )
+      .then(selectedAction => {
+        if (selectedAction === action) {
+          vscode.commands.executeCommand('workbench.action.reloadWindow');
+        }
+      });
+  })
+
   // Start up log:
   logging.LogInfo("Extension started!");
   vscode.window.showInformationMessage('This extension is used for analyzing your project for issues. If you have no project folder opened please open it, or include it in the DiffMerge Extension settings.'
