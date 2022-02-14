@@ -3,8 +3,8 @@ package eu.assuremoss.framework.modules.compiler;
 import com.github.difflib.patch.Patch;
 import eu.assuremoss.utils.Pair;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.apache.maven.cli.MavenCli;
 
 import java.io.*;
@@ -53,7 +53,7 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
         try (PrintStream buffer = new PrintStream(baos, true, utf8)) {
             cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer);
             String mvnOutput = baos.toString();
-            LOG.debug(mvnOutput);
+            LOG.info(mvnOutput);
             if (mvnOutput.contains("BUILD SUCCESS")) {
                 return true;
             }
