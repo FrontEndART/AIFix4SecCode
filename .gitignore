@@ -4,6 +4,8 @@ target/
 
 main.log
 
+config.properties
+
 test-project/.classpath
 test-project/.columbus_java
 test-project/.project
