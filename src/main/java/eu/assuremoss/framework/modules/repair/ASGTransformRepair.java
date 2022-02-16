@@ -101,9 +101,9 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         problemPosition.addContent(new Element("path").addContent(ve.getPath().substring(pathToRemove.length()).replaceAll("\\\\", "/")));
 
         problemPosition.addContent(new Element("startLine").addContent(ve.getStartLine() + ""));
-        problemPosition.addContent(new Element("startCol").addContent(24 + ""));
+        problemPosition.addContent(new Element("startCol").addContent(ve.getStartCol() + ""));
         problemPosition.addContent(new Element("endLine").addContent(ve.getEndLine() + ""));
-        problemPosition.addContent(new Element("endCol").addContent(61 + ""));
+        problemPosition.addContent(new Element("endCol").addContent(ve.getEndCol() + ""));
 
         positions.addContent(problemPosition);
         problemToRepair.addContent(positions);
@@ -137,5 +137,13 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         }
 
         return resList;
+    }
+
+    public void deletePatch(int patchCounter) {
+        try {
+            Files.delete(Path.of(patchSavePath, "patch" + patchCounter + ".diff"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

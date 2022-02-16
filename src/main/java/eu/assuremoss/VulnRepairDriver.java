@@ -99,6 +99,7 @@ public class VulnRepairDriver {
         VulnerabilityRepairer vr = new ASGTransformRepair(projectName, projectPath, resultsPath, descriptionPath, patchSavePath);
         int patchCounter1 = 1;
         int patchCounter2 = 1;
+        Map<String, Integer> problemTypeCounter = new HashMap<>();
         JSONObject vsCodeConfig = new JSONObject();
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels, patchCounter1++);
@@ -184,7 +185,18 @@ public class VulnRepairDriver {
             issueObject.put("patches", patchesArray);
             issueObject.put("textRange", textRangeObject);
 
-            vsCodeConfig.put(ve.getType(), issueObject);
+            String problemTypeCount;
+            if (problemTypeCounter.get(ve.getType()) == null) {
+                problemTypeCounter.put(ve.getType(), 1);
+                problemTypeCount = "";
+            } else {
+                int n = problemTypeCounter.get(ve.getType());
+                n++;
+                problemTypeCounter.put(ve.getType(), n);
+                problemTypeCount = "_" + n;
+            }
+
+            vsCodeConfig.put(ve.getType() + problemTypeCount, issueObject);
         }
 
         try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "vscode-config.json")))) {
@@ -193,6 +205,10 @@ public class VulnRepairDriver {
             fw.write(gson.toJson(element));
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+        for (int i  = 0; i < patchCounter1; i++) {
+            ((ASGTransformRepair) vr).deletePatch(i);
         }
     }
 }
