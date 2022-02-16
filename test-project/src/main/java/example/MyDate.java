@@ -4,8 +4,8 @@ import java.util.Date;
 /**
  * Example for EI_EXPOSE_REP bugs
  */
-class MyDate {
-    private Date date = new Date();
+public class MyDate {
+    private Date date = null;
 
 
     public Date getDate() {

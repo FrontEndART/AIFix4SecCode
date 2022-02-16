@@ -1,5 +1,5 @@
 package example;
-class Main {
+public class Main {
     public static String MY_CONSTANT = "This variable should be final!";  //example for MS_SHOULD_BE_FINAL
 
     public static void main(String args[]) {
