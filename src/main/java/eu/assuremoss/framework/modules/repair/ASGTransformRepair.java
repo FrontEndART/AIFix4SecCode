@@ -2,7 +2,6 @@ package eu.assuremoss.framework.modules.repair;
 
 import coderepair.communication.base.RepairAlgorithmRunner;
 import coderepair.repair.RepairToolSwitcher;
-import com.github.difflib.DiffUtils;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
@@ -17,11 +16,14 @@ import org.jdom2.Element;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @AllArgsConstructor
 public class ASGTransformRepair implements VulnerabilityRepairer {
@@ -99,9 +101,9 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         problemPosition.addContent(new Element("path").addContent(ve.getPath().substring(pathToRemove.length()).replaceAll("\\\\", "/")));
 
         problemPosition.addContent(new Element("startLine").addContent(ve.getStartLine() + ""));
-        problemPosition.addContent(new Element("startCol").addContent(ve.getStartCol() + ""));
+        problemPosition.addContent(new Element("startCol").addContent(24 + ""));
         problemPosition.addContent(new Element("endLine").addContent(ve.getEndLine() + ""));
-        problemPosition.addContent(new Element("endCol").addContent(25 + ""));
+        problemPosition.addContent(new Element("endCol").addContent(61 + ""));
 
         positions.addContent(problemPosition);
         problemToRepair.addContent(positions);
