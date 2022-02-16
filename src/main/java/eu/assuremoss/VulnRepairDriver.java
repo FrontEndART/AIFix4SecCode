@@ -147,7 +147,7 @@ public class VulnRepairDriver {
                                     Arrays.asList(Files.readString(Path.of(path.getAbsolutePath())).split("\n")), patch, 2);
 
                     // make the path in the patch file relative to the project path
-                    /*for (int j = 0; j < 2; j++) {
+                    for (int j = 0; j < 2; j++) {
                         String line = unifiedDiff.get(j);
 
                         String regex = projectPath;
@@ -159,7 +159,7 @@ public class VulnRepairDriver {
                         }
 
                         unifiedDiff.set(j, lineParts[0] + lineParts[1]);
-                    }*/
+                    }
 
                     String diffString = Joiner.on("\n").join(unifiedDiff) + "\n";
                     patchWriter.write(diffString);
