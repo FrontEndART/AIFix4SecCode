@@ -1,5 +1,5 @@
 # AIFix4SecCode
-An automated code repair framework for fixing vulnerabilities. The framework detects vulnerabilities based on static analysis with the help of the [OpenStatickAnalyzer](https://github.com/sed-inf-u-szeged/OpenStaticAnalyzer) tool that integrates [SpotBugs](https://spotbugs.github.io/) as well.
+An automated code repair framework for fixing vulnerabilities. The framework detects vulnerabilities based on static analysis with the help of the [OpenStaticAnalyzer](https://github.com/sed-inf-u-szeged/OpenStaticAnalyzer) tool that integrates [SpotBugs](https://spotbugs.github.io/) as well.
 
 The detected vulnerabilities get automatically patched by an ASG transformation based repair solution implemented in the [CodeRepair](https://github.com/FrontEndART/OpenStaticAnalyzer/tree/CodeRepairTool/java/cl/CodeRepair) code module. Currently, the automatic repair of the following security issues are supported:
 * [EI_EXPOSE_REP2](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ei2-may-expose-internal-representation-by-incorporating-reference-to-mutable-object-ei-expose-rep2)
