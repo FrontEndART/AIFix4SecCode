@@ -590,10 +590,15 @@ export function init(
       } else {
         throw Error("Unable to find source file in '" + patchFilepath + "'");
       }
+
+      // Saving issues.json and file contents in state,
+      // so later the changes can be reverted if user asks for it:
+      saveFileAndFixesToState(path.join(PATCH_FOLDER, sourceFile));
+
       var sourceFileContent = readFileSync(
         path.join(PROJECT_FOLDER, sourceFile),
         "utf8"
-      );
+      ); 
 
       // 2.
       var destinationFileMatch = /\+\+\+ ([^ \n\r\t]+).*/.exec(
