@@ -28,12 +28,12 @@ import java.util.*;
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
     private static final Logger LOG = LogManager.getLogger(OpenStaticAnalyzer.class);
 
-    private static final Map<String, String> SUPPORTED_PROBLEM_TYPES = new HashMap<>();
+    private static final Map<String, List<String>> SUPPORTED_PROBLEM_TYPES = new HashMap<>();
     static {
-        SUPPORTED_PROBLEM_TYPES.put("FB_EiER", "");
-        SUPPORTED_PROBLEM_TYPES.put("FB_MSBF", "MS_SHOULD_BE_FINAL");
-        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSP", "NP_NULL_ON_SOME_PATH");
-        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSPE", "NP_NULL_ON_SOME_PATH_EXCEPTION");
+        SUPPORTED_PROBLEM_TYPES.put("FB_EiER", List.of("EI_EXPOSE_REP2", "EI_EXPOSE_REP2_ARRAY", "EI_EXPOSE_REP2_DATEOBJECT"));
+        SUPPORTED_PROBLEM_TYPES.put("FB_MSBF", List.of("MS_SHOULD_BE_FINAL"));
+        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSP", List.of("NP_NULL_ON_SOME_PATH"));
+        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSPE", List.of("NP_NULL_ON_SOME_PATH_EXCEPTION"));
     }
 
     private String osaPath;
@@ -132,12 +132,8 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 String nodeContext = attributes.item(i).getAttributes().getNamedItem("context").getNodeValue();
                 if ("warning".equals(nodeContext) && SUPPORTED_PROBLEM_TYPES.containsKey(nodeName)) {
                     NodeList warnAttributes = attributes.item(i).getChildNodes();
-                    String problemType = SUPPORTED_PROBLEM_TYPES.get(nodeName);
-                    if ("".equals(problemType)) {
-                        resList.add(createVulnerabilityEntry(warnAttributes, "EI_EXPOSE_REP2"));
-                        resList.add(createVulnerabilityEntry(warnAttributes, "EI_EXPOSE_REP2_ARRAY"));
-                        resList.add(createVulnerabilityEntry(warnAttributes, "EI_EXPOSE_REP2_DATEOBJECT"));
-                    } else {
+                    List<String> problemTypes = SUPPORTED_PROBLEM_TYPES.get(nodeName);
+                    for (String problemType : problemTypes) {
                         resList.add(createVulnerabilityEntry(warnAttributes, problemType));
                     }
                 }
@@ -174,13 +170,13 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                         ve.setStartLine(Integer.parseInt(attrVal));
                         break;
                     case "Column":
-                        ve.setStartCol(Integer.parseInt(attrVal));
+                        ve.setStartCol(24);
                         break;
                     case "EndLine":
                         ve.setEndLine(Integer.parseInt(attrVal));
                         break;
                     case "EndColumn":
-                        ve.setEndCol(Integer.parseInt(attrVal));
+                        ve.setEndCol(61);
                         break;
                     case "WarningText":
                         ve.setDescription(attrVal);
