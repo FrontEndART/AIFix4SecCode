@@ -15,6 +15,7 @@ import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
 import eu.assuremoss.framework.modules.repair.ASGTransformRepair;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
 import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.PatchDeleter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
@@ -207,8 +208,6 @@ public class VulnRepairDriver {
             e.printStackTrace();
         }
 
-        for (int i  = 0; i < patchCounter1; i++) {
-            ((ASGTransformRepair) vr).deletePatch(i);
-        }
+        PatchDeleter.deletePatches(patchSavePath, patchCounter1);
     }
 }

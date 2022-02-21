@@ -138,12 +138,4 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
 
         return resList;
     }
-
-    public void deletePatch(int patchCounter) {
-        try {
-            Files.delete(Path.of(patchSavePath, "patch" + patchCounter + ".diff"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }
