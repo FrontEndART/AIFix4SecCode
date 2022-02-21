@@ -15,6 +15,7 @@ import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
 import eu.assuremoss.framework.modules.repair.ASGTransformRepair;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
 import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.Utils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
@@ -99,6 +100,7 @@ public class VulnRepairDriver {
         VulnerabilityRepairer vr = new ASGTransformRepair(projectName, projectPath, resultsPath, descriptionPath, patchSavePath);
         int patchCounter1 = 1;
         int patchCounter2 = 1;
+        Map<String, Integer> problemTypeCounter = new HashMap<>();
         JSONObject vsCodeConfig = new JSONObject();
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels, patchCounter1++);
@@ -184,7 +186,18 @@ public class VulnRepairDriver {
             issueObject.put("patches", patchesArray);
             issueObject.put("textRange", textRangeObject);
 
-            vsCodeConfig.put(ve.getType(), issueObject);
+            String problemTypeCount;
+            if (problemTypeCounter.get(ve.getType()) == null) {
+                problemTypeCounter.put(ve.getType(), 1);
+                problemTypeCount = "";
+            } else {
+                int n = problemTypeCounter.get(ve.getType());
+                n++;
+                problemTypeCounter.put(ve.getType(), n);
+                problemTypeCount = "_" + n;
+            }
+
+            vsCodeConfig.put(ve.getType() + problemTypeCount, issueObject);
         }
 
         try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "vscode-config.json")))) {
@@ -194,5 +207,7 @@ public class VulnRepairDriver {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        Utils.deletePatches(patchSavePath, patchCounter1);
     }
 }
