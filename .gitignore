@@ -3,7 +3,8 @@ target/
 *.iml
 
 main.log
-src/main/resources/config.properties
+
+config.properties
 
 test-project/.classpath
 test-project/.columbus_java

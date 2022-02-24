@@ -1,65 +1,70 @@
 package eu.assuremoss.framework.modules.repair;
 
-import com.github.difflib.DiffUtils;
+import coderepair.communication.base.RepairAlgorithmRunner;
+import coderepair.repair.RepairToolSwitcher;
+import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
-import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
-import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
 import eu.assuremoss.utils.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.AllArgsConstructor;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
+@AllArgsConstructor
 public class ASGTransformRepair implements VulnerabilityRepairer {
     private static final Logger LOG = LogManager.getLogger(ASGTransformRepair.class);
 
-    @Override
-    public File generateDescription(File descriptionLocation, List<VulnerabilityEntry> vulnerabilityLocations) {
-        File descriptionFile = new File(descriptionLocation.getPath(), "description.xml");
+    private String projectName;
+    private String projectPath;
+    private String resultsPath;
+    private String descriptionPath;
+    private String patchSavePath;
 
-        Map<String, List<VulnerabilityEntry>> vulnerabilityEntries = new HashMap<>();
-        for (VulnerabilityEntry ve : vulnerabilityLocations) {
-            if (vulnerabilityEntries.containsKey(ve.getType())) {
-                vulnerabilityEntries.get(ve.getType()).add(ve);
-            } else {
-                List<VulnerabilityEntry> vulnerabilityEntryList = new ArrayList<>();
-                vulnerabilityEntryList.add(ve);
-                vulnerabilityEntries.put(ve.getType(), vulnerabilityEntryList);
-            }
-        }
+    @Override
+    public File generateDescription(VulnerabilityEntry vulnerabilityEntry, List<CodeModel> codeModels) {
+        File descriptionLocation = new File(descriptionPath);
+        File descriptionFile = new File(descriptionLocation.getAbsolutePath(), "description.xml");
 
         Document document = new Document();
         Element root = new Element("linked-hash-map");
 
-        for (String type : vulnerabilityEntries.keySet()) {
-            List<VulnerabilityEntry> vulnerabilityEntryList = vulnerabilityEntries.get(type);
+        Element entry1 = createEntryElement();
+        entry1.addContent(createStringElement().addContent("coderepair.algs.problemType"));
+        entry1.addContent(createStringElement().addContent(vulnerabilityEntry.getType()));
 
-            Element entry1 = createEntryElement();
-            entry1.addContent(createStringElement().addContent("coderepair.algs.problemType"));
-            entry1.addContent(createStringElement().addContent(type));
+        Element entry2 = createEntryElement();
+        entry2.addContent(createStringElement().addContent("coderepair.algs.problemLocations"));
+        Element list = new Element("list");
+        list.addContent(createProblemToRepairElement(vulnerabilityEntry));
+        entry2.addContent(list);
 
-            Element entry2 = createEntryElement();
-            entry2.addContent(createStringElement().addContent("coderepair.algs.problemLocations"));
-            Element list = new Element("list");
-            for (VulnerabilityEntry ve : vulnerabilityEntryList) {
-                list.addContent(createProblemToRepairElement(ve));
-            }
-            entry2.addContent(list);
+        Element entry3 = createEntryElement();
+        entry3.addContent(createStringElement().addContent("coderepair.base.sourceCodeLocation"));
+        entry3.addContent(createStringElement().addContent((Paths.get(projectPath, "src", "main", "java") + File.separator).replaceAll("\\\\", "/")));
 
-            root.addContent(entry1);
-            root.addContent(entry2);
-        }
+        Element entry4 = createEntryElement();
+        entry4.addContent(createStringElement().addContent("coderepair.base.schemaLocation"));
+        entry4.addContent(createStringElement().addContent(codeModels.get(0).getModelPath().getAbsolutePath().replaceAll("\\\\", "/")));
+
+        root.addContent(entry1);
+        root.addContent(entry2);
+        root.addContent(entry3);
+        root.addContent(entry4);
 
         document.setRootElement(root);
 
@@ -87,15 +92,18 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         return new Element("string");
     }
     private Element createProblemToRepairElement(VulnerabilityEntry ve) {
-        Element problemToRepair = new Element("coderepair.repairtools.base.ProblemToRepair");
+        Element problemToRepair = new Element("coderepair.communication.base.ProblemToRepair");
         Element positions = new Element("positions");
 
-        Element problemPosition = new Element("coderepair.repairtools.base.ProblemPosition");
-        problemPosition.addContent(new Element("path").addContent(ve.getPath()));
+        Element problemPosition = new Element("coderepair.communication.base.ProblemPosition");
+
+        String pathToRemove = Paths.get(projectPath, "src", "main", "java") + File.separator;
+        problemPosition.addContent(new Element("path").addContent(ve.getPath().substring(pathToRemove.length()).replaceAll("\\\\", "/")));
+
         problemPosition.addContent(new Element("startLine").addContent(ve.getStartLine() + ""));
-        problemPosition.addContent(new Element("startCol").addContent(ve.getStartCol() + ""));
+        problemPosition.addContent(new Element("startCol").addContent((ve.getType().startsWith("NP") ? 20 : 24) + ""));
         problemPosition.addContent(new Element("endLine").addContent(ve.getEndLine() + ""));
-        problemPosition.addContent(new Element("endCol").addContent(ve.getEndCol() + ""));
+        problemPosition.addContent(new Element("endCol").addContent((ve.getType().startsWith("NP") ? 24 : 61) + ""));
 
         positions.addContent(problemPosition);
         problemToRepair.addContent(positions);
@@ -104,33 +112,29 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     }
 
     @Override
-    public List<Pair<File, Patch<String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
+    public List<Pair<File, Patch<String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels, int patchCounter) {
+        generateDescription(ve, codeModels);
+
         List<Pair<File, Patch<String>>> resList = new ArrayList<>();
-        // for testing purposes load two modifications of the test project and generate a valid and a wrong patch
-        File asyncAppenderOrig = new File(srcLocation, String.valueOf(Paths.get("src", "main", "java", "vir", "samples", "HelloWorld.java")));
-        List<String> text1 = new ArrayList<>();
-        List<String> text2 = new ArrayList<>();
-        List<String> text3 = new ArrayList<>();
+
+        String patchPath = Paths.get(patchSavePath, "patch" + patchCounter + ".diff").toString();
+        String[] args = {
+                String.valueOf(Paths.get(descriptionPath, "description.xml")),
+                patchPath,
+                String.valueOf(Paths.get(resultsPath, "error.txt")),
+        };
+        RepairAlgorithmRunner rar = new RepairAlgorithmRunner();
         try {
-            text1 = new BufferedReader(new FileReader(asyncAppenderOrig)).lines()
-                    .collect(Collectors.toList());
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            InputStream resourceStream = loader.getResourceAsStream("HelloWorld-good.java");
-            text2 = new BufferedReader(new InputStreamReader(resourceStream)).lines()
-                    .collect(Collectors.toList());
-            resourceStream = loader.getResourceAsStream("HelloWorld-bad.java");
-            text3 = new BufferedReader(new InputStreamReader(resourceStream)).lines()
-                    .collect(Collectors.toList());
-        } catch (FileNotFoundException e) {
+            rar.run(args, new RepairToolSwitcher());
+            List<String> patchLines = Files.readAllLines(Path.of(patchPath));
+            Patch<String> patch = UnifiedDiffUtils.parseUnifiedDiff(patchLines);
+            resList.add(new Pair<>(
+                    new File(ve.getPath()),
+                    patch
+            ));
+        } catch (IOException e) {
             e.printStackTrace();
         }
-
-        //generating diff information.
-        Patch<String> patchGood = DiffUtils.diff(text1, text2);
-        Patch<String> patchBad = DiffUtils.diff(text1, text3);
-
-        resList.add(new Pair<>(asyncAppenderOrig, patchGood));
-        resList.add(new Pair<>(asyncAppenderOrig, patchBad));
 
         return resList;
     }

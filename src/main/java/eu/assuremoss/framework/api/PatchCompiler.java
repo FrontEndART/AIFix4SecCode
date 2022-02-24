@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface PatchCompiler {
 
+    public boolean compile(File srcLocation, boolean runTests, boolean copyDependencies);
+
     public List<Pair<File, Patch<String>>> applyAndCompile(File srcLocation, List<Pair<File, Patch<String>>> patches, boolean runTests);
 
     public void revertPatch(Pair<File, Patch<String>> patch, File srcLocation);
