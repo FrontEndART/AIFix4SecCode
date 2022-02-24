@@ -7,8 +7,8 @@ import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
-import eu.assuremoss.utils.Extension;
 import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.Utils;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -29,6 +29,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     private static final Logger LOG = LogManager.getLogger(OpenStaticAnalyzer.class);
 
     private static final Map<String, List<String>> SUPPORTED_PROBLEM_TYPES = new HashMap<>();
+
     static {
         SUPPORTED_PROBLEM_TYPES.put("FB_EiER", List.of("EI_EXPOSE_REP2", "EI_EXPOSE_REP2_ARRAY", "EI_EXPOSE_REP2_DATEOBJECT"));
         SUPPORTED_PROBLEM_TYPES.put("FB_MSBF", List.of("MS_SHOULD_BE_FINAL"));
@@ -36,13 +37,13 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         SUPPORTED_PROBLEM_TYPES.put("FB_NNOSPE", List.of("NP_NULL_ON_SOME_PATH_EXCEPTION"));
     }
 
-    private String osaPath;
-    private String osaEdition;
-    private String j2cpPath;
-    private String j2cpEdition;
-    private String resultsPath;
-    private String projectName;
-    private String patchSavePath;
+    private final String osaPath;
+    private final String osaEdition;
+    private final String j2cpPath;
+    private final String j2cpEdition;
+    private final String resultsPath;
+    private final String projectName;
+    private final String patchSavePath;
 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation) {
@@ -50,7 +51,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         mpc.compile(srcLocation, true, true);
 
         String fbFileListPath = String.valueOf(Paths.get(resultsPath, "fb_file_list.txt"));
-        try (FileWriter fw = new FileWriter(fbFileListPath);) {
+        try (FileWriter fw = new FileWriter(fbFileListPath)) {
             fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), "target", "classes")));
         } catch (IOException e) {
             e.printStackTrace();
@@ -59,7 +60,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         List<CodeModel> resList = new ArrayList<>();
 
         String[] command = new String[]{
-                new File(osaPath, osaEdition + "Java" + Extension.getExtension()).getAbsolutePath(),
+                new File(osaPath, osaEdition + "Java" + Utils.getExtension()).getAbsolutePath(),
                 "-resultsDir=" + resultsPath,
                 "-projectName=" + projectName,
                 "-projectBaseDir=" + srcLocation,
@@ -67,21 +68,10 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-currentDate=0",
                 "-FBFileList=" + fbFileListPath,
                 "-runFB=true",
-                "-FBOptions=-auxclasspath " + String.valueOf(Paths.get(srcLocation.getAbsolutePath(), "target", "dependency"))
+                "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), "target", "dependency")
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
-        processBuilder.redirectErrorStream(true);
-        try {
-            Process process = processBuilder.start();
-            BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-            String line;
-            while ((line = out.readLine()) != null) {
-                LOG.info(line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        runProcess(processBuilder);
 
         String asgPath = String.valueOf(Paths.get(resultsPath,
                 projectName,
@@ -92,13 +82,19 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 projectName + ".ljsi"));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
 
-        command = new String[] {
-                new File(j2cpPath, j2cpEdition + Extension.getExtension()).getAbsolutePath(),
+        command = new String[]{
+                new File(j2cpPath, j2cpEdition + Utils.getExtension()).getAbsolutePath(),
                 asgPath,
                 "-from:" + Paths.get(srcLocation.getAbsolutePath(), "src", "main", "java") + File.separator,
                 "-to:"
         };
         processBuilder = new ProcessBuilder(command);
+        runProcess(processBuilder);
+
+        return resList;
+    }
+
+    private void runProcess(ProcessBuilder processBuilder) {
         processBuilder.redirectErrorStream(true);
         try {
             Process process = processBuilder.start();
@@ -111,8 +107,6 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return resList;
     }
 
     @Override
@@ -150,6 +144,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
         return resList;
     }
+
     private VulnerabilityEntry createVulnerabilityEntry(NodeList warnAttributes, String problemType) {
         VulnerabilityEntry ve = new VulnerabilityEntry();
 
