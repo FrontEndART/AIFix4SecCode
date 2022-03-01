@@ -39,6 +39,7 @@ public class VulnRepairDriver {
     private static final String PROJECT_PATH_KEY = "project_path";
     private static final String OSA_PATH_KEY = "osa_path";
     private static final String OSA_EDITION_KEY = "osa_edition";
+    private static final String SUPPORTED_PROBLEM_TYPES_PATH_KEY = "supported_problem_types_path";
     private static final String J2CP_PATH_KEY = "j2cp_path";
     private static final String J2CP_EDITION_KEY = "j2cp_edition";
     private static final String RESULTS_PATH_KEY = "results_path";
@@ -48,6 +49,7 @@ public class VulnRepairDriver {
     private String projectPath = "";
     private String osaPath = "";
     private String osaEdition = "";
+    private String supportedProblemTypesPath = "";
     private String j2cpPath = "";
     private String j2cpEdition = "";
     private String resultsPath = "";
@@ -71,6 +73,7 @@ public class VulnRepairDriver {
             projectPath = (String) properties.get(PROJECT_PATH_KEY);
             osaPath = (String) properties.get(OSA_PATH_KEY);
             osaEdition = (String) properties.get(OSA_EDITION_KEY);
+            supportedProblemTypesPath = (String) properties.get(SUPPORTED_PROBLEM_TYPES_PATH_KEY);
             j2cpPath = (String) properties.get(J2CP_PATH_KEY);
             j2cpEdition = (String) properties.get(J2CP_EDITION_KEY);
             resultsPath = (String) properties.get(RESULTS_PATH_KEY);
@@ -90,11 +93,11 @@ public class VulnRepairDriver {
         SourceCodeCollector scc = new LocalSourceFolder(projectPath);
         scc.collectSourceCode();
 
-        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, projectName, patchSavePath);
+        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, supportedProblemTypesPath, j2cpPath, j2cpEdition, resultsPath, projectName, patchSavePath);
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation());
         codeModels.stream().forEach(cm -> LOG.debug(cm.getType() + ":" + cm.getModelPath()));
 
-        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, projectName, patchSavePath);
+        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, supportedProblemTypesPath, j2cpPath, j2cpEdition, resultsPath, projectName, patchSavePath);
         List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation());
 
         VulnerabilityRepairer vr = new ASGTransformRepair(projectName, projectPath, resultsPath, descriptionPath, patchSavePath);
@@ -110,6 +113,7 @@ public class VulnRepairDriver {
             PatchValidator pv = new OpenStaticAnalyzer(
                     osaPath,
                     osaEdition,
+                    supportedProblemTypesPath,
                     j2cpPath,
                     j2cpEdition,
                     resultsPath,
