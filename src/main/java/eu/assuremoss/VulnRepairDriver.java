@@ -56,17 +56,20 @@ public class VulnRepairDriver {
 
     public static void main(String[] args) {
         VulnRepairDriver driver = new VulnRepairDriver();
-        driver.bootstrap();
+        if (args.length == 1) {
+            driver.bootstrap(args[0]);
+        } else {
+            LOG.error("Unable to process arguments.");
+        }
     }
 
-    public void bootstrap() {
+    public void bootstrap(String configPath) {
         LOG.info("Start!");
 
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Properties properties = new Properties();
-        try (InputStream resourceStream = loader.getResourceAsStream(CONFIG_FILE_NAME)) {
+        try (InputStream stream = new FileInputStream(configPath)) {
             LOG.info("Attempting to load data from config.properties.");
-            properties.load(resourceStream);
+            properties.load(stream);
             projectName = (String) properties.get(PROJECT_NAME_KEY);
             projectPath = (String) properties.get(PROJECT_PATH_KEY);
             osaPath = (String) properties.get(OSA_PATH_KEY);
