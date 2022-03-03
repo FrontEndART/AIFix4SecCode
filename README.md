@@ -13,7 +13,11 @@ git clone https://github.com/FrontEndART/AIFix4SecCode.git
 cd AIFix4SecCode
 mvn install:install-file -Dfile=src\\main\\resources\\CodeRepair-1.0-SNAPSHOT-jar-with-dependencies.jar -DgroupId=com.fea -DartifactId=coderepair -Dversion=1.0 -Dpackaging=jar -DgeneratePom=true
 mvn package
+cd vscode-plugin
+npm install
 ```
+Npm is installed with Node.js. This means that you have to install Node.js to get npm installed on your computer. You can download it from here: https://nodejs.org/
+
 Next, you need to download and extract the [latest release](https://github.com/sed-inf-u-szeged/OpenStaticAnalyzer/releases) of the OpenStaticAnalyzer.
 
 
@@ -34,3 +38,10 @@ j2cp_edition=THE NAME OF THE CHANGE PATH HELPER TOOL # e.g. JAN2ChangePath
 
 ## Acknowledgement
 The development of the AIFix4SecCode framework was supported by the [AssureMOSS](https://assuremoss.eu) (Grant No.952647) EU-funded project.
+
+## How to install the plugin to VSCode
+You can install the plugin to visual studio code from the command line:
+```
+code --install-extension <extension-vsix-path>
+```
+You can find the .vsix file in the vscode-plugin subdirectory of the project e.g. d:\\AIFix4SecCode\\vscode-plugin\\aifix4seccode-vscode-1.0.0.vsix
