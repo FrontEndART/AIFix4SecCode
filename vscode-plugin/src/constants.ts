@@ -1,6 +1,7 @@
 import { ExecSyncOptionsWithStringEncoding } from 'child_process';
 import { workspace } from 'vscode';
 import { getRootPath } from './path';
+var path = require("path");
 
 export let PROJECT_FOLDER = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.subjectProjectPath');
 
@@ -8,8 +9,8 @@ export function SetProjectFolder(path: string){
   PROJECT_FOLDER = path;
 }
 
-export const PATCH_FOLDER = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.generatedPatchesPath');
-export const ANALYZER_EXE_PATH = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.executablePath');
+export const PATCH_FOLDER = path.normalize(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.generatedPatchesPath'));
+export const ANALYZER_EXE_PATH = path.normalize(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.executablePath'));
 export const ANALYZER_PARAMETERS = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.executableParameters')
 export const ANALYZER_USE_DIFF_MODE = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.useDiffMode')
 export const ANALYZER_MENTION = 'analyzer_mention';
