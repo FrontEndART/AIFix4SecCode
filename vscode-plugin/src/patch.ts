@@ -78,8 +78,14 @@ export function patchToCodes(patch: string) {
 // 4.: Refreshes the diagnosis on the file to show the remaining suggestions.
 export function applyPatchToFile(leftPath: string, rightContent: string, patchPath: string){
   if (leftPath) {
+    
+          if(!rightContent){
+            window.showErrorMessage('Failed to apply patch to source file! \n Make sure that your configuration is correct. Also make sure that the source file has not been patched already by this patch before! This issue may occour if the patch syntax is incorrect.'); 
+            return;
+          }
+
           // 1.
-          writeFileSync(getSafeFsPath(leftPath), rightContent, utf8Stream);
+          writeFileSync(leftPath, rightContent, utf8Stream);
           // 2.
           initIssues().then(() => {
             if (issues) {
