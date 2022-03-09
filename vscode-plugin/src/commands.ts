@@ -41,6 +41,7 @@ import { applyPatchToFile } from "./patch";
 import { getSafeFsPath } from "./path";
 import { initActionCommands } from "./language/codeActions";
 import * as cp from "child_process";
+import upath from 'upath';
 
 const parseJson = require("parse-json");
 const parseDiff = require("parse-diff");
@@ -344,7 +345,7 @@ export function init(
       );
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
-    var openFilePath = vscode.Uri.file(path.join(PROJECT_FOLDER, sourceFile));
+    var openFilePath = vscode.Uri.file(upath.joinSafe(PROJECT_FOLDER, sourceFile));
     //var openFilePath = vscode.Uri.parse("file:///" + PROJECT_FOLDER + '/' + sourceFile); // not working on MacOS...
 
     logging.LogInfo("Running diagnosis in opened file...");

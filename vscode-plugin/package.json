@@ -60,6 +60,7 @@
     "ts-mocha": "^8.0.0",
     "tslint": "^5.12.1",
     "typescript": "^3.3.1",
+    "upath": "^2.0.1",
     "vsce": "^1.95.1",
     "vscode-test": "^1.0.2",
     "what-the-diff": "^0.6.0"
