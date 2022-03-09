@@ -317,7 +317,7 @@ export function init(
 
   function openUpFile(patchPath: string) {
     logging.LogInfo("===== Executing openUpFile command. =====");
-
+    let project_folder = PROJECT_FOLDER
     if (!PROJECT_FOLDER) {
       SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
     }
@@ -325,7 +325,7 @@ export function init(
     var patch = "";
     try {
       logging.LogInfo("Reading patch from " + PATCH_FOLDER + "/" + patchPath);
-      patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
+      patch = readFileSync(path.join(PATCH_FOLDER, patchPath), "utf8");
     } catch (err) {
       logging.LogErrorAndShowErrorMessage(
         String(err),
@@ -344,7 +344,7 @@ export function init(
       );
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
-    var openFilePath = vscode.Uri.file(PROJECT_FOLDER + "/" + sourceFile);
+    var openFilePath = vscode.Uri.file(path.join(PROJECT_FOLDER, sourceFile));
     //var openFilePath = vscode.Uri.parse("file:///" + PROJECT_FOLDER + '/' + sourceFile); // not working on MacOS...
 
     logging.LogInfo("Running diagnosis in opened file...");
@@ -378,7 +378,7 @@ export function init(
 
       var patch = "";
       try {
-        patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
+        patch = readFileSync(path.join(PATCH_FOLDER, patchPath), "utf8");
       } catch (err) {
         logging.LogErrorAndShowErrorMessage(
           String(err),
@@ -409,7 +409,7 @@ export function init(
         throw Error("Unable to find destination file in '" + patchPath + "'");
       }
 
-      var original = readFileSync(PROJECT_FOLDER + "/" + sourceFile, "utf8");
+      var original = readFileSync(path.join(PROJECT_FOLDER, sourceFile), "utf8");
       var patched = diff.applyPatch(original, patch);
 
       if(!patched){
@@ -420,7 +420,7 @@ export function init(
       if (isPatchAlreadyOpened(sourceFile)) {
         let requiredWebview = activeDiffPanelWebviews.find((webview) => {
           if ("leftPath" in webview.params) {
-            if (webview.params.leftPath! === PATCH_FOLDER + "/" + sourceFile) {
+            if (webview.params.leftPath! === path.join(PROJECT_FOLDER, sourceFile)) {
               return webview;
             }
           }
@@ -459,7 +459,7 @@ export function init(
         patchPath: patchPath,
         leftContent: original,
         rightContent: patched,
-        leftPath: PATCH_FOLDER + "/" + sourceFile,
+        leftPath: path.join(PROJECT_FOLDER, sourceFile),
         rightPath: "",
         context,
         theme: vscode.window.activeColorTheme.kind.toString(),
@@ -468,11 +468,11 @@ export function init(
       // ==== LOAD PATCH IN "view Patch files" MODE: ====
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
       vscode.workspace
-        .openTextDocument(PATCH_FOLDER + "/" + patchPath)
+        .openTextDocument(path.join(PATCH_FOLDER, patchPath))
         .then((document) => {
           context.workspaceState.update(
             "openedPatchPath",
-            JSON.stringify(PATCH_FOLDER + "/" + patchPath)
+            JSON.stringify(path.join(PATCH_FOLDER, patchPath))
           );
           vscode.window.showTextDocument(document);
         });
@@ -532,7 +532,7 @@ export function init(
 
       if ("leftPath" in webview.params && "patchPath" in webview.params) {
         var openFilePath = vscode.Uri.file(
-          PROJECT_FOLDER + "/" + webview.params.leftPath
+          path.join(PROJECT_FOLDER, webview.params.leftPath)
         );
         vscode.workspace.openTextDocument(openFilePath).then((document) => {
           vscode.window.showTextDocument(document).then(() => {
@@ -589,7 +589,7 @@ export function init(
 
       // Saving issues.json and file contents in state,
       // so later the changes can be reverted if user asks for it:
-      saveFileAndFixesToState(path.normalize(path.join(PATCH_FOLDER, sourceFile)));
+      saveFileAndFixesToState(path.normalize(path.join(PROJECT_FOLDER, sourceFile)));
 
       var sourceFileContent = readFileSync(
         path.normalize(path.join(PROJECT_FOLDER, sourceFile)),

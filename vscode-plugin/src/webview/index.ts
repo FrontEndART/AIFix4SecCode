@@ -8,6 +8,7 @@ import { window, ViewColumn, ExtensionContext, workspace } from 'vscode';
 import { extract } from '../theme/extractor';
 import { getTitle } from './utils';
 import { getIssues } from '../services/fakeAiFixCode';
+var path = require("path");
 
 var stringify = require('json-stringify');
 

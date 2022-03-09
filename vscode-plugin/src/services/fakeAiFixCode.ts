@@ -63,13 +63,14 @@ export function getIssuesSync() {
 export async function getFixes(leftPath: string) {
     let issues = await getIssues();
     let fixes: any[] = [];
+    
 
     if (issues) {
         Object.values(issues).forEach(issue => {
             issue.patches.forEach((fix: IFix) => {
                 var patch = '';
                 try {
-                    patch = readFileSync(PATCH_FOLDER + '/' + fix.path, "utf8");
+                    patch = readFileSync(path.join(PATCH_FOLDER, fix.path), "utf8");
                 } catch (err) {
                     console.log(err);
                 }
@@ -81,8 +82,8 @@ export async function getFixes(leftPath: string) {
                 } else {
                     throw Error("Unable to find source file in '" + fix.path + "'");
                 }
-                
-                if (getSafeFsPath(path.join(PATCH_FOLDER, sourceFile)) === getSafeFsPath(leftPath)) {
+                let patch_folder = PATCH_FOLDER
+                if (getSafeFsPath(path.join(PROJECT_FOLDER, sourceFile)) === getSafeFsPath(leftPath)) {
                     fixes.push(fix);
                 }
             });
