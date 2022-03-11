@@ -106,7 +106,7 @@ public class VulnRepairDriver {
         int patchCounter2 = 1;
         Map<String, Integer> problemTypeCounter = new HashMap<>();
         JSONObject vsCodeConfig = new JSONObject();
-        
+
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
             List<Pair<File, Pair<Patch<String>, String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
             LOG.debug(String.valueOf(patches));
@@ -186,8 +186,8 @@ public class VulnRepairDriver {
             JSONObject issueObject = new JSONObject();
 
             JSONObject textRangeObject = new JSONObject();
-            textRangeObject.put("startLine", ve.getStartLine()-1);
-            textRangeObject.put("endLine", ve.getEndLine()-1);
+            textRangeObject.put("startLine", ve.getStartLine());
+            textRangeObject.put("endLine", ve.getEndLine());
             textRangeObject.put("startColumn", ve.getStartCol()-1);
             textRangeObject.put("endColumn", ve.getEndCol()-1);
 
