@@ -1,6 +1,6 @@
 package example;
 import java.util.Date;
-
+import java.util.Arrays;
 /**
  * Example for EI_EXPOSE_REP bugs
  */

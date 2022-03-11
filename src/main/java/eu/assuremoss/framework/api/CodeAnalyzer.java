@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface CodeAnalyzer {
 
-    public List<CodeModel> analyzeSourceCode(File srcLocation);
+    public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation);
 }

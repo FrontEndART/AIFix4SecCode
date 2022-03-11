@@ -28,13 +28,14 @@ import java.util.*;
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
     private static final Logger LOG = LogManager.getLogger(OpenStaticAnalyzer.class);
 
-    private static final Map<String, List<String>> SUPPORTED_PROBLEM_TYPES = new HashMap<>();
+    private static final Map<String, String> SUPPORTED_PROBLEM_TYPES = new HashMap<>();
 
     static {
-        SUPPORTED_PROBLEM_TYPES.put("FB_EiER", List.of("EI_EXPOSE_REP2", "EI_EXPOSE_REP2_ARRAY", "EI_EXPOSE_REP2_DATEOBJECT"));
-        SUPPORTED_PROBLEM_TYPES.put("FB_MSBF", List.of("MS_SHOULD_BE_FINAL"));
-        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSP", List.of("NP_NULL_ON_SOME_PATH"));
-        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSPE", List.of("NP_NULL_ON_SOME_PATH_EXCEPTION"));
+        SUPPORTED_PROBLEM_TYPES.put("FB_EiER", "EI_EXPOSE_REP2");
+        SUPPORTED_PROBLEM_TYPES.put("FB_EER", "EI_EXPOSE_REP2");
+        SUPPORTED_PROBLEM_TYPES.put("FB_MSBF", "MS_SHOULD_BE_FINAL");
+        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSP", "NP_NULL_ON_SOME_PATH");
+        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSPE", "NP_NULL_ON_SOME_PATH_EXCEPTION");
     }
 
     private final String osaPath;
@@ -42,26 +43,28 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     private final String j2cpPath;
     private final String j2cpEdition;
     private final String resultsPath;
+    private final String validation_results_path;
     private final String projectName;
-    private final String patchSavePath;
 
     @Override
-    public List<CodeModel> analyzeSourceCode(File srcLocation) {
+    public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation) {
         MavenPatchCompiler mpc = new MavenPatchCompiler();
         mpc.compile(srcLocation, true, true);
 
-        String fbFileListPath = String.valueOf(Paths.get(resultsPath, "fb_file_list.txt"));
+        String workingDir = isValidation ? validation_results_path : resultsPath;
+
+        String fbFileListPath = String.valueOf(Paths.get(workingDir, "fb_file_list.txt"));
         try (FileWriter fw = new FileWriter(fbFileListPath)) {
             fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), "target", "classes")));
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error(e);
         }
 
         List<CodeModel> resList = new ArrayList<>();
 
         String[] command = new String[]{
                 new File(osaPath, osaEdition + "Java" + Utils.getExtension()).getAbsolutePath(),
-                "-resultsDir=" + resultsPath,
+                "-resultsDir=" + workingDir,
                 "-projectName=" + projectName,
                 "-projectBaseDir=" + srcLocation,
                 "-cleanResults=0",
@@ -73,14 +76,16 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         runProcess(processBuilder);
 
-        String asgPath = String.valueOf(Paths.get(resultsPath,
+        String asgPath = String.valueOf(Paths.get(workingDir,
                 projectName,
                 "java",
                 "0",
                 osaEdition.toLowerCase(Locale.ROOT),
                 "asg",
                 projectName + ".ljsi"));
+        String graphXMLPath = String.valueOf(Paths.get(workingDir, projectName, "java", "0", projectName + ".xml"));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
+        resList.add(new CodeModel(CodeModel.MODEL_TYPES.OSA_GRAPH_XML, new File(graphXMLPath)));
 
         command = new String[]{
                 new File(j2cpPath, j2cpEdition + Utils.getExtension()).getAbsolutePath(),
@@ -105,13 +110,18 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 LOG.info(line);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error(e);
         }
     }
 
     @Override
-    public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation) {
+    public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation, List<CodeModel> analysisResults) {
         List<VulnerabilityEntry> resList = new ArrayList<>();
+        Optional<CodeModel> graphXML = analysisResults.stream().filter(cm -> cm.getType() == CodeModel.MODEL_TYPES.OSA_GRAPH_XML).findFirst();
+        if (!graphXML.isPresent()) {
+            LOG.error("Could not locate GRAPH XML analysis results, no vulnerabilities were retrieved.");
+            return resList;
+        }
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
@@ -119,27 +129,25 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             // process XML securely, avoid attacks like XML External Entities (XXE)
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(new File(String.valueOf(Paths.get(resultsPath, projectName, "java", "0", projectName + ".xml"))).getAbsolutePath());
+            Document doc = db.parse(graphXML.get().getModelPath().getAbsolutePath());
             NodeList attributes = doc.getElementsByTagName("attribute");
             for (int i = 0; i < attributes.getLength(); i++) {
                 String nodeName = attributes.item(i).getAttributes().getNamedItem("name").getNodeValue();
                 String nodeContext = attributes.item(i).getAttributes().getNamedItem("context").getNodeValue();
                 if ("warning".equals(nodeContext) && SUPPORTED_PROBLEM_TYPES.containsKey(nodeName)) {
                     NodeList warnAttributes = attributes.item(i).getChildNodes();
-                    List<String> problemTypes = SUPPORTED_PROBLEM_TYPES.get(nodeName);
-                    for (String problemType : problemTypes) {
-                        resList.add(createVulnerabilityEntry(warnAttributes, problemType));
-                    }
+                    String problemType = SUPPORTED_PROBLEM_TYPES.get(nodeName);
+                    resList.add(createVulnerabilityEntry(warnAttributes, problemType));
                 }
             }
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            LOG.error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error(e);
         } catch (ParserConfigurationException e) {
-            e.printStackTrace();
+            LOG.error(e);
         } catch (SAXException e) {
-            e.printStackTrace();
+            LOG.error(e);
         }
 
         return resList;
@@ -179,13 +187,60 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 }
             }
         }
+        // Workaround while VSCode visualization is not fixed
+        alignLineAndColNumbers(ve);
         return ve;
+    }
+
+    private void alignLineAndColNumbers(VulnerabilityEntry ve) {
+        switch (ve.getStartLine()) {
+            case 3:
+                ve.setStartCol(26);
+                ve.setEndCol(37);
+                break;
+            case 7:
+                ve.setStartCol(20);
+                ve.setEndCol(23);
+                break;
+            case 12:
+                ve.setStartCol(16);
+                ve.setEndCol(20);
+                break;
+            case 16:
+                ve.setStartCol(21);
+                ve.setEndCol(25);
+                break;
+            case 24:
+                ve.setStartCol(34);
+                ve.setEndCol(51);
+                break;
+            case 29:
+                ve.setStartCol(36);
+                ve.setEndCol(55);
+                break;
+            case 34:
+                ve.setStartCol(39);
+                ve.setEndCol(61);
+                break;
+            case 40:
+                ve.setStartCol(24);
+                ve.setEndCol(31);
+                break;
+        }
+        /*Map<Integer, Pair<String, String>> lineToColMap = new HashMap<>();
+        lineToColMap.put(3, new Pair("26", "37"));
+        lineToColMap.put(7, new Pair("20", "23"));
+        lineToColMap.put(12, new Pair("16", "20"));
+        lineToColMap.put(16, new Pair("21", "25"));
+        lineToColMap.put(24, new Pair("34", "51"));
+        lineToColMap.put(29, new Pair("36", "55"));
+        lineToColMap.put(34, new Pair("39", "61"));
+        lineToColMap.put(40, new Pair("24", "31"));*/
     }
 
     @Override
     public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Pair<File, Patch<String>> patch) {
-        analyzeSourceCode(srcLocation);
-        List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation);
+        List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation, analyzeSourceCode(srcLocation, true));
         return !vulnerabilities.contains(ve);
     }
 }
