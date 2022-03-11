@@ -38,11 +38,11 @@ import * as logging from "./services/logging";
 import { SymbolDisplayPartKind, WatchDirectoryFlags } from "typescript";
 import { basename, dirname } from "path";
 import { applyPatchToFile } from "./patch";
-import { getSafeFsPath } from "./path";
+import { getSafeFsPath, getSafePath } from "./path";
 import { initActionCommands } from "./language/codeActions";
 import * as cp from "child_process";
-import upath from 'upath';
 
+var upath = require("upath");
 const parseJson = require("parse-json");
 const parseDiff = require("parse-diff");
 const diff = require("diff");
@@ -347,7 +347,6 @@ export function init(
     }
     var openFilePath = vscode.Uri.file(upath.joinSafe(PROJECT_FOLDER, sourceFile));
     //var openFilePath = vscode.Uri.parse("file:///" + PROJECT_FOLDER + '/' + sourceFile); // not working on MacOS...
-
     logging.LogInfo("Running diagnosis in opened file...");
     vscode.workspace.openTextDocument(openFilePath).then((document) => {
       vscode.window.showTextDocument(document).then(() => {
@@ -398,6 +397,9 @@ export function init(
         );
         throw Error("Unable to find source file in '" + patchPath + "'");
       }
+
+      var sourceFilePath = getSafePath(upath.join(PROJECT_FOLDER, sourceFile))
+
       var destinationFileMatch = /\+\+\+ ([^ \n\r\t]+).*/.exec(patch);
       var destinationFile;
       if (destinationFileMatch && destinationFileMatch[1]) {
@@ -409,10 +411,11 @@ export function init(
         );
         throw Error("Unable to find destination file in '" + patchPath + "'");
       }
-
-      var original = readFileSync(path.join(PROJECT_FOLDER, sourceFile), "utf8");
+      let projectFolder = PROJECT_FOLDER
+      
+      var original = readFileSync(sourceFilePath, "utf8");
       var patched = diff.applyPatch(original, patch);
-
+      
       if(!patched){
         vscode.window.showErrorMessage('Failed to load patched version of this source file into a diff view! \n Make sure that your configuration is correct. Also make sure that the source file has not been patched already by this patch before! This issue may occour if the patch syntax is incorrect.'); 
         return;
@@ -460,7 +463,7 @@ export function init(
         patchPath: patchPath,
         leftContent: original,
         rightContent: patched,
-        leftPath: path.join(PROJECT_FOLDER, sourceFile),
+        leftPath: sourceFilePath,
         rightPath: "",
         context,
         theme: vscode.window.activeColorTheme.kind.toString(),
@@ -576,10 +579,10 @@ export function init(
       // 4. Hide navbar buttons (applyPatch, declinePatch, nextDiff, prevDiff).
 
       // 1.
-      var patchFilepath = JSON.parse(
+      var patchFilepath = getSafePath(upath.normalize(JSON.parse(
         context.workspaceState.get<string>("openedPatchPath")!
-      );
-      var patchFileContent = readFileSync(path.normalize(patchFilepath), "utf8");
+      )));
+      var patchFileContent = readFileSync(getSafePath(upath.normalize(patchFilepath)), "utf8");
       var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
       var sourceFile: string;
       if (sourceFileMatch && sourceFileMatch[1]) {
@@ -590,10 +593,10 @@ export function init(
 
       // Saving issues.json and file contents in state,
       // so later the changes can be reverted if user asks for it:
-      saveFileAndFixesToState(path.normalize(path.join(PROJECT_FOLDER, sourceFile)));
+      saveFileAndFixesToState(getSafePath(upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFile))));
 
       var sourceFileContent = readFileSync(
-        path.normalize(path.join(PROJECT_FOLDER, sourceFile)),
+        getSafePath(upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFile))),
         "utf8"
       ); 
 
@@ -615,7 +618,7 @@ export function init(
 
       // 3.
       applyPatchToFile(
-        path.normalize(path.join(PROJECT_FOLDER, sourceFile)),
+        getSafePath(upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFile))),
         patched,
         patchFilepath
       );
@@ -636,17 +639,18 @@ export function init(
       );
 
       if ("leftPath" in webview.params && "patchPath" in webview.params) {
-        updateUserDecisions(
-          "declined",
-          webview.params.patchPath!,
-          webview.params.leftPath!
-        );
-        // var openFilePath = vscode.Uri.parse(
-        //   "file:///" + PROJECT_FOLDER + "/" + webview.params.leftPath
-        // );
-        var openFilePath = path.normalize(path.join(PROJECT_FOLDER, webview.params.leftPath))
+        var openFilePath = getSafePath(upath.normalize(webview.params.leftPath))
         vscode.workspace.openTextDocument(openFilePath).then((document) => {
           vscode.window.showTextDocument(document).then(() => {
+
+            if ("leftPath" in webview.params && "patchPath" in webview.params) {
+              updateUserDecisions(
+                "declined",
+                getSafePath(webview.params.patchPath!),
+                getSafePath(webview.params.leftPath!)
+              );
+            }
+
             vscode.window.withProgress(
               {
                 location: vscode.ProgressLocation.Notification,
@@ -672,7 +676,7 @@ export function init(
       }
 
       if ("patchPath" in webview.params && webview.params.patchPath) {
-        patchPath = webview.params.patchPath;
+        patchPath = getSafePath(webview.params.patchPath);
       }
       testView.treeDataProvider?.refresh(patchPath);
 
@@ -680,9 +684,9 @@ export function init(
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
       // TODO: DO it with patch file
       let activeEditor = vscode.window.activeTextEditor!.document.uri.fsPath;
-      var patchFilepath = JSON.parse(
+      var patchFilepath = getSafePath(upath.normalize(JSON.parse(
         context.workspaceState.get<string>("openedPatchPath")!
-      );
+      )));
       var patchFileContent = readFileSync(patchFilepath, "utf8");
       var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
       var sourceFile: string;
@@ -694,7 +698,7 @@ export function init(
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
       testView.treeDataProvider?.refresh(patchFilepath);
       vscode.workspace
-        .openTextDocument(path.join(PROJECT_FOLDER, sourceFile))
+        .openTextDocument(getSafePath(upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFile))))
         .then((document) => {
           vscode.window.showTextDocument(document).then(() => {
             vscode.window.withProgress(
@@ -712,7 +716,7 @@ export function init(
                 updateUserDecisions(
                   "declined",
                   patchFilepath,
-                  path.join(PROJECT_FOLDER, sourceFile)
+                  getSafePath(upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFile)))
                 );
               }
             );
@@ -865,7 +869,7 @@ export function init(
 
     var patch = "";
     try {
-      patch = readFileSync(outputFolder + "/" + patchPath, "utf8");
+      patch = readFileSync(getSafePath(upath.join(outputFolder, patchPath)), "utf8");
     } catch (err) {
       console.log(err);
     }
@@ -877,7 +881,7 @@ export function init(
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
 
-    var original = readFileSync(PROJECT_FOLDER + "/" + sourceFile, "utf8");
+    var original = readFileSync(getSafePath(upath.join(PROJECT_FOLDER, sourceFile)), "utf8");
     return original;
   }
 
@@ -891,7 +895,7 @@ export function init(
 
     var patch = "";
     try {
-      patch = readFileSync(outputFolder + "/" + patchPath, "utf8");
+      patch = readFileSync(getSafePath(upath.join(outputFolder, patchPath)), "utf8");
     } catch (err) {
       console.log(err);
     }

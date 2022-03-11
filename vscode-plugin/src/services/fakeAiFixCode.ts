@@ -3,12 +3,13 @@ import { dirname, basename } from "path";
 import { Terminal, window, ProgressLocation, workspace } from "vscode";
 import { ANALYZER_EXE_PATH, PATCH_FOLDER, PROJECT_FOLDER, utf8Stream } from "../constants";
 import { IFix, Iissue } from "../interfaces";
-import { getSafeFsPath } from "../path";
+import { getSafeFsPath, getSafePath } from "../path";
 
 const fs = require('fs');
 const util = require('util');
 const parseJson = require('parse-json');
 var path = require("path");
+var upath = require("upath");
 
 //export let issues = '';
 export let issuesJson: Iissue | undefined;
@@ -83,7 +84,11 @@ export async function getFixes(leftPath: string) {
                     throw Error("Unable to find source file in '" + fix.path + "'");
                 }
                 let patch_folder = PATCH_FOLDER
-                if (getSafeFsPath(path.join(PROJECT_FOLDER, sourceFile)) === getSafeFsPath(leftPath)) {
+                
+                var navigateDiffTargetPath = getSafePath(upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFile)))
+                leftPath = getSafePath(upath.normalize(leftPath))
+
+                if (navigateDiffTargetPath === leftPath) {
                     fixes.push(fix);
                 }
             });

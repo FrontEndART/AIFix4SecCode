@@ -4,7 +4,10 @@ import { ANALYZER_MENTION, PATCH_FOLDER, PROJECT_FOLDER } from "../constants";
 import { IFix, Iissue, IIssueRange } from "../interfaces";
 import { getIssues } from "../services/fakeAiFixCode";
 import * as logging from '../services/logging';
+import { getSafeFsPath, getSafePath } from "../path";
+
 var path = require('path');
+var upath = require('upath');
 
 let issues: Iissue | undefined;
 
@@ -47,7 +50,13 @@ export async function refreshDiagnostics(
             
             let openedFilePath = vscode.window.activeTextEditor?.document.uri.path;
 
-            if(path.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase() === vscode.Uri.file(openedFilePath!).fsPath.toLowerCase()){
+            let codeActionTargetPath = upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFilePath)).toLowerCase()
+            let currentlyOpenedFilePath = upath.normalize(openedFilePath).toLowerCase()
+                    
+            codeActionTargetPath = getSafePath(codeActionTargetPath)
+            currentlyOpenedFilePath = getSafePath(currentlyOpenedFilePath)
+
+            if(codeActionTargetPath === currentlyOpenedFilePath){
               diagnostics.push(createDiagnostic(doc, fixText, fixRange));
             }
           });
@@ -75,9 +84,9 @@ function createDiagnostic(
   issueRange: IIssueRange
 ): vscode.Diagnostic {
   const range = new vscode.Range(
-    issueRange.startLine,
+    issueRange.startLine - 1,
     issueRange.startColumn,
-    issueRange.endLine,
+    issueRange.endLine - 1,
     issueRange.endColumn
   );
 
