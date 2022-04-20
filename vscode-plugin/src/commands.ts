@@ -86,11 +86,12 @@ export async function updateUserDecisions(
         date.getHours().toString() +
         ":" +
         date.getMinutes().toString();
-        appendFileSync(
-          path.join(patchRoot, "user_decisions.txt"), 
-          `${dateStr} == ${leftPath} original File <-> ${patchPath} patch, decision: ${decision}, reason: ${value} \n`,
-          utf8Stream
-        );
+
+      appendFileSync(
+        path.join(patchRoot, "user_decisions.txt"),
+        `${dateStr} == ${leftPath} original File <-> ${patchPath} patch, decision: ${decision}, reason: ${value} \n`,
+        utf8Stream
+      );
     }
   });
 }
@@ -214,16 +215,15 @@ export function init(
   async function redoLastFix() {
     logging.LogInfo("===== Redo Last Fix started from command. =====");
 
-
-    var lastFilePath = path.normalize(JSON.parse(
-      context.workspaceState.get<string>("lastFilePath")!
-    ));
+    var lastFilePath = path.normalize(
+      JSON.parse(context.workspaceState.get<string>("lastFilePath")!)
+    );
     var lastFileContent = JSON.parse(
       context.workspaceState.get<string>("lastFileContent")!
     );
-    var lastIssuesPath = path.normalize(JSON.parse(
-      context.workspaceState.get<string>("lastIssuesPath")!
-    ));
+    var lastIssuesPath = path.normalize(
+      JSON.parse(context.workspaceState.get<string>("lastIssuesPath")!)
+    );
     var lastIssuesContent = JSON.parse(
       context.workspaceState.get<string>("lastIssuesContent")!
     );
@@ -248,10 +248,9 @@ export function init(
           }
           getOutputFromAnalyzer();
         } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
-
-          var patchFilepath = path.normalize(JSON.parse(
-            context.workspaceState.get<string>("openedPatchPath")!
-          ));
+          var patchFilepath = path.normalize(
+            JSON.parse(context.workspaceState.get<string>("openedPatchPath")!)
+          );
 
           // Update user decisions of the revert fix:
           updateUserDecisions(
@@ -356,7 +355,9 @@ export function init(
       );
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
-    var openFilePath = vscode.Uri.file(path.join(PROJECT_FOLDER, sourceFile));
+    var openFilePath = vscode.Uri.file(
+      upath.normalize(upath.join(PROJECT_FOLDER, sourceFile))
+    );
     //var openFilePath = vscode.Uri.parse("file:///" + PROJECT_FOLDER + '/' + sourceFile); // not working on MacOS...
 
     logging.LogInfo("Running diagnosis in opened file...");
@@ -420,25 +421,29 @@ export function init(
         );
         throw Error("Unable to find destination file in '" + patchPath + "'");
       }
+      let projectFolder = PROJECT_FOLDER;
 
-      var original = readFileSync(
-        path.join(PROJECT_FOLDER, sourceFile),
-        "utf8"
-      );
+      sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
+      if (process.platform === "linux" || process.platform === "darwin") {
+        if (sourceFile[0] !== "/") {
+          sourceFile = "/" + sourceFile;
+        }
+      }
+
+      var original = readFileSync(sourceFile, "utf8");
       var patched = diff.applyPatch(original, patch);
 
-
-      if(!patched){
-        vscode.window.showErrorMessage('Failed to load patched version of this source file into a diff view! \n Make sure that your configuration is correct. Also make sure that the source file has not been patched already by this patch before! This issue may occour if the patch syntax is incorrect.'); 
+      if (!patched) {
+        vscode.window.showErrorMessage(
+          "Failed to load patched version of this source file into a diff view! \n Make sure that your configuration is correct. Also make sure that the source file has not been patched already by this patch before! This issue may occour if the patch syntax is incorrect."
+        );
         return;
       }
 
       if (isPatchAlreadyOpened(sourceFile)) {
         let requiredWebview = activeDiffPanelWebviews.find((webview) => {
           if ("leftPath" in webview.params) {
-            if (
-              webview.params.leftPath! === path.join(PROJECT_FOLDER, sourceFile)
-            ) {
+            if (webview.params.leftPath! === sourceFile) {
               return webview;
             }
           }
@@ -477,7 +482,7 @@ export function init(
         patchPath: patchPath,
         leftContent: original,
         rightContent: patched,
-        leftPath: path.join(PROJECT_FOLDER, sourceFile),
+        leftPath: sourceFile,
         rightPath: "",
         context,
         theme: vscode.window.activeColorTheme.kind.toString(),
@@ -612,7 +617,10 @@ export function init(
       var patchFilepath = JSON.parse(
         context.workspaceState.get<string>("openedPatchPath")!
       );
-      var patchFileContent = readFileSync(path.normalize(patchFilepath), "utf8");
+      var patchFileContent = readFileSync(
+        path.normalize(patchFilepath),
+        "utf8"
+      );
       var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
       var sourceFile: string;
       if (sourceFileMatch && sourceFileMatch[1]) {
@@ -623,8 +631,9 @@ export function init(
 
       // Saving issues.json and file contents in state,
       // so later the changes can be reverted if user asks for it:
-
-      saveFileAndFixesToState(path.normalize(path.join(PATCH_FOLDER, sourceFile)));
+      saveFileAndFixesToState(
+        path.normalize(path.join(PROJECT_FOLDER, sourceFile))
+      );
 
       var sourceFileContent = readFileSync(
         path.normalize(path.join(PROJECT_FOLDER, sourceFile)),
@@ -691,24 +700,24 @@ export function init(
               patchPath = webview.params.patchPath;
             }
 
-            filterOutIssues(patchPath);
-
             testView.treeDataProvider?.refresh(patchPath);
 
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
-                vscode.window.withProgress(
-                  {
-                    location: vscode.ProgressLocation.Notification,
-                    title: "Loading Diagnostics...",
-                  },
-                  async () => {
-                    await refreshDiagnostics(
-                      vscode.window.activeTextEditor!.document,
-                      analysisDiagnostics
-                    );
-                  }
-                );
+                filterOutIssues(patchPath).then(() => {
+                  vscode.window.withProgress(
+                    {
+                      location: vscode.ProgressLocation.Notification,
+                      title: "Loading Diagnostics...",
+                    },
+                    async () => {
+                      await refreshDiagnostics(
+                        vscode.window.activeTextEditor!.document,
+                        analysisDiagnostics
+                      );
+                    }
+                  );
+                });
               });
             });
           }
@@ -739,14 +748,16 @@ export function init(
         throw Error("Unable to find source file in '" + patchFilepath + "'");
       }
 
+      sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
+      if (process.platform === "linux" || process.platform === "darwin") {
+        if (sourceFile[0] !== "/") sourceFile = "/" + sourceFile;
+      }
+
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
 
-      filterOutIssues(patchFilepath);
-
-      testView.treeDataProvider?.refresh(patchFilepath);
-      vscode.workspace
-        .openTextDocument(path.join(PROJECT_FOLDER, sourceFile))
-        .then((document) => {
+      filterOutIssues(patchFilepath).then(() => {
+        testView.treeDataProvider?.refresh(patchFilepath);
+        vscode.workspace.openTextDocument(sourceFile).then((document) => {
           vscode.window.showTextDocument(document).then(() => {
             vscode.window.withProgress(
               {
@@ -760,56 +771,55 @@ export function init(
                   analysisDiagnostics
                 );
 
-                updateUserDecisions(
-                  "declined",
-                  patchFilepath,
-                  path.join(PROJECT_FOLDER, sourceFile)
-                );
+                updateUserDecisions("declined", patchFilepath, sourceFile);
               }
             );
           });
         });
+      });
     }
   }
 
-  function filterOutIssues(patchPath: String) {
-    initIssues().then(() => {
-      if (issues) {
-        const webview = getActiveDiffPanelWebview();
+  async function filterOutIssues(patchPath: String) {
+    await initIssues();
+    if (issues) {
+      const webview = getActiveDiffPanelWebview();
 
-          Object.keys(issues).forEach((key) => {
-            // if (
-            //   issues[key]!.patches.some(
-            //     (x: any) => x.path === patchPath! || patchPath!.includes(x.path)
-            //   )
-            // ) {
-            //   delete issues[key];
-            // }
-            issues[key]!.patches = issues[key]!.patches.filter((x: any) => x.path !== patchPath! || !patchPath!.includes(x.path));
-            if(!issues[key]!.patches.length){
-              delete issues[key];
-            }
-          });
+      Object.keys(issues).forEach((key) => {
+        // if (
+        //   issues[key]!.patches.some(
+        //     (x: any) => x.path === patchPath! || patchPath!.includes(x.path)
+        //   )
+        // ) {
+        //   delete issues[key];
+        // }
+
+        let patchFolder = PATCH_FOLDER;
+        issues[key]!.patches = issues[key]!.patches.filter(
+          (x: any) => !patchPath!.includes(x.path)
+        );
+        if (!issues[key]!.patches.length) {
+          delete issues[key];
         }
+      });
+    }
 
-      
-      console.log(issues);
+    console.log(issues);
 
-      let issuesStr = stringify(issues);
-      console.log(issuesStr);
+    let issuesStr = stringify(issues);
+    console.log(issuesStr);
 
-      let issuesPath: string | undefined = "";
-      if (
-        vscode.workspace
-          .getConfiguration()
-          .get<string>("aifix4seccode.analyzer.issuesPath")
-      ) {
-        issuesPath = vscode.workspace
-          .getConfiguration()
-          .get<string>("aifix4seccode.analyzer.issuesPath");
-      }
-      writeFileSync(issuesPath!, issuesStr, utf8Stream);
-    });
+    let issuesPath: string | undefined = "";
+    if (
+      vscode.workspace
+        .getConfiguration()
+        .get<string>("aifix4seccode.analyzer.issuesPath")
+    ) {
+      issuesPath = vscode.workspace
+        .getConfiguration()
+        .get<string>("aifix4seccode.analyzer.issuesPath");
+    }
+    writeFileSync(issuesPath!, issuesStr, utf8Stream);
   }
 
   function saveFileAndFixesToState(filePath: string) {
@@ -894,8 +904,11 @@ export function init(
       } else {
         throw Error("Unable to find source file in '" + patchFilepath + "'");
       }
-      var leftPath = path.join(PROJECT_FOLDER, sourceFile);
-
+      var leftPath = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
+      if(process.platform === 'linux' || process.platform === 'darwin'){
+        if(leftPath[0] !== '/')
+          leftPath = '/' + leftPath
+      }
       let fixes = await fakeAiFixCode.getFixes(leftPath);
       console.log(fixes);
       let nextFixId = currentFixId + step;
@@ -903,13 +916,19 @@ export function init(
         nextFixId = nextFixId > 0 ? 0 : fixes.length - 1;
       }
 
+      let fixPath = upath.normalize(upath.join(PATCH_FOLDER, fixes[nextFixId].path))
+      if(process.platform === 'linux' || process.platform === 'darwin'){
+        if(fixPath[0] !== '/')
+          fixPath = '/' + fixPath
+      }
+
       vscode.workspace
-        .openTextDocument(path.join(PATCH_FOLDER, fixes[nextFixId].path))
+        .openTextDocument(fixPath)
         .then((document) => {
           vscode.window.showTextDocument(document).then(() => {
             context.workspaceState.update(
               "openedPatchPath",
-              JSON.stringify(path.join(PATCH_FOLDER, fixes[nextFixId].path))
+              JSON.stringify(fixPath)
             );
           });
         });
@@ -958,7 +977,7 @@ export function init(
 
     var patch = "";
     try {
-      patch = readFileSync(outputFolder + "/" + patchPath, "utf8");
+      patch = readFileSync(upath.normalize(upath.join(outputFolder, patchPath)), "utf8");
     } catch (err) {
       console.log(err);
     }
@@ -970,7 +989,14 @@ export function init(
       throw Error("Unable to find source file in '" + patchPath + "'");
     }
 
-    var original = readFileSync(PROJECT_FOLDER + "/" + sourceFile, "utf8");
+    sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
+      if (process.platform === "linux" || process.platform === "darwin") {
+        if (sourceFile[0] !== "/") {
+          sourceFile = "/" + sourceFile;
+        }
+      }
+
+    var original = readFileSync(sourceFile, "utf8");
     return original;
   }
 

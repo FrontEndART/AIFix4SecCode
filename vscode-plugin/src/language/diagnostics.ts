@@ -5,6 +5,7 @@ import { IFix, Iissue, IIssueRange } from "../interfaces";
 import { getIssues } from "../services/fakeAiFixCode";
 import * as logging from '../services/logging';
 var path = require('path');
+var upath = require('upath');
 
 let issues: Iissue | undefined;
 
@@ -46,8 +47,18 @@ export async function refreshDiagnostics(
             }
             
             let openedFilePath = vscode.window.activeTextEditor?.document.uri.path;
+            let projectFolder = PROJECT_FOLDER;
 
-            if(path.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase() === vscode.Uri.file(openedFilePath!).fsPath.toLowerCase()){
+            sourceFilePath = upath.normalize(upath.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase())
+            openedFilePath = upath.normalize(vscode.Uri.file(openedFilePath!).fsPath.toLowerCase())
+            if(process.platform === 'linux' || process.platform === 'darwin'){
+              if(sourceFilePath![0] !== '/')
+                sourceFilePath = '/' + sourceFilePath
+              if(openedFilePath![0] !== '/')
+                openedFilePath = '/' + openedFilePath
+            }
+
+            if(sourceFilePath === openedFilePath){
               diagnostics.push(createDiagnostic(doc, fixText, fixRange));
             }
           });
