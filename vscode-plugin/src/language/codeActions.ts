@@ -3,10 +3,7 @@ import * as vscode from 'vscode';
 import { PATCH_FOLDER, PROJECT_FOLDER } from '../constants';
 import { IFix, Iissue, IIssueRange } from '../interfaces';
 import { getIssues } from '../services/fakeAiFixCode';
-import { getSafeFsPath, getSafePath } from "../path";
-
 var path = require('path');
-var upath = require('upath');
 
 let issues: Iissue | undefined;
 let disposableAnalyzerProvider : vscode.Disposable;
@@ -14,6 +11,7 @@ let disposableAnalyzerInfoProvider : vscode.Disposable;
 
 async function initIssues() {
     issues = await getIssues();
+    console.log(issues);
 }
 
 export function initActionCommands(context: vscode.ExtensionContext) {
@@ -64,10 +62,10 @@ export class Analyzer implements vscode.CodeActionProvider {
         vscode.CodeActionKind.QuickFix
     ];
 
-    public provideCodeActions(document: vscode.TextDocument, range: vscode.Range, context: vscode.CodeActionContext): vscode.CodeAction[] | undefined {
+    public async provideCodeActions(document: vscode.TextDocument, range: vscode.Range): Promise<vscode.CodeAction[] | undefined> {
 
         let commandActions: vscode.CodeAction[] = [];
-        
+        issues = await getIssues();
         if (issues) {
             Object.values(issues).forEach(issue => {
                 const fixRange = issue.textRange;
@@ -77,7 +75,7 @@ export class Analyzer implements vscode.CodeActionProvider {
                     var patch = '';
 
                     try {
-                        patch = readFileSync(upath.joinSafe(PATCH_FOLDER, patchPath), "utf8");
+                        patch = readFileSync(PATCH_FOLDER + '/' + patchPath, "utf8");
                     } catch (err) {
                         console.log(err);
                     }
@@ -91,20 +89,11 @@ export class Analyzer implements vscode.CodeActionProvider {
                         throw Error("Unable to find source file in '" + patch + "'");
                     }
 
-                    let openedFilePath = vscode.window.activeTextEditor?.document.uri.fsPath;
+                    let openedFilePath = vscode.window.activeTextEditor?.document.uri.path;
                     
-                    let codeActionTargetPath = upath.normalize(upath.joinSafe(PROJECT_FOLDER, sourceFilePath)).toLowerCase()
-                    let currentlyOpenedFilePath = upath.normalize(openedFilePath).toLowerCase()
-                    
-                    codeActionTargetPath = getSafePath(codeActionTargetPath)
-                    currentlyOpenedFilePath = getSafePath(currentlyOpenedFilePath)
-                    
-                    if(codeActionTargetPath === currentlyOpenedFilePath){
-                        let foundMatchingDiagnostic = context.diagnostics.some((diagnostic) => 
-                            diagnostic.range.start.line === fixRange.startLine - 1 && diagnostic.range.end.line === fixRange.endLine - 1
-                        )
-                        if(foundMatchingDiagnostic)
-                            commandActions.push(this.createCommand(fixText, fixRange, patchPath));
+                    let projectFolder = PROJECT_FOLDER
+                    if(path.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase() === vscode.Uri.file(openedFilePath!).fsPath.toLowerCase()){
+                        commandActions.push(this.createCommand(fixText, fixRange, patchPath));
                     }
                 });
             });
