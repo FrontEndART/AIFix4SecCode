@@ -4,7 +4,7 @@ package example;
  * EI_EXPOSE_REP issue for array usage
  */
 
-
+import java.util.Arrays;
 import java.util.UUID;
 
 public class ArrayDemo {
@@ -26,7 +26,7 @@ public class ArrayDemo {
     }
 
     public ArrayDemo withPermissionsToNeeded(String[] permissionsToNeeded) {
-        this.permissionsToNeeded = permissionsToNeeded;
+        this.permissionsToNeeded = Arrays.copyOf(permissionsToNeeded, permissionsToNeeded.length);
         return this;
     }
 

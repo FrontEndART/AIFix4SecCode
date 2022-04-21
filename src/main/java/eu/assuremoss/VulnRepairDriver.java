@@ -42,6 +42,7 @@ public class VulnRepairDriver {
     private static final String J2CP_PATH_KEY = "j2cp_path";
     private static final String J2CP_EDITION_KEY = "j2cp_edition";
     private static final String RESULTS_PATH_KEY = "results_path";
+    private static final String VALIDATION_RESULTS_PATH_KEY = "validation_results_path";
     private static final String DESCRIPTION_PATH_KEY = "description_path";
     private static final String PATCH_SAVE_PATH_KEY = "patch_save_path";
     private String projectName = "";
@@ -51,6 +52,7 @@ public class VulnRepairDriver {
     private String j2cpPath = "";
     private String j2cpEdition = "";
     private String resultsPath = "";
+    private String validation_results_path = "";
     private String descriptionPath = "";
     private String patchSavePath = "";
 
@@ -74,6 +76,7 @@ public class VulnRepairDriver {
             j2cpPath = (String) properties.get(J2CP_PATH_KEY);
             j2cpEdition = (String) properties.get(J2CP_EDITION_KEY);
             resultsPath = (String) properties.get(RESULTS_PATH_KEY);
+            validation_results_path = (String) properties.get(VALIDATION_RESULTS_PATH_KEY);
             descriptionPath = (String) properties.get(DESCRIPTION_PATH_KEY);
             patchSavePath = (String) properties.get(PATCH_SAVE_PATH_KEY);
             LOG.info("Successfully loaded data.");
@@ -90,37 +93,41 @@ public class VulnRepairDriver {
         SourceCodeCollector scc = new LocalSourceFolder(projectPath);
         scc.collectSourceCode();
 
-        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, projectName, patchSavePath);
-        List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation());
+        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, validation_results_path, projectName);
+        List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation(), false);
         codeModels.stream().forEach(cm -> LOG.debug(cm.getType() + ":" + cm.getModelPath()));
 
-        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, projectName, patchSavePath);
-        List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation());
+        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, validation_results_path, projectName);
+        List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
+        vulnerabilityLocations.forEach(ve -> System.out.println(ve.getType() + " -> " + ve.getStartLine()));
 
         VulnerabilityRepairer vr = new ASGTransformRepair(projectName, projectPath, resultsPath, descriptionPath, patchSavePath);
-        int patchCounter1 = 1;
+        //int patchCounter1 = 1;
         int patchCounter2 = 1;
         Map<String, Integer> problemTypeCounter = new HashMap<>();
         JSONObject vsCodeConfig = new JSONObject();
+
         for (VulnerabilityEntry ve : vulnerabilityLocations) {
-            List<Pair<File, Patch<String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels, patchCounter1++);
+            List<Pair<File, Pair<Patch<String>, String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
             LOG.debug(String.valueOf(patches));
             PatchCompiler comp = new MavenPatchCompiler();
-            List<Pair<File, Patch<String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
+            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
             PatchValidator pv = new OpenStaticAnalyzer(
                     osaPath,
                     osaEdition,
                     j2cpPath,
                     j2cpEdition,
                     resultsPath,
-                    projectName,
-                    patchSavePath
+                    validation_results_path,
+                    projectName
             );
-            List<Pair<File, Patch<String>>> candidatePatches = new ArrayList<>();
-            for (Pair<File, Patch<String>> patch : filteredPatches) {
+            List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = new ArrayList<>();
+            for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : filteredPatches) {
+                Patch<String> rawPatch = patchWithExplanation.getB().getA();
+                Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
                 comp.applyPatch(patch, scc.getSourceCodeLocation());
                 if (pv.validatePatch(scc.getSourceCodeLocation(), ve, patch)) {
-                    candidatePatches.add(patch);
+                    candidatePatches.add(patchWithExplanation);
                 }
                 comp.revertPatch(patch, scc.getSourceCodeLocation());
             }
@@ -139,10 +146,11 @@ public class VulnRepairDriver {
             JSONArray patchesArray = new JSONArray();
             for (int i = 0; i < candidatePatches.size(); i++) {
                 File path = candidatePatches.get(i).getA();
-                Patch<String> patch = candidatePatches.get(i).getB();
+                Patch<String> patch = candidatePatches.get(i).getB().getA();
+                String explanation = candidatePatches.get(i).getB().getB();
 
                 // Dump the patch and generate the necessary meta-info json as well with vulnerability/patch candidate mapping for the VS Code plug-in
-                String patchName = MessageFormat.format("patch_{0}_{1}_{2}_{3}_{4}_{5}", patchCounter2++, ve.getType(), ve.getStartLine(), ve.getEndLine(), ve.getStartCol(), ve.getEndCol());
+                String patchName = MessageFormat.format("patch_{0}_{1}_{2}_{3}_{4}_{5}.diff", patchCounter2++, ve.getType(), ve.getStartLine(), ve.getEndLine(), ve.getStartCol(), ve.getEndCol());
                 try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath, patchName)))) {
                     List<String> unifiedDiff =
                             UnifiedDiffUtils.generateUnifiedDiff(path.getPath(), path.getPath(),
@@ -168,7 +176,7 @@ public class VulnRepairDriver {
 
                     JSONObject patchObject = new JSONObject();
                     patchObject.put("path", patchName);
-                    patchObject.put("explanation", "Fix");
+                    patchObject.put("explanation", explanation);
                     patchObject.put("score", 10);
                     patchesArray.add(patchObject);
                 } catch (IOException e) {
@@ -180,8 +188,8 @@ public class VulnRepairDriver {
             JSONObject textRangeObject = new JSONObject();
             textRangeObject.put("startLine", ve.getStartLine());
             textRangeObject.put("endLine", ve.getEndLine());
-            textRangeObject.put("startColumn", ve.getStartCol());
-            textRangeObject.put("endColumn", ve.getEndCol());
+            textRangeObject.put("startColumn", ve.getStartCol()-1);
+            textRangeObject.put("endColumn", ve.getEndCol()-1);
 
             issueObject.put("patches", patchesArray);
             issueObject.put("textRange", textRangeObject);
@@ -194,7 +202,7 @@ public class VulnRepairDriver {
                 int n = problemTypeCounter.get(ve.getType());
                 n++;
                 problemTypeCounter.put(ve.getType(), n);
-                problemTypeCount = "_" + n;
+                problemTypeCount = "#" + n;
             }
 
             vsCodeConfig.put(ve.getType() + problemTypeCount, issueObject);
@@ -208,6 +216,6 @@ public class VulnRepairDriver {
             e.printStackTrace();
         }
 
-        Utils.deletePatches(patchSavePath, patchCounter1);
+        Utils.deleteIntermediatePatches(patchSavePath);
     }
 }
