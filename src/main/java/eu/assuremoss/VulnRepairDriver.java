@@ -26,7 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * The main driver class that runs the vulnerability repair workflow
@@ -45,6 +49,8 @@ public class VulnRepairDriver {
     private static final String RESULTS_PATH_KEY = "results_path";
     private static final String DESCRIPTION_PATH_KEY = "description_path";
     private static final String PATCH_SAVE_PATH_KEY = "patch_save_path";
+    private static final String ARCHIVE_PATH = "archive_path";
+    private static final String ARCHIVE_ENABLED = "archive_enabled";
     private String projectName = "";
     private String projectPath = "";
     private String osaPath = "";
@@ -55,6 +61,8 @@ public class VulnRepairDriver {
     private String resultsPath = "";
     private String descriptionPath = "";
     private String patchSavePath = "";
+    private String archivePath = "";
+    private boolean archiveEnabled = false;
 
     public static void main(String[] args) {
         VulnRepairDriver driver = new VulnRepairDriver();
@@ -77,6 +85,8 @@ public class VulnRepairDriver {
             j2cpPath = osaPath + File.separator + "WindowsTools";
             j2cpEdition = "JAN2ChangePath";
             resultsPath = (String) properties.get(RESULTS_PATH_KEY);
+            archivePath = (String) properties.get(ARCHIVE_PATH);
+            archiveEnabled = Boolean.valueOf(properties.get(ARCHIVE_ENABLED).toString());
             descriptionPath = resultsPath + File.separator + "osa_xml";
             patchSavePath = resultsPath + File.separator + "patches";
             LOG.info("Successfully loaded data.");
@@ -89,6 +99,8 @@ public class VulnRepairDriver {
         } catch (IOException e) {
             LOG.info("Unable to create results folder.");
         }
+
+        String currentTime = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
         SourceCodeCollector scc = new LocalSourceFolder(projectPath);
         scc.collectSourceCode();
@@ -202,6 +214,55 @@ public class VulnRepairDriver {
             }
 
             vsCodeConfig.put(ve.getType() + problemTypeCount, issueObject);
+        }
+
+        if (archiveEnabled){
+            File src = new File (patchSavePath);
+            File dest = new File(archivePath);
+            File desc = new File(descriptionPath + File.separator + "description.xml");
+
+            try {
+                if(!dest.exists()){
+                    Path path = Paths.get(dest.toString());
+                    Files.createDirectory(path);
+                }
+                FileOutputStream fos = new FileOutputStream(dest + File.separator + currentTime + ".zip");
+                ZipOutputStream zos = new ZipOutputStream(fos);
+
+                File[] files = src.listFiles();
+                for (File fileToZip : files) {
+                    FileInputStream fis = new FileInputStream(fileToZip);
+                    ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
+                    zos.putNextEntry(zipEntry);
+
+                    byte[] bytes = new byte[1024];
+                    int length;
+                    while ((length = fis.read(bytes)) >= 0) {
+                        zos.write(bytes, 0, length);
+                    }
+
+                    zos.closeEntry();
+                    fis.close();
+                }
+                FileInputStream fis = new FileInputStream(desc);
+                ZipEntry zipEntry = new ZipEntry(desc.getName());
+                zos.putNextEntry(zipEntry);
+
+                byte[] bytes = new byte[1024];
+                int length;
+                while ((length = fis.read(bytes)) >= 0) {
+                    zos.write(bytes, 0, length);
+                }
+
+                zos.closeEntry();
+                fis.close();
+
+                zos.close();
+                fos.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "vscode-config.json")))) {
