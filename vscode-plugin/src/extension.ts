@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Start up log:
   logging.LogInfo("Extension started!");
-  vscode.window.showInformationMessage('This extension is used for analyzing your project for issues. If you have no project folder opened please open it, or include it in the DiffMerge Extension settings.'
+  vscode.window.showInformationMessage('This extension is used for analyzing your project for issues. If you have no project folder opened please open it, or include it in the \'AIFix4SecCode\' Extension settings.'
   , 'Open Settings').then(selected => {
     vscode.commands.executeCommand('workbench.action.openSettings', 'AIFix4SecCode');
   });

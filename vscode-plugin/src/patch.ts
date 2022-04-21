@@ -2,7 +2,7 @@ import { refreshDiagnostics } from './language/diagnostics';
 import { writeFileSync } from 'fs';
 import { getIssues } from './services/fakeAiFixCode';
 import { getSafeFsPath } from './path';
-import { utf8Stream, PROJECT_FOLDER } from './constants';
+import { utf8Stream, PROJECT_FOLDER, ANALYZER_USE_DIFF_MODE } from './constants';
 import { env } from 'process';
 import { workspace, Uri, window, ProgressLocation } from 'vscode';
 import { testView } from './commands';
@@ -78,8 +78,14 @@ export function patchToCodes(patch: string) {
 // 4.: Refreshes the diagnosis on the file to show the remaining suggestions.
 export function applyPatchToFile(leftPath: string, rightContent: string, patchPath: string){
   if (leftPath) {
+    
+          if(!rightContent){
+            window.showErrorMessage('Failed to apply patch to source file! \n Make sure that your configuration is correct. Also make sure that the source file has not been patched already by this patch before! This issue may occour if the patch syntax is incorrect.'); 
+            return;
+          }
+
           // 1.
-          writeFileSync(getSafeFsPath(leftPath), rightContent, utf8Stream);
+          writeFileSync(leftPath, rightContent, utf8Stream);
           // 2.
           initIssues().then(() => {
             if (issues) {
@@ -110,7 +116,10 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
                   // 4.
                   await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
                   
-                  updateUserDecisions('applied', patchPath, leftPath);
+                  // User decisions are updated here in patch mode (and at extendedWebview in diff mode):
+                  if(ANALYZER_USE_DIFF_MODE == "view Patch files"){
+                    updateUserDecisions('applied', patchPath, leftPath);
+                  }
                 });
               });
             });

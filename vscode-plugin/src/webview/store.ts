@@ -8,6 +8,15 @@ export function setActiveDiffPanelWebview(webview: ExtendedWebview) {
 
   if(!activeDiffPanelWebviews.includes(webview)){
     activeDiffPanelWebviews.push(webview);
+    
+    // If a webview in this array will later on be disposed,
+    // then we remove it from the active webviews array:
+    webview.webViewPanel.onDidDispose(() => {
+      const index = activeDiffPanelWebviews.indexOf(webview, 0);
+      if (index > -1) {
+        activeDiffPanelWebviews.splice(index, 1);
+      }
+    })
   }
 }
 

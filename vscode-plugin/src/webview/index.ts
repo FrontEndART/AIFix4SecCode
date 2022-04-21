@@ -8,6 +8,7 @@ import { window, ViewColumn, ExtensionContext, workspace } from 'vscode';
 import { extract } from '../theme/extractor';
 import { getTitle } from './utils';
 import { getIssues } from '../services/fakeAiFixCode';
+var path = require("path");
 
 var stringify = require('json-stringify');
 
@@ -72,7 +73,7 @@ export async function showDiff({ patchPath, leftContent, rightContent, leftPath,
         const patchPath = env.patchPath!;
         let output = applyPatchToFile(savedLeftPath, rightContent, patchPath);
         extendsWebView.webViewPanel.dispose();
-        return output;
+        return output!;
       } catch (error) {
         window.showErrorMessage('Something went wrong with saving this content...');
         log(`Error: can't save file due "${error}"`);

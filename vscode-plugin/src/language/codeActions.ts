@@ -4,6 +4,7 @@ import { PATCH_FOLDER, PROJECT_FOLDER } from '../constants';
 import { IFix, Iissue, IIssueRange } from '../interfaces';
 import { getIssues } from '../services/fakeAiFixCode';
 var path = require('path');
+var upath = require('upath');
 
 let issues: Iissue | undefined;
 let disposableAnalyzerProvider : vscode.Disposable;
@@ -11,6 +12,7 @@ let disposableAnalyzerInfoProvider : vscode.Disposable;
 
 async function initIssues() {
     issues = await getIssues();
+    console.log(issues);
 }
 
 export function initActionCommands(context: vscode.ExtensionContext) {
@@ -61,10 +63,10 @@ export class Analyzer implements vscode.CodeActionProvider {
         vscode.CodeActionKind.QuickFix
     ];
 
-    public provideCodeActions(document: vscode.TextDocument, range: vscode.Range): vscode.CodeAction[] | undefined {
+    public async provideCodeActions(document: vscode.TextDocument, range: vscode.Range): Promise<vscode.CodeAction[] | undefined> {
 
         let commandActions: vscode.CodeAction[] = [];
-        
+        issues = await getIssues();
         if (issues) {
             Object.values(issues).forEach(issue => {
                 const fixRange = issue.textRange;
@@ -91,7 +93,17 @@ export class Analyzer implements vscode.CodeActionProvider {
                     let openedFilePath = vscode.window.activeTextEditor?.document.uri.path;
                     
                     let projectFolder = PROJECT_FOLDER
-                    if(path.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase() === vscode.Uri.file(openedFilePath!).fsPath.toLowerCase()){
+
+                    sourceFilePath = upath.normalize(upath.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase())
+                    openedFilePath = upath.normalize(vscode.Uri.file(openedFilePath!).fsPath.toLowerCase())
+                    if(process.platform === 'linux' || process.platform === 'darwin'){
+                        if(sourceFilePath![0] !== '/')
+                          sourceFilePath = '/' + sourceFilePath
+                        if(openedFilePath![0] !== '/')
+                          openedFilePath = '/' + openedFilePath
+                      }
+
+                    if(sourceFilePath === openedFilePath){
                         commandActions.push(this.createCommand(fixText, fixRange, patchPath));
                     }
                 });
