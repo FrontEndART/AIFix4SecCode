@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -35,69 +36,87 @@ public class VulnRepairDriver {
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
 
     private static final String CONFIG_FILE_NAME = "config.properties";
-    private static final String PROJECT_NAME_KEY = "project_name";
-    private static final String PROJECT_PATH_KEY = "project_path";
-    private static final String OSA_PATH_KEY = "osa_path";
-    private static final String OSA_EDITION_KEY = "osa_edition";
-    private static final String J2CP_PATH_KEY = "j2cp_path";
-    private static final String J2CP_EDITION_KEY = "j2cp_edition";
-    private static final String RESULTS_PATH_KEY = "results_path";
-    private static final String VALIDATION_RESULTS_PATH_KEY = "validation_results_path";
-    private static final String DESCRIPTION_PATH_KEY = "description_path";
-    private static final String PATCH_SAVE_PATH_KEY = "patch_save_path";
+    private static final String PROJECT_NAME_KEY = "config.project_name";
+    private static final String PROJECT_PATH_KEY = "config.project_path";
+    private static final String OSA_PATH_KEY = "config.osa_path";
+    private static final String OSA_EDITION_KEY = "config.osa_edition";
+    private static final String RESULTS_PATH_KEY = "config.results_path";
+    private static final String VALIDATION_RESULTS_PATH_KEY = "config.validation_results_path";
+    private static final String ARCHIVE_PATH = "config.archive_path";
+    private static final String ARCHIVE_ENABLED = "config.archive_enabled";
+
     private String projectName = "";
     private String projectPath = "";
     private String osaPath = "";
     private String osaEdition = "";
+    private String supportedProblemTypesPath = "";
     private String j2cpPath = "";
     private String j2cpEdition = "";
     private String resultsPath = "";
     private String validation_results_path = "";
     private String descriptionPath = "";
     private String patchSavePath = "";
+    private String archivePath = "";
+    private boolean archiveEnabled = false;
 
     public static void main(String[] args) {
         VulnRepairDriver driver = new VulnRepairDriver();
-        driver.bootstrap();
+        Properties configProps = new Properties();
+        if (args.length == 1) {
+            try (InputStream stream = new FileInputStream(args[0])) {
+                configProps.load(stream);
+            } catch (IOException e) {
+                LOG.info("Could not load " + args[0] + ". Exiting.");
+                System.exit(-1);
+            }
+        } else {
+            LOG.warn("No configuration properties file is provided, using the default: " + CONFIG_FILE_NAME + ".");
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            try (InputStream stream = loader.getResourceAsStream(CONFIG_FILE_NAME)) {
+                configProps.load(stream);
+            } catch (IOException e) {
+                LOG.info("Could not load " + CONFIG_FILE_NAME + ". Exiting.");
+                System.exit(-1);
+            }
+        }
+
+        driver.bootstrap(configProps);
     }
 
-    public void bootstrap() {
+    public void bootstrap(Properties properties) {
         LOG.info("Start!");
 
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        Properties properties = new Properties();
-        try (InputStream resourceStream = loader.getResourceAsStream(CONFIG_FILE_NAME)) {
-            LOG.info("Attempting to load data from config.properties.");
-            properties.load(resourceStream);
-            projectName = (String) properties.get(PROJECT_NAME_KEY);
-            projectPath = (String) properties.get(PROJECT_PATH_KEY);
-            osaPath = (String) properties.get(OSA_PATH_KEY);
-            osaEdition = (String) properties.get(OSA_EDITION_KEY);
-            j2cpPath = (String) properties.get(J2CP_PATH_KEY);
-            j2cpEdition = (String) properties.get(J2CP_EDITION_KEY);
-            resultsPath = (String) properties.get(RESULTS_PATH_KEY);
-            validation_results_path = (String) properties.get(VALIDATION_RESULTS_PATH_KEY);
-            descriptionPath = (String) properties.get(DESCRIPTION_PATH_KEY);
-            patchSavePath = (String) properties.get(PATCH_SAVE_PATH_KEY);
-            LOG.info("Successfully loaded data.");
-        } catch (IOException e) {
-            LOG.info("Could not find config.properties. Exiting.");
-            System.exit(-1);
-        }
+        projectName = properties.getProperty(PROJECT_NAME_KEY);
+        projectPath = properties.getProperty(PROJECT_PATH_KEY);
+        osaPath = String.valueOf(Paths.get(properties.getProperty(OSA_PATH_KEY), "Java"));
+        osaEdition = properties.getProperty(OSA_EDITION_KEY);
+        j2cpPath = String.valueOf(Paths.get(osaPath, (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows") ? "WindowsTools" : "LinuxTools")));
+        j2cpEdition = "JAN2ChangePath";
+        resultsPath = properties.getProperty(RESULTS_PATH_KEY);
+        validation_results_path = properties.getProperty(VALIDATION_RESULTS_PATH_KEY);
+        archivePath = properties.getProperty(ARCHIVE_PATH);
+        archiveEnabled = Boolean.parseBoolean(properties.getProperty(ARCHIVE_ENABLED));
+        descriptionPath = String.valueOf(Paths.get(resultsPath, "osa_xml"));
+        patchSavePath = String.valueOf(Paths.get(resultsPath, "patches"));
+
+        LOG.info("Successfully loaded configuration properties.");
+
         try {
             Files.createDirectory(Paths.get(resultsPath));
         } catch (IOException e) {
             LOG.info("Unable to create results folder.");
         }
 
+        String currentTime = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+
         SourceCodeCollector scc = new LocalSourceFolder(projectPath);
         scc.collectSourceCode();
 
-        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, validation_results_path, projectName);
+        CodeAnalyzer osa = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, validation_results_path, projectName, Utils.getWarningMappingFromProp(properties));
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation(), false);
         codeModels.stream().forEach(cm -> LOG.debug(cm.getType() + ":" + cm.getModelPath()));
 
-        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, validation_results_path, projectName);
+        VulnerabilityDetector vd = new OpenStaticAnalyzer(osaPath, osaEdition, j2cpPath, j2cpEdition, resultsPath, validation_results_path, projectName, Utils.getWarningMappingFromProp(properties));
         List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
         vulnerabilityLocations.forEach(ve -> System.out.println(ve.getType() + " -> " + ve.getStartLine()));
 
@@ -119,7 +138,8 @@ public class VulnRepairDriver {
                     j2cpEdition,
                     resultsPath,
                     validation_results_path,
-                    projectName
+                    projectName,
+                    Utils.getWarningMappingFromProp(properties)
             );
             List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = new ArrayList<>();
             for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : filteredPatches) {
@@ -164,7 +184,7 @@ public class VulnRepairDriver {
                         regex = regex.replaceAll("\\\\", "\\\\\\\\");
 
                         String[] lineParts = line.split(regex);
-                        if (lineParts[1].charAt(0) =='\\' || lineParts[1].charAt(0) =='/') {
+                        if (lineParts[1].charAt(0) == '\\' || lineParts[1].charAt(0) == '/') {
                             lineParts[1] = lineParts[1].substring(1);
                         }
 
@@ -188,8 +208,8 @@ public class VulnRepairDriver {
             JSONObject textRangeObject = new JSONObject();
             textRangeObject.put("startLine", ve.getStartLine());
             textRangeObject.put("endLine", ve.getEndLine());
-            textRangeObject.put("startColumn", ve.getStartCol()-1);
-            textRangeObject.put("endColumn", ve.getEndCol()-1);
+            textRangeObject.put("startColumn", ve.getStartCol() - 1);
+            textRangeObject.put("endColumn", ve.getEndCol() - 1);
 
             issueObject.put("patches", patchesArray);
             issueObject.put("textRange", textRangeObject);
@@ -208,12 +228,16 @@ public class VulnRepairDriver {
             vsCodeConfig.put(ve.getType() + problemTypeCount, issueObject);
         }
 
-        try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "vscode-config.json")))) {
+       try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "vscode-config.json")))) {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             JsonElement element = JsonParser.parseString(vsCodeConfig.toJSONString());
             fw.write(gson.toJson(element));
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+        if (archiveEnabled) {
+            Utils.archiveResults(patchSavePath, archivePath, descriptionPath, currentTime);
         }
 
         Utils.deleteIntermediatePatches(patchSavePath);

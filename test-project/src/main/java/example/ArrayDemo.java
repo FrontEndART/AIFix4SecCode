@@ -26,7 +26,7 @@ public class ArrayDemo {
     }
 
     public ArrayDemo withPermissionsToNeeded(String[] permissionsToNeeded) {
-        this.permissionsToNeeded = Arrays.copyOf(permissionsToNeeded, permissionsToNeeded.length);
+        this.permissionsToNeeded = permissionsToNeeded;
         return this;
     }
 
@@ -37,7 +37,7 @@ public class ArrayDemo {
 
 
     public ArrayDemo withActions(String[] actions) {
-        this.actions = actions;
+        this.actions = Arrays.copyOf(actions, actions.length);
         return this;
     }
 
