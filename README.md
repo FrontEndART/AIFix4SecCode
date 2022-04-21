@@ -36,12 +36,12 @@ j2cp_path=PATH OF THE HELPER TOOLS # e.g. d:\\OpenStaticAnalyzer-4.1.0-x64-Windo
 j2cp_edition=THE NAME OF THE CHANGE PATH HELPER TOOL # e.g. JAN2ChangePath
 ```
 
-## Acknowledgement
-The development of the AIFix4SecCode framework was supported by the [AssureMOSS](https://assuremoss.eu) (Grant No.952647) EU-funded project.
-
 ## How to install the plugin to VSCode
 You can install the plugin to visual studio code from the command line:
 ```
 code --install-extension <extension-vsix-path>
 ```
 You can find the .vsix file in the vscode-plugin subdirectory of the project e.g. d:\\AIFix4SecCode\\vscode-plugin\\aifix4seccode-vscode-1.0.0.vsix
+
+## Acknowledgement
+The development of the AIFix4SecCode framework was supported by the [AssureMOSS](https://assuremoss.eu) (Grant No.952647) EU-funded project.
