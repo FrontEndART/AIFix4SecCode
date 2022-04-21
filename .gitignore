@@ -5,6 +5,7 @@ target/
 main.log
 
 config.properties
+supported_problem_types.properties
 
 test-project/.classpath
 test-project/.columbus_java
