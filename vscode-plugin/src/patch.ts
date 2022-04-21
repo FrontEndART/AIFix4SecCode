@@ -2,7 +2,7 @@ import { refreshDiagnostics } from './language/diagnostics';
 import { writeFileSync } from 'fs';
 import { getIssues } from './services/fakeAiFixCode';
 import { getSafeFsPath } from './path';
-import { utf8Stream, PROJECT_FOLDER } from './constants';
+import { utf8Stream, PROJECT_FOLDER, ANALYZER_USE_DIFF_MODE } from './constants';
 import { env } from 'process';
 import { workspace, Uri, window, ProgressLocation } from 'vscode';
 import { testView } from './commands';
@@ -116,7 +116,10 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
                   // 4.
                   await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
                   
-                  updateUserDecisions('applied', patchPath, leftPath);
+                  // User decisions are updated here in patch mode (and at extendedWebview in diff mode):
+                  if(ANALYZER_USE_DIFF_MODE == "view Patch files"){
+                    updateUserDecisions('applied', patchPath, leftPath);
+                  }
                 });
               });
             });
