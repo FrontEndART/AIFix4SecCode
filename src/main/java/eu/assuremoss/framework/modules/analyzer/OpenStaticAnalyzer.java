@@ -30,15 +30,9 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
     private static final Map<String, List<String>> SUPPORTED_PROBLEM_TYPES = new HashMap<>();
 
-    static {
-        SUPPORTED_PROBLEM_TYPES.put("FB_EiER", List.of("EI_EXPOSE_REP2", "EI_EXPOSE_REP2_ARRAY", "EI_EXPOSE_REP2_DATEOBJECT"));
-        SUPPORTED_PROBLEM_TYPES.put("FB_MSBF", List.of("MS_SHOULD_BE_FINAL"));
-        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSP", List.of("NP_NULL_ON_SOME_PATH"));
-        SUPPORTED_PROBLEM_TYPES.put("FB_NNOSPE", List.of("NP_NULL_ON_SOME_PATH_EXCEPTION"));
-    }
-
     private final String osaPath;
     private final String osaEdition;
+    private final String supportedProblemTypesPath;
     private final String j2cpPath;
     private final String j2cpEdition;
     private final String resultsPath;
@@ -111,6 +105,24 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
     @Override
     public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation) {
+        Properties properties = new Properties();
+        try (InputStream stream = new FileInputStream(supportedProblemTypesPath)) {
+            properties.load(stream);
+            for (Object key : properties.keySet()) {
+                String line = (String) properties.get(key);
+                StringTokenizer tokenizer = new StringTokenizer(line, ",");
+                List<String> problemTypes = new ArrayList<>();
+                while (tokenizer.hasMoreTokens()) {
+                    problemTypes.add(tokenizer.nextToken());
+                }
+                SUPPORTED_PROBLEM_TYPES.put((String) key, problemTypes);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         List<VulnerabilityEntry> resList = new ArrayList<>();
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

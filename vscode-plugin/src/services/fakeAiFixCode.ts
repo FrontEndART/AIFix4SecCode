@@ -1,5 +1,6 @@
 import { access, constants, watch, readFileSync, readFile } from "fs";
 import { dirname, basename } from "path";
+import { updateHeritageClause } from "typescript";
 import { Terminal, window, ProgressLocation, workspace } from "vscode";
 import { ANALYZER_EXE_PATH, PATCH_FOLDER, PROJECT_FOLDER, utf8Stream } from "../constants";
 import { IFix, Iissue } from "../interfaces";
@@ -9,6 +10,7 @@ const fs = require('fs');
 const util = require('util');
 const parseJson = require('parse-json');
 var path = require("path");
+var upath = require("upath");
 
 //export let issues = '';
 export let issuesJson: Iissue | undefined;
@@ -63,13 +65,14 @@ export function getIssuesSync() {
 export async function getFixes(leftPath: string) {
     let issues = await getIssues();
     let fixes: any[] = [];
+    
 
     if (issues) {
         Object.values(issues).forEach(issue => {
             issue.patches.forEach((fix: IFix) => {
                 var patch = '';
                 try {
-                    patch = readFileSync(PATCH_FOLDER + '/' + fix.path, "utf8");
+                    patch = readFileSync(upath.join(PATCH_FOLDER, fix.path), "utf8");
                 } catch (err) {
                     console.log(err);
                 }
@@ -81,8 +84,18 @@ export async function getFixes(leftPath: string) {
                 } else {
                     throw Error("Unable to find source file in '" + fix.path + "'");
                 }
-                
-                if (getSafeFsPath(path.join(PATCH_FOLDER, sourceFile)) === getSafeFsPath(leftPath)) {
+
+                let patch_folder = PATCH_FOLDER
+                sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
+                leftPath = upath.normalize(leftPath);
+                if(process.platform === 'linux' || process.platform === 'darwin')
+                {
+                    if(sourceFile[0] !== '/'){
+                        sourceFile = '/' + sourceFile;
+                    }
+                }
+
+                if (sourceFile === leftPath) {
                     fixes.push(fix);
                 }
             });
