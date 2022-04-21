@@ -37,7 +37,7 @@ public class ArrayDemo {
 
 
     public ArrayDemo withActions(String[] actions) {
-        this.actions = Arrays.copyOf(actions, actions.length);
+        this.actions = actions;
         return this;
     }
 
