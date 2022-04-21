@@ -71,14 +71,14 @@ public class VulnRepairDriver {
             properties.load(resourceStream);
             projectName = (String) properties.get(PROJECT_NAME_KEY);
             projectPath = (String) properties.get(PROJECT_PATH_KEY);
-            osaPath = (String) properties.get(OSA_PATH_KEY);
+            osaPath = properties.get(OSA_PATH_KEY) + File.separator + "Java";
             osaEdition = (String) properties.get(OSA_EDITION_KEY);
             supportedProblemTypesPath = (String) properties.get(SUPPORTED_PROBLEM_TYPES_PATH_KEY);
-            j2cpPath = (String) properties.get(J2CP_PATH_KEY);
-            j2cpEdition = (String) properties.get(J2CP_EDITION_KEY);
+            j2cpPath = osaPath + File.separator + "WindowsTools";
+            j2cpEdition = "JAN2ChangePath";
             resultsPath = (String) properties.get(RESULTS_PATH_KEY);
-            descriptionPath = (String) properties.get(DESCRIPTION_PATH_KEY);
-            patchSavePath = (String) properties.get(PATCH_SAVE_PATH_KEY);
+            descriptionPath = resultsPath + File.separator + "osa_xml";
+            patchSavePath = resultsPath + File.separator + "patches";
             LOG.info("Successfully loaded data.");
         } catch (IOException e) {
             LOG.info("Could not find config.properties. Exiting.");

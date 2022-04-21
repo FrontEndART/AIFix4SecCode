@@ -147,8 +147,8 @@ export class ExtendedWebview {
           if('rightContent' in this.params && 'leftPath' in this.params && 'patchPath' in this.params){
           if(sevent.contents.right.replace(/\r\n/g, "\n") === this.params.rightContent.replace(/\r\n/g, "\n"))
           {
-            //No manual change
-            updateUserDecisions('applied', this.params.patchPath!, this.params.leftPath!);
+            // //No manual change
+            // updateUserDecisions('applied', this.params.patchPath!, this.params.leftPath!);
           } else {
             //Manual change
             let guid = Guid.newGuid();
