@@ -44,7 +44,7 @@ public class Utils {
 
     public static Map<String, String> getWarningMappingFromProp(Properties properties) {
         Map<String, String> warningMap = new HashMap<>();
-        List<String> mappingPropertyNames = properties.keySet().stream().filter(p -> p.toString().startsWith("mapping")).map(pObj -> pObj.toString()).collect(Collectors.toList());
+        List<String> mappingPropertyNames = properties.keySet().stream().filter(p -> p.toString().startsWith("mapping.")).map(pObj -> pObj.toString()).collect(Collectors.toList());
         for(String mappingKey : mappingPropertyNames) {
             warningMap.put(mappingKey.replaceFirst("^mapping.", ""), properties.getProperty(mappingKey));
         }
@@ -52,53 +52,61 @@ public class Utils {
         return  warningMap;
     }
 
+    public static Map<String, Map<String, String>> getFixStrategies(Properties properties) {
+        Map<String, Map<String, String>> fixStrategies = new HashMap<>();
+        List<String> strategyPropertyNames = properties.keySet().stream().filter(p -> p.toString().startsWith("strategy.")).map(pObj -> pObj.toString()).collect(Collectors.toList());
+        for(String strategyKey : strategyPropertyNames) {
+            String fixStrategyKey = strategyKey.replaceFirst("^strategy.", "");
+            String[] strategies = properties.getProperty(strategyKey).split("\\|");
+            Map<String, String> fixStrategy = new HashMap<>();
+            for(String strategy : strategies) {
+                fixStrategy.put(strategy, properties.getProperty("desc." + strategy));
+            }
+            fixStrategies.put(fixStrategyKey, fixStrategy);
+        }
+        return fixStrategies;
+    }
+
     public static void archiveResults(String patchSavePath, String archivePath, String descriptionPath, String currentTime) {
         File src = new File(patchSavePath);
         File dest = new File(archivePath);
-        File desc = new File(descriptionPath + File.separator + "description.xml");
+        File desc = Paths.get(descriptionPath, "description.xml").toFile();
 
-        try {
+        if (!dest.exists()) {
+            dest.mkdirs();
+        }
+
+        try(FileOutputStream fos = new FileOutputStream(new File(dest, currentTime + ".zip"));
+            ZipOutputStream zos = new ZipOutputStream(fos)) {
             if (!dest.exists()) {
                 Path path = Paths.get(dest.toString());
                 Files.createDirectory(path);
             }
-            FileOutputStream fos = new FileOutputStream(dest + File.separator + currentTime + ".zip");
-            ZipOutputStream zos = new ZipOutputStream(fos);
 
             File[] files = src.listFiles();
             for (File fileToZip : files) {
-                FileInputStream fis = new FileInputStream(fileToZip);
-                ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
-                zos.putNextEntry(zipEntry);
-
-                byte[] bytes = new byte[1024];
-                int length;
-                while ((length = fis.read(bytes)) >= 0) {
-                    zos.write(bytes, 0, length);
-                }
-
-                zos.closeEntry();
-                fis.close();
+                archiveFile(zos, fileToZip);
             }
-            FileInputStream fis = new FileInputStream(desc);
-            ZipEntry zipEntry = new ZipEntry(desc.getName());
-            zos.putNextEntry(zipEntry);
-
-            byte[] bytes = new byte[1024];
-            int length;
-            while ((length = fis.read(bytes)) >= 0) {
-                zos.write(bytes, 0, length);
-            }
-
-            zos.closeEntry();
-            fis.close();
-
-            zos.close();
-            fos.close();
+            archiveFile(zos, desc);
 
         } catch (IOException e) {
             LOG.error("Archive was unsuccessful.");
             LOG.error(e);
         }
+    }
+
+    private static void archiveFile(ZipOutputStream zos, File fileToZip) throws IOException {
+        FileInputStream fis = new FileInputStream(fileToZip);
+        ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
+        zos.putNextEntry(zipEntry);
+
+        byte[] bytes = new byte[1024];
+        int length;
+        while ((length = fis.read(bytes)) >= 0) {
+            zos.write(bytes, 0, length);
+        }
+
+        zos.closeEntry();
+        fis.close();
     }
 }

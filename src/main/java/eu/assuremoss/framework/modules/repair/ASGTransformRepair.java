@@ -23,34 +23,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
 public class ASGTransformRepair implements VulnerabilityRepairer {
     private static final Logger LOG = LogManager.getLogger(ASGTransformRepair.class);
-    private static final Map<String, Map<String, String>> FIX_STRATEGIES = new HashMap<>();
+
     private static int PATCH_COUNTER = 1;
 
-    static {
-        FIX_STRATEGIES.put("EI_EXPOSE_REP2", Map.of(
-                "EI_EXPOSE_REP2_ARRAY", "Repair with Arrays.copyOf",
-                "EI_EXPOSE_REP2_DATEOBJECT", "Repair with creating new Date",
-                "EI_EXPOSE_REP2", "Repair with clone"));
-        FIX_STRATEGIES.put("MS_SHOULD_BE_FINAL", Map.of(
-                "MS_SHOULD_BE_FINAL","Repair with adding final"));
-        FIX_STRATEGIES.put("NP_NULL_ON_SOME_PATH", Map.of(
-                "NP_NULL_ON_SOME_PATH","Repair with null-check in ternary"));
-        FIX_STRATEGIES.put("NP_NULL_ON_SOME_PATH_EXCEPTION", Map.of(
-                "NP_NULL_ON_SOME_PATH_EXCEPTION", "Repair with null-check in ternary"));
-    }
-
-    private final String projectName;
     private final String projectPath;
     private final String resultsPath;
     private final String descriptionPath;
     private final String patchSavePath;
+    private final Map<String, Map<String, String>> fixStrategies;
 
     private File generateDescription(VulnerabilityEntry vulnerabilityEntry, List<CodeModel> codeModels, String strategy) {
         File descriptionLocation = new File(descriptionPath);
@@ -133,7 +119,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     @Override
     public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
         List<Pair<File, Pair<Patch<String>, String>>> resList = new ArrayList<>();
-        for (String strategy : FIX_STRATEGIES.get(ve.getType()).keySet()) {
+        for (String strategy : fixStrategies.get(ve.getType()).keySet()) {
             generateDescription(ve, codeModels, strategy);
 
             String patchPath = Paths.get(patchSavePath, "repair_patch" + PATCH_COUNTER++ + ".diff").toString();
@@ -149,7 +135,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
                 Patch<String> patch = UnifiedDiffUtils.parseUnifiedDiff(patchLines);
                 resList.add(new Pair<>(
                         new File(ve.getPath()),
-                        new Pair<>(patch, FIX_STRATEGIES.get(ve.getType()).get(strategy))
+                        new Pair<>(patch, fixStrategies.get(ve.getType()).get(strategy))
                 ));
             } catch (IOException e) {
                 e.printStackTrace();
