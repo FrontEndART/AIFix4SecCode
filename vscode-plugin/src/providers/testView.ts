@@ -44,6 +44,52 @@ export class TestView {
 
 async function initTree() {
   tree = await getIssues();
+  groupTreeToDistinctGroups(tree);
+  console.log(tree);
+}
+
+function groupTreeToDistinctGroups(tree: any) {
+  Object.keys(tree).forEach((key) => {
+    let patchesOfKey = getAllPatchesOfKey(key);
+    if (tree[key]) {
+      if (tree[key].patches.length < patchesOfKey.length) {
+        tree[key].patches = patchesOfKey;
+        deleteDuplicateKeys(key);
+      }
+    }
+  });
+}
+
+function getAllPatchesOfKey(_key: any) {
+  let duplicateKey = "";
+  let patches: any = [];
+  if (_key.includes("#")) {
+    duplicateKey = _key.substring(0, _key.indexOf("#"));
+  }
+
+  Object.keys(tree).forEach((key) => {
+    if (key.includes("#")) {
+      if (key.substring(0, key.indexOf("#")) === duplicateKey) {
+        patches = patches.concat(tree[key].patches);
+      }
+    }
+  });
+
+  return patches;
+}
+
+function deleteDuplicateKeys(_key: any) {
+  let counter = 0;
+
+  Object.keys(tree).forEach((key) => {
+    let _keyWithoutId = _key.substring(0, _key.indexOf("#"));
+    let keyWithoutId = key.substring(0, key.indexOf("#"));
+    if (counter > 0 && _keyWithoutId === keyWithoutId) {
+      delete tree[key];
+    }
+
+    counter++;
+  });
 }
 
 let nodes: string[] = [];
@@ -66,16 +112,16 @@ class NodeWithIdTreeDataProvider
     this._onDidChangeTreeData.fire();
   }
 
-  getChildren(element: { key: string }): { key: string }[] {
-    return getChildren(element ? element.key : undefined!).map((key) =>
-      getNode(key)
-    );
-  }
-
   getTreeItem(element: { key: string }): vscode.TreeItem {
     const treeItem = getTreeItem(element.key);
     treeItem.id = (++counter).toString();
     return treeItem;
+  }
+
+  getChildren(element: { key: string }): { key: string }[] {
+    let children = getChildren(element ? element.key : undefined!);
+    let childrenNodes = children.map((key: any) => getNode(key));
+    return childrenNodes;
   }
 
   getParent({ key }: { key: string }): { key: string } {
@@ -88,7 +134,7 @@ function getChildren(key: string) {
   if (!key) {
     return Object.keys(tree);
   } else {
-    return [];
+    return tree[key].patches.map((patch: any) => patch["path"]);
   }
 }
 
@@ -98,45 +144,90 @@ function getTreeItem(key: string): vscode.TreeItem {
     `$(zap) Click to show the source of ${key}`,
     true
   );
-  let itemLabel = "";
-  if (treeElement) {
-    itemLabel = <any>{
-      label: "Found " + key,
-      highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0,
+
+  if (treeElement.patches) {
+    let itemLabel = "";
+    if (treeElement) {
+      itemLabel = <any>{
+        label: key,
+        highlights:
+          key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0,
+      };
+    }
+    return {
+      label: itemLabel,
+      tooltip,
+      command: {
+        title: "Open patch",
+        command: "aifix4seccode-vscode.openUpFile",
+        arguments: [treeElement.patches[0].path],
+      },
+      collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+      iconPath: {
+        light: path.join(
+          __filename,
+          "..",
+          "..",
+          "..",
+          "resources",
+          "icons",
+          "light",
+          "eye.svg"
+        ),
+        dark: path.join(
+          __filename,
+          "..",
+          "..",
+          "..",
+          "resources",
+          "icons",
+          "dark",
+          "eye.svg"
+        ),
+      },
+    };
+  } else {
+    let itemLabel = "";
+    if (treeElement) {
+      itemLabel = <any>{
+        label: treeElement.explanation,
+        highlights:
+          key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0,
+      };
+    }
+    return {
+      label: itemLabel,
+      tooltip,
+      command: {
+        title: "Open patch",
+        command: "aifix4seccode-vscode.openUpFile",
+        arguments: [treeElement.path],
+      },
+      collapsibleState: vscode.TreeItemCollapsibleState.None,
+      iconPath: {
+        light: path.join(
+          __filename,
+          "..",
+          "..",
+          "..",
+          "resources",
+          "icons",
+          "light",
+          "screwdriver.svg"
+        ),
+        dark: path.join(
+          __filename,
+          "..",
+          "..",
+          "..",
+          "resources",
+          "icons",
+          "dark",
+          "screwdriver.svg"
+        ),
+      },
     };
   }
-  return {
-    label: itemLabel,
-    tooltip,
-    command: {
-      title: "Open patch",
-      command: "aifix4seccode-vscode.openUpFile",
-      arguments: [treeElement.patches[0].path],
-    },
-    collapsibleState: vscode.TreeItemCollapsibleState.None,
-    iconPath: {
-      light: path.join(
-        __filename,
-        "..",
-        "..",
-        "..",
-        "resources",
-        "icons",
-        "light",
-        "eye.svg"
-      ),
-      dark: path.join(
-        __filename,
-        "..",
-        "..",
-        "..",
-        "resources",
-        "icons",
-        "dark",
-        "eye.svg"
-      ),
-    },
-  };
 }
 
 function getTreeElement(element: any) {
@@ -146,7 +237,15 @@ function getTreeElement(element: any) {
   let parent = tree;
   parent = parent[element];
   if (!parent) {
-    return element;
+    //
+    let issues: any = Object.values(tree);
+    let patch = undefined;
+    let i = 0;
+    while (patch === undefined) {
+      patch = issues[i].patches.find((patch: any) => patch.path === element);
+      i++;
+    }
+    return patch;
   }
   return parent;
 }

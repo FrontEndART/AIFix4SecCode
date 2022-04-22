@@ -629,14 +629,21 @@ export function init(
         throw Error("Unable to find source file in '" + patchFilepath + "'");
       }
 
-      // Saving issues.json and file contents in state,
+      let projectFolder = PROJECT_FOLDER;
+      sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
+      if(process.platform === 'linux' || process.platform === 'darwin'){
+        if(sourceFile[0] !== '/'){
+          sourceFile = '/' + sourceFile;
+        }
+      }
+      // Saving issupath.join(projectFolder, sourceFile)es.json and file contents in state,
       // so later the changes can be reverted if user asks for it:
       saveFileAndFixesToState(
-        path.normalize(path.join(PROJECT_FOLDER, sourceFile))
+        path.normalize(sourceFile)
       );
 
       var sourceFileContent = readFileSync(
-        path.normalize(path.join(PROJECT_FOLDER, sourceFile)),
+        path.normalize(sourceFile),
         "utf8"
       );
 
@@ -658,7 +665,7 @@ export function init(
 
       // 3.
       applyPatchToFile(
-        path.normalize(path.join(PROJECT_FOLDER, sourceFile)),
+        path.normalize(sourceFile),
         patched,
         patchFilepath
       );
