@@ -69,6 +69,7 @@ export class Analyzer implements vscode.CodeActionProvider {
         issues = await getIssues();
         if (issues) {
             Object.values(issues).forEach(issue => {
+                if(issue.textRange.startLine - 1 === range.start.line){
                 const fixRange = issue.textRange;
                 issue.patches.forEach((fix: IFix) => {
                     const fixText = fix.explanation;
@@ -102,11 +103,16 @@ export class Analyzer implements vscode.CodeActionProvider {
                         if(openedFilePath![0] !== '/')
                           openedFilePath = '/' + openedFilePath
                       }
-
-                    if(sourceFilePath === openedFilePath){
-                        commandActions.push(this.createCommand(fixText, fixRange, patchPath));
+                    
+                    let editor = vscode.window.activeTextEditor;
+                    let cursorPosition = editor?.selection.start;
+                    if(cursorPosition){
+                        if(sourceFilePath === openedFilePath && cursorPosition!.line === range.start.line){
+                            commandActions.push(this.createCommand(fixText, fixRange, patchPath));
+                        }
                     }
                 });
+                }
             });
         }
 
