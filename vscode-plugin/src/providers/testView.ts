@@ -148,9 +148,10 @@ function getTreeItem(key: string): vscode.TreeItem {
 
   if (Array.isArray(treeElement)) {
     let itemLabel = "";
+    let labelText = (treeElement.length > 1) ? key + ' (' + treeElement.length + ' issues)' : key + ' (' + treeElement.length + ' issue)';
     if (treeElement) {
       itemLabel = <any>{
-        label: key,
+        label: labelText,
         highlights:
           key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0,
       };
