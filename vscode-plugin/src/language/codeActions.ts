@@ -6,13 +6,13 @@ import { getIssues } from '../services/fakeAiFixCode';
 var path = require('path');
 var upath = require('upath');
 
-let issues: Iissue | undefined;
+let issueGroups: Iissue | undefined;
 let disposableAnalyzerProvider : vscode.Disposable;
 let disposableAnalyzerInfoProvider : vscode.Disposable;
 
 async function initIssues() {
-    issues = await getIssues();
-    console.log(issues);
+    issueGroups = await getIssues();
+    console.log(issueGroups);
 }
 
 export function initActionCommands(context: vscode.ExtensionContext) {
@@ -66,11 +66,12 @@ export class Analyzer implements vscode.CodeActionProvider {
     public async provideCodeActions(document: vscode.TextDocument, range: vscode.Range): Promise<vscode.CodeAction[] | undefined> {
 
         let commandActions: vscode.CodeAction[] = [];
-        issues = await getIssues();
-        if (issues) {
-            Object.values(issues).forEach(issue => {
+        issueGroups = await getIssues();
+        if (issueGroups) {
+            Object.values(issueGroups).forEach(issues => {
+                issues.forEach((issue: any) => {
                 if(issue.textRange.startLine - 1 === range.start.line){
-                const fixRange = issue.textRange;
+                const fixRange = issues.textRange;
                 issue.patches.forEach((fix: IFix) => {
                     const fixText = fix.explanation;
                     const patchPath = fix.path;
@@ -113,6 +114,7 @@ export class Analyzer implements vscode.CodeActionProvider {
                     }
                 });
                 }
+            });
             });
         }
 

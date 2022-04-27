@@ -12,10 +12,10 @@ import { updateUserDecisions } from './commands';
 
 var stringify = require('json-stringify');
 
-let issues: any;
+let issueGroups: any;
 
 async function initIssues() {
-  issues = await getIssues();
+  issueGroups = await getIssues();
 }
 
 const pathDescription: RegExp = /((.|\n|\r)*)@@\n/g;
@@ -88,16 +88,18 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
           writeFileSync(leftPath, rightContent, utf8Stream);
           // 2.
           initIssues().then(() => {
-            if (issues) {
-              Object.keys(issues).forEach(key => {
-                if (issues[key]!.patches.some((x: any) => x.path === patchPath || patchPath.includes(x.path))) {
-                  delete issues[key];
+            if (issueGroups) {
+              Object.values(issueGroups).forEach((issues: any) => {
+                issues.forEach((issue: any) => {
+                if (issue.patches.some((x: any) => x.path === patchPath || patchPath.includes(x.path))) {
+                  delete issueGroups[issues];
                 }
               });
+            });
             }
-            console.log(issues);
+            console.log(issueGroups);
 
-            let issuesStr = stringify(issues);
+            let issuesStr = stringify(issueGroups);
             console.log(issuesStr);
 
             let issuesPath : string | undefined = '';

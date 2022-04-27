@@ -258,6 +258,8 @@ export function init(
             patchFilepath,
             lastFilePath
           );
+
+          getOutputFromAnalyzer();
         }
       });
     });
@@ -329,6 +331,7 @@ export function init(
   function openUpFile(patchPath: string) {
     logging.LogInfo("===== Executing openUpFile command. =====");
     let project_folder = PROJECT_FOLDER;
+    let patch_folder = PATCH_FOLDER;
     if (!PROJECT_FOLDER) {
       SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
     }
@@ -336,7 +339,7 @@ export function init(
     var patch = "";
     try {
       logging.LogInfo("Reading patch from " + PATCH_FOLDER + "/" + patchPath);
-      patch = readFileSync(path.join(PATCH_FOLDER, patchPath), "utf8");
+      patch = readFileSync(upath.join(PATCH_FOLDER, patchPath), "utf8");
     } catch (err) {
       logging.LogErrorAndShowErrorMessage(
         String(err),
@@ -573,18 +576,22 @@ export function init(
 
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
-                vscode.window.withProgress(
-                  {
-                    location: vscode.ProgressLocation.Notification,
-                    title: "Loading Diagnostics...",
-                  },
-                  async () => {
-                    await refreshDiagnostics(
-                      vscode.window.activeTextEditor!.document,
-                      analysisDiagnostics
+                if ("leftPath" in webview.params && "patchPath" in webview.params) {
+                  filterOutIssues(webview.params.patchPath!).then(() => {
+                    vscode.window.withProgress(
+                      {
+                        location: vscode.ProgressLocation.Notification,
+                        title: "Loading Diagnostics...",
+                      },
+                      async () => {
+                        await refreshDiagnostics(
+                          vscode.window.activeTextEditor!.document,
+                          analysisDiagnostics
+                        );
+                      }
                     );
-                  }
-                );
+                  });
+                }
               });
             });
           }
@@ -631,21 +638,16 @@ export function init(
 
       let projectFolder = PROJECT_FOLDER;
       sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
-      if(process.platform === 'linux' || process.platform === 'darwin'){
-        if(sourceFile[0] !== '/'){
-          sourceFile = '/' + sourceFile;
+      if (process.platform === "linux" || process.platform === "darwin") {
+        if (sourceFile[0] !== "/") {
+          sourceFile = "/" + sourceFile;
         }
       }
       // Saving issupath.join(projectFolder, sourceFile)es.json and file contents in state,
       // so later the changes can be reverted if user asks for it:
-      saveFileAndFixesToState(
-        path.normalize(sourceFile)
-      );
+      saveFileAndFixesToState(path.normalize(sourceFile));
 
-      var sourceFileContent = readFileSync(
-        path.normalize(sourceFile),
-        "utf8"
-      );
+      var sourceFileContent = readFileSync(path.normalize(sourceFile), "utf8");
 
       // 2.
       var destinationFileMatch = /\+\+\+ ([^ \n\r\t]+).*/.exec(
@@ -664,11 +666,8 @@ export function init(
       console.log(patched);
 
       // 3.
-      applyPatchToFile(
-        path.normalize(sourceFile),
-        patched,
-        patchFilepath
-      );
+      applyPatchToFile(path.normalize(sourceFile), patched, patchFilepath);
+      filterOutIssues(patchFilepath);
 
       // 4.
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
@@ -793,26 +792,23 @@ export function init(
       const webview = getActiveDiffPanelWebview();
 
       Object.keys(issues).forEach((key) => {
-        // if (
-        //   issues[key]!.patches.some(
-        //     (x: any) => x.path === patchPath! || patchPath!.includes(x.path)
-        //   )
-        // ) {
-        //   delete issues[key];
-        // }
-
         let patchFolder = PATCH_FOLDER;
-        issues[key]!.patches = issues[key]!.patches.filter(
-          (x: any) => !patchPath!.includes(x.path)
-        );
-        if (!issues[key]!.patches.length) {
-          delete issues[key];
-        }
+
+        issues[key].forEach((issue: any) => {
+          issue.patches.forEach((patch: any) => {
+            if (patch.path === patchPath || patchPath.includes(patch.path)) {
+              issues[key].splice(issues[key].indexOf(issue), 1);
+              if (!issues[key].length) {
+                delete issues[key];
+              }
+            }
+          });
+        });
       });
+      // if (!tree[key].patches.length) {
+      //     delete tree[key];
+      // }
     }
-
-    console.log(issues);
-
     let issuesStr = stringify(issues);
     console.log(issuesStr);
 
@@ -912,9 +908,8 @@ export function init(
         throw Error("Unable to find source file in '" + patchFilepath + "'");
       }
       var leftPath = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
-      if(process.platform === 'linux' || process.platform === 'darwin'){
-        if(leftPath[0] !== '/')
-          leftPath = '/' + leftPath
+      if (process.platform === "linux" || process.platform === "darwin") {
+        if (leftPath[0] !== "/") leftPath = "/" + leftPath;
       }
       let fixes = await fakeAiFixCode.getFixes(leftPath);
       console.log(fixes);
@@ -923,22 +918,21 @@ export function init(
         nextFixId = nextFixId > 0 ? 0 : fixes.length - 1;
       }
 
-      let fixPath = upath.normalize(upath.join(PATCH_FOLDER, fixes[nextFixId].path))
-      if(process.platform === 'linux' || process.platform === 'darwin'){
-        if(fixPath[0] !== '/')
-          fixPath = '/' + fixPath
+      let fixPath = upath.normalize(
+        upath.join(PATCH_FOLDER, fixes[nextFixId].path)
+      );
+      if (process.platform === "linux" || process.platform === "darwin") {
+        if (fixPath[0] !== "/") fixPath = "/" + fixPath;
       }
 
-      vscode.workspace
-        .openTextDocument(fixPath)
-        .then((document) => {
-          vscode.window.showTextDocument(document).then(() => {
-            context.workspaceState.update(
-              "openedPatchPath",
-              JSON.stringify(fixPath)
-            );
-          });
+      vscode.workspace.openTextDocument(fixPath).then((document) => {
+        vscode.window.showTextDocument(document).then(() => {
+          context.workspaceState.update(
+            "openedPatchPath",
+            JSON.stringify(fixPath)
+          );
         });
+      });
       currentFixId = nextFixId;
     }
   }
@@ -984,7 +978,10 @@ export function init(
 
     var patch = "";
     try {
-      patch = readFileSync(upath.normalize(upath.join(outputFolder, patchPath)), "utf8");
+      patch = readFileSync(
+        upath.normalize(upath.join(outputFolder, patchPath)),
+        "utf8"
+      );
     } catch (err) {
       console.log(err);
     }
@@ -997,11 +994,11 @@ export function init(
     }
 
     sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
-      if (process.platform === "linux" || process.platform === "darwin") {
-        if (sourceFile[0] !== "/") {
-          sourceFile = "/" + sourceFile;
-        }
+    if (process.platform === "linux" || process.platform === "darwin") {
+      if (sourceFile[0] !== "/") {
+        sourceFile = "/" + sourceFile;
       }
+    }
 
     var original = readFileSync(sourceFile, "utf8");
     return original;
