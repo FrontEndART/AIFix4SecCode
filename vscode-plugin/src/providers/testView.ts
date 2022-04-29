@@ -44,7 +44,7 @@ export class TestView {
 
 async function initTree() {
   tree = await getIssues();
-  groupTreeToDistinctGroups(tree);
+  //groupTreeToDistinctGroups(tree);
   console.log(tree);
 }
 
@@ -134,7 +134,8 @@ function getChildren(key: string) {
   if (!key) {
     return Object.keys(tree);
   } else {
-    return tree[key].patches.map((patch: any) => patch["path"]);
+    //tree[key].map((issue: any) => patches = patches.concat(issue.patches.map((patch: any) => patch["path"])))
+    return Object.keys(tree[key]).map((index: any) => key + '#' + (parseInt(index) + 1).toString());
   }
 }
 
@@ -145,11 +146,12 @@ function getTreeItem(key: string): vscode.TreeItem {
     true
   );
 
-  if (treeElement.patches) {
+  if (Array.isArray(treeElement)) {
     let itemLabel = "";
+    let labelText = (treeElement.length > 1) ? key + ' (' + treeElement.length + ' issues)' : key + ' (' + treeElement.length + ' issue)';
     if (treeElement) {
       itemLabel = <any>{
-        label: key,
+        label: labelText,
         highlights:
           key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0,
       };
@@ -160,7 +162,7 @@ function getTreeItem(key: string): vscode.TreeItem {
       command: {
         title: "Open patch",
         command: "aifix4seccode-vscode.openUpFile",
-        arguments: [treeElement.patches[0].path],
+        arguments: [treeElement[0].patches[0].path],
       },
       collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
       iconPath: {
@@ -190,7 +192,7 @@ function getTreeItem(key: string): vscode.TreeItem {
     let itemLabel = "";
     if (treeElement) {
       itemLabel = <any>{
-        label: treeElement.explanation,
+        label: key,
         highlights:
           key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0,
       };
@@ -239,13 +241,13 @@ function getTreeElement(element: any) {
   if (!parent) {
     //
     let issues: any = Object.values(tree);
-    let patch = undefined;
-    let i = 0;
-    while (patch === undefined) {
-      patch = issues[i].patches.find((patch: any) => patch.path === element);
-      i++;
-    }
-    return patch;
+    //let patch = undefined;
+    //let i = 0;
+    //while (patch === undefined) {
+      //patch = issues[i].map((issue: any) => issue.patches.find((patch: any) => patch.path === element)).filter((x: any) => x !== undefined)[0]
+      //i++;
+    //}
+    return issues[Object.keys(tree).indexOf(element.split('#')[0])][0].patches[0];
   }
   return parent;
 }
@@ -262,14 +264,23 @@ function filterTree(patchPath: string) {
     // if (tree[key].patches.some((x: any) => x.path === patchPath || patchPath.includes(x.path))) {
     // 	delete tree[key];
     // }
-    tree[key]!.patches = tree[key]!.patches.filter(
-      (x: any) => x.path !== patchPath! || !patchPath!.includes(x.path)
-    );
-    if (!tree[key]!.patches.length) {
-      delete tree[key];
-    }
-  });
-  console.log(tree);
+    //tree[key].patches = tree[key].patches.filter((x) => x.path !== patchPath || !patchPath.includes(x.path));
+    tree[key].forEach((issue: any) => {
+        issue.patches.forEach((patch: any) => {
+            if(patch.path === patchPath || patchPath.includes(patch.path))
+            {
+                tree[key].splice(tree[key].indexOf(issue), 1);
+                if(!tree[key].length){
+                    delete tree[key];
+                }
+            }
+        })
+    })
+    // if (!tree[key].patches.length) {
+    //     delete tree[key];
+    // }
+});
+console.log(tree);
 }
 
 class Key {
