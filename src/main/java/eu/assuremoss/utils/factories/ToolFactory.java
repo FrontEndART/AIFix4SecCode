@@ -1,24 +1,22 @@
 package eu.assuremoss.utils.factories;
 
-import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
 import eu.assuremoss.framework.modules.repair.ASGTransformRepair;
-import eu.assuremoss.utils.Configuration;
 import eu.assuremoss.utils.Utils;
 
 import java.nio.file.Paths;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Properties;
 
 import static eu.assuremoss.utils.Configuration.*;
 
 public class ToolFactory {
     public static OpenStaticAnalyzer createOsa(Properties properties) {
+        String osaPath = String.valueOf(Paths.get(properties.getProperty(OSA_PATH_KEY), "Java"));
         return new OpenStaticAnalyzer(
-                properties.getProperty(OSA_PATH_KEY),
+                osaPath,
                 properties.getProperty(OSA_EDITION_KEY),
-                String.valueOf(Paths.get(properties.getProperty(OSA_PATH_KEY), (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows") ? "WindowsTools" : "LinuxTools"))),
+                String.valueOf(Paths.get(osaPath, (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows") ? "WindowsTools" : "LinuxTools"))),
                 "JAN2ChangePath",
                 properties.getProperty(RESULTS_PATH_KEY),
                 properties.getProperty(VALIDATION_RESULTS_PATH_KEY),
