@@ -49,12 +49,6 @@ public class VulnRepairDriver {
     public void bootstrap(Properties props) {
         LOG.info("Start!");
 
-        boolean archiveEnabled = Boolean.parseBoolean(props.getProperty(ARCHIVE_ENABLED));
-        String archivePath = props.getProperty(ARCHIVE_PATH);
-        String descriptionPath = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "osa_xml"));
-        String patchSavePath = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "patches"));
-
-
         try {
             Files.createDirectory(Paths.get(props.getProperty(RESULTS_PATH_KEY)));
         } catch (IOException e) {
@@ -96,10 +90,10 @@ public class VulnRepairDriver {
                 }
                 comp.revertPatch(patch, scc.getSourceCodeLocation());
             }
-            File patchSavePathDir = new File(patchSavePath);
+            File patchSavePathDir = new File(patchSavePath(props));
             if (!patchSavePathDir.exists()) {
                 try {
-                    Files.createDirectory(Paths.get(patchSavePath));
+                    Files.createDirectory(Paths.get(patchSavePath(props)));
                 } catch (IOException e) {
                     LOG.error("Failed to create directory for patches.");
                 }
@@ -116,7 +110,7 @@ public class VulnRepairDriver {
 
                 // Dump the patch and generate the necessary meta-info json as well with vulnerability/patch candidate mapping for the VS Code plug-in
                 String patchName = MessageFormat.format("patch_{0}_{1}_{2}_{3}_{4}_{5}.diff", patchCounter++, ve.getType(), ve.getStartLine(), ve.getEndLine(), ve.getStartCol(), ve.getEndCol());
-                try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath, patchName)))) {
+                try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath(props), patchName)))) {
                     List<String> unifiedDiff =
                             UnifiedDiffUtils.generateUnifiedDiff(path.getPath(), path.getPath(),
                                     Arrays.asList(Files.readString(Path.of(path.getAbsolutePath())).split("\n")), patch, 2);
@@ -173,7 +167,7 @@ public class VulnRepairDriver {
             vsCodeConfig.put(ve.getType() + problemTypeCount, issueObject);
         }
 
-        try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath, "vscode-config.json")))) {
+        try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath(props), "vscode-config.json")))) {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             JsonElement element = JsonParser.parseString(vsCodeConfig.toJSONString());
             fw.write(gson.toJson(element));
@@ -181,10 +175,10 @@ public class VulnRepairDriver {
             e.printStackTrace();
         }
 
-        if (archiveEnabled) {
-            Utils.archiveResults(patchSavePath, archivePath, descriptionPath, currentTime);
+        if (archiveEnabled(props)) {
+            Utils.archiveResults(patchSavePath(props), props.getProperty(ARCHIVE_PATH), descriptionPath(props), currentTime);
         }
 
-        Utils.deleteIntermediatePatches(patchSavePath);
+        Utils.deleteIntermediatePatches(patchSavePath(props));
     }
 }

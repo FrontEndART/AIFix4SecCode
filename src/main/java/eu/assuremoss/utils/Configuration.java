@@ -8,6 +8,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 
@@ -68,5 +69,18 @@ public class Configuration {
         try (InputStream stream = loader.getResourceAsStream(fileName)) {
             properties.load(stream);
         }
+    }
+
+
+    public static boolean archiveEnabled(Properties props) {
+        return Boolean.parseBoolean(props.getProperty(ARCHIVE_ENABLED));
+    }
+
+    public static String descriptionPath(Properties props) {
+        return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "osa_xml"));
+    }
+
+    public static String patchSavePath(Properties props) {
+        return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "patches"));
     }
 }
