@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static eu.assuremoss.utils.Configuration.DEFAULT_CONFIG_FILE_NAME;
+
 public class Utils {
     private static final Logger LOG = LogManager.getLogger(Utils.class);
 
@@ -108,5 +110,13 @@ public class Utils {
 
         zos.closeEntry();
         fis.close();
+    }
+
+    public static String getConfigFile(String[] args) {
+        if (args.length > 0) {
+            return args[1];
+        }
+
+        return DEFAULT_CONFIG_FILE_NAME;
     }
 }
