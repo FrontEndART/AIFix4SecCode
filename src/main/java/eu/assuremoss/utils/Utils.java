@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static eu.assuremoss.utils.Configuration.DEFAULT_CONFIG_FILE_NAME;
+import static eu.assuremoss.utils.Configuration.*;
+import static eu.assuremoss.utils.Configuration.patchSavePath;
 
 public class Utils {
     private static final Logger LOG = LogManager.getLogger(Utils.class);
@@ -26,12 +27,13 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-                LOG.info("Deleting " + file.getName());
+//                LOG.info("Deleting " + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);
             }
         }
+        System.out.println("INFO - Intermediate patches deleted!");
     }
 
     public static String getExtension() {
@@ -119,4 +121,24 @@ public class Utils {
 
         return DEFAULT_CONFIG_FILE_NAME;
     }
+
+    public static void createDirectoryForResults(Properties props) {
+        try {
+            Files.createDirectory(Paths.get(props.getProperty(RESULTS_PATH_KEY)));
+        } catch (IOException e) {
+            LOG.info("Unable to create results folder.");
+        }
+    }
+
+    public static void createDirectoryForPatches(Properties props) {
+        File patchSavePathDir = new File(patchSavePath(props));
+        if (!patchSavePathDir.exists()) {
+            try {
+                Files.createDirectory(Paths.get(patchSavePath(props)));
+            } catch (IOException e) {
+                LOG.error("Failed to create directory for patches.");
+            }
+        }
+    }
+
 }

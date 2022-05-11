@@ -38,6 +38,7 @@ import static eu.assuremoss.utils.Utils.getConfigFile;
  */
 public class VulnRepairDriver {
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
+    private int patchCounter = 1;
 
     public static void main(String[] args) throws IOException {
         VulnRepairDriver driver = new VulnRepairDriver();
@@ -49,122 +50,54 @@ public class VulnRepairDriver {
     public void bootstrap(Properties props) {
         LOG.info("Start!");
 
-        try {
-            Files.createDirectory(Paths.get(props.getProperty(RESULTS_PATH_KEY)));
-        } catch (IOException e) {
-            LOG.info("Unable to create results folder.");
-        }
-
+        // 0. Setup
+        Utils.createDirectoryForResults(props);
         String currentTime = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
+        // 1. Get source code
         SourceCodeCollector scc = new LocalSourceFolder(props.getProperty(PROJECT_PATH_KEY));
         scc.collectSourceCode();
 
+        // 2. Analyze source code
         CodeAnalyzer osa = ToolFactory.createOsa(props);
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation(), false);
-        codeModels.stream().forEach(cm -> LOG.debug(cm.getType() + ":" + cm.getModelPath()));
 
-        VulnerabilityDetector vd = ToolFactory.createOsa(props);
-        List<VulnerabilityEntry> vulnerabilityLocations = vd.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
-        vulnerabilityLocations.forEach(ve -> System.out.println(ve.getType() + " -> " + ve.getStartLine()));
+        // 2. Produces :- ASG
+        VulnerabilityRepairer vulnRepairer = ToolFactory.createASGTransformRepair(props);
 
-        VulnerabilityRepairer vr = ToolFactory.createASGTransformRepair(props);
-        int patchCounter = 1;
+        // 3. Detect vulnerabilities
+        VulnerabilityDetector vulnDetector = ToolFactory.createOsa(props);
+
+        // 3. Produces :- vulnerability locations
+        List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
+
+        // == Transform code / repair ==
         Map<String, Integer> problemTypeCounter = new HashMap<>();
         JSONObject vsCodeConfig = new JSONObject();
 
-        for (VulnerabilityEntry ve : vulnerabilityLocations) {
-            List<Pair<File, Pair<Patch<String>, String>>> patches = vr.generateRepairPatches(scc.getSourceCodeLocation(), ve, codeModels);
-            LOG.debug(String.valueOf(patches));
+        int vulnIndex = 1;
+        for (VulnerabilityEntry vulnEntry : vulnerabilityLocations) {
+            // - Init -
             PatchCompiler comp = new MavenPatchCompiler();
+
+            // == n. Vulnerability ==
+            showVulnerabilityID(vulnEntry, vulnIndex++);
+
+            // - Generate repair patches -
+            List<Pair<File, Pair<Patch<String>, String>>> patches = vulnRepairer.generateRepairPatches(scc.getSourceCodeLocation(), vulnEntry, codeModels);
+
+            //  - Applying & Compiling patches -
+            System.out.printf(" = Applying & Compiling patches (%d) = \n", patches.size());
             List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
-            PatchValidator pv = ToolFactory.createOsa(props);
 
-            List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = new ArrayList<>();
-            for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : filteredPatches) {
-                Patch<String> rawPatch = patchWithExplanation.getB().getA();
-                Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
-                comp.applyPatch(patch, scc.getSourceCodeLocation());
-                if (pv.validatePatch(scc.getSourceCodeLocation(), ve, patch)) {
-                    candidatePatches.add(patchWithExplanation);
-                }
-                comp.revertPatch(patch, scc.getSourceCodeLocation());
-            }
-            File patchSavePathDir = new File(patchSavePath(props));
-            if (!patchSavePathDir.exists()) {
-                try {
-                    Files.createDirectory(Paths.get(patchSavePath(props)));
-                } catch (IOException e) {
-                    LOG.error("Failed to create directory for patches.");
-                }
-            }
-            LOG.debug(String.valueOf(candidatePatches));
-            if (candidatePatches.isEmpty()) {
-                continue;
-            }
-            JSONArray patchesArray = new JSONArray();
-            for (int i = 0; i < candidatePatches.size(); i++) {
-                File path = candidatePatches.get(i).getA();
-                Patch<String> patch = candidatePatches.get(i).getB().getA();
-                String explanation = candidatePatches.get(i).getB().getB();
+            //  - Testing Patches -
+            List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, comp, filteredPatches);
 
-                // Dump the patch and generate the necessary meta-info json as well with vulnerability/patch candidate mapping for the VS Code plug-in
-                String patchName = MessageFormat.format("patch_{0}_{1}_{2}_{3}_{4}_{5}.diff", patchCounter++, ve.getType(), ve.getStartLine(), ve.getEndLine(), ve.getStartCol(), ve.getEndCol());
-                try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath(props), patchName)))) {
-                    List<String> unifiedDiff =
-                            UnifiedDiffUtils.generateUnifiedDiff(path.getPath(), path.getPath(),
-                                    Arrays.asList(Files.readString(Path.of(path.getAbsolutePath())).split("\n")), patch, 2);
+            // - Save patches -
+            Utils.createDirectoryForPatches(props);
+            if (candidatePatches.isEmpty()) continue;
 
-                    // make the path in the patch file relative to the project path
-                    for (int j = 0; j < 2; j++) {
-                        String line = unifiedDiff.get(j);
-
-                        String regex = props.getProperty(PROJECT_PATH_KEY);
-                        regex = regex.replaceAll("\\\\", "\\\\\\\\");
-
-                        String[] lineParts = line.split(regex);
-                        if (lineParts[1].charAt(0) == '\\' || lineParts[1].charAt(0) == '/') {
-                            lineParts[1] = lineParts[1].substring(1);
-                        }
-
-                        unifiedDiff.set(j, lineParts[0] + lineParts[1]);
-                    }
-
-                    String diffString = Joiner.on("\n").join(unifiedDiff) + "\n";
-                    patchWriter.write(diffString);
-
-                    JSONObject patchObject = new JSONObject();
-                    patchObject.put("path", patchName);
-                    patchObject.put("explanation", explanation);
-                    patchObject.put("score", 10);
-                    patchesArray.add(patchObject);
-                } catch (IOException e) {
-                    LOG.error("Failed to save candidate patch: " + patch);
-                }
-            }
-            JSONObject issueObject = new JSONObject();
-
-            JSONObject textRangeObject = new JSONObject();
-            textRangeObject.put("startLine", ve.getStartLine());
-            textRangeObject.put("endLine", ve.getEndLine());
-            textRangeObject.put("startColumn", ve.getStartCol() - 1);
-            textRangeObject.put("endColumn", ve.getEndCol() - 1);
-
-            issueObject.put("patches", patchesArray);
-            issueObject.put("textRange", textRangeObject);
-
-            String problemTypeCount;
-            if (problemTypeCounter.get(ve.getType()) == null) {
-                problemTypeCounter.put(ve.getType(), 1);
-                problemTypeCount = "";
-            } else {
-                int n = problemTypeCounter.get(ve.getType());
-                n++;
-                problemTypeCounter.put(ve.getType(), n);
-                problemTypeCount = "#" + n;
-            }
-
-            vsCodeConfig.put(ve.getType() + problemTypeCount, issueObject);
+            savePatches(props, problemTypeCounter, vsCodeConfig, vulnEntry, candidatePatches);
         }
 
         try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath(props), "vscode-config.json")))) {
@@ -181,4 +114,100 @@ public class VulnRepairDriver {
 
         Utils.deleteIntermediatePatches(patchSavePath(props));
     }
+
+    private void showVulnerabilityID(VulnerabilityEntry vulnEntry, int vulnIndex) {
+        System.out.printf("\n == %d. VULNERABILITY == \n", vulnIndex);
+        System.out.println(" Description: " + vulnEntry.getDescription());
+        System.out.println();
+    }
+
+    private List<Pair<File, Pair<Patch<String>, String>>> getCandidatePatches(Properties props, SourceCodeCollector scc, VulnerabilityEntry vulnEntry, PatchCompiler comp, List<Pair<File, Pair<Patch<String>, String>>> filteredPatches) {
+        System.out.printf("\n = Testing Patches (%d) = \n", filteredPatches.size());
+
+        List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = new ArrayList<>();
+        PatchValidator patchValidator = ToolFactory.createOsa(props);
+        int patchIndex = 1;
+
+        for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : filteredPatches) {
+            System.out.printf(" -> %d. Patch\n", patchIndex++);
+
+            Patch<String> rawPatch = patchWithExplanation.getB().getA();
+            Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
+
+            comp.applyPatch(patch, scc.getSourceCodeLocation());
+            if (patchValidator.validatePatch(scc.getSourceCodeLocation(), vulnEntry, patch)) {
+                candidatePatches.add(patchWithExplanation);
+            }
+            comp.revertPatch(patch, scc.getSourceCodeLocation());
+        }
+
+        return candidatePatches;
+    }
+
+    private void savePatches(Properties props, Map<String, Integer> problemTypeCounter, JSONObject vsCodeConfig, VulnerabilityEntry vulnEntry, List<Pair<File, Pair<Patch<String>, String>>> candidatePatches) {
+        JSONArray patchesArray = new JSONArray();
+        for (int i = 0; i < candidatePatches.size(); i++) {
+            File path = candidatePatches.get(i).getA();
+            Patch<String> patch = candidatePatches.get(i).getB().getA();
+            String explanation = candidatePatches.get(i).getB().getB();
+
+            // Dump the patch and generate the necessary meta-info json as well with vulnerability/patch candidate mapping for the VS Code plug-in
+            String patchName = MessageFormat.format("patch_{0}_{1}_{2}_{3}_{4}_{5}.diff", patchCounter++, vulnEntry.getType(), vulnEntry.getStartLine(), vulnEntry.getEndLine(), vulnEntry.getStartCol(), vulnEntry.getEndCol());
+            try (PrintWriter patchWriter = new PrintWriter(String.valueOf(Paths.get(patchSavePath(props), patchName)))) {
+                List<String> unifiedDiff =
+                        UnifiedDiffUtils.generateUnifiedDiff(path.getPath(), path.getPath(),
+                                Arrays.asList(Files.readString(Path.of(path.getAbsolutePath())).split("\n")), patch, 2);
+
+                // make the path in the patch file relative to the project path
+                for (int j = 0; j < 2; j++) {
+                    String line = unifiedDiff.get(j);
+
+                    String regex = props.getProperty(PROJECT_PATH_KEY);
+                    regex = regex.replaceAll("\\\\", "\\\\\\\\");
+
+                    String[] lineParts = line.split(regex);
+                    if (lineParts[1].charAt(0) == '\\' || lineParts[1].charAt(0) == '/') {
+                        lineParts[1] = lineParts[1].substring(1);
+                    }
+
+                    unifiedDiff.set(j, lineParts[0] + lineParts[1]);
+                }
+
+                String diffString = Joiner.on("\n").join(unifiedDiff) + "\n";
+                patchWriter.write(diffString);
+
+                JSONObject patchObject = new JSONObject();
+                patchObject.put("path", patchName);
+                patchObject.put("explanation", explanation);
+                patchObject.put("score", 10);
+                patchesArray.add(patchObject);
+            } catch (IOException e) {
+                LOG.error("Failed to save candidate patch: " + patch);
+            }
+        }
+        JSONObject issueObject = new JSONObject();
+
+        JSONObject textRangeObject = new JSONObject();
+        textRangeObject.put("startLine", vulnEntry.getStartLine());
+        textRangeObject.put("endLine", vulnEntry.getEndLine());
+        textRangeObject.put("startColumn", vulnEntry.getStartCol() - 1);
+        textRangeObject.put("endColumn", vulnEntry.getEndCol() - 1);
+
+        issueObject.put("patches", patchesArray);
+        issueObject.put("textRange", textRangeObject);
+
+        String problemTypeCount;
+        if (problemTypeCounter.get(vulnEntry.getType()) == null) {
+            problemTypeCounter.put(vulnEntry.getType(), 1);
+            problemTypeCount = "";
+        } else {
+            int n = problemTypeCounter.get(vulnEntry.getType());
+            n++;
+            problemTypeCounter.put(vulnEntry.getType(), n);
+            problemTypeCount = "#" + n;
+        }
+
+        vsCodeConfig.put(vulnEntry.getType() + problemTypeCount, issueObject);
+    }
+
 }

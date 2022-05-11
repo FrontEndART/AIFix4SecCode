@@ -51,7 +51,7 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
         try (PrintStream buffer = new PrintStream(baos, true, utf8)) {
             cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer);
             String mvnOutput = baos.toString();
-            LOG.info(mvnOutput);
+            System.out.println("[MVN] Compile finished");
             if (mvnOutput.contains("BUILD SUCCESS")) {
                 return true;
             }

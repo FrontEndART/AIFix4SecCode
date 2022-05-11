@@ -118,6 +118,8 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
 
     @Override
     public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
+        System.out.println(" - Generating repair patches - ");
+
         List<Pair<File, Pair<Patch<String>, String>>> resList = new ArrayList<>();
         for (String strategy : fixStrategies.get(ve.getType()).keySet()) {
             generateDescription(ve, codeModels, strategy);

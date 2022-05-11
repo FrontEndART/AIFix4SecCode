@@ -65,7 +65,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), "target", "dependency")
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
-        runProcess(processBuilder);
+        runProcess(processBuilder, "OSA");
 
         String asgPath = String.valueOf(Paths.get(workingDir,
                 projectName,
@@ -85,20 +85,25 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-to:"
         };
         processBuilder = new ProcessBuilder(command);
-        runProcess(processBuilder);
+        runProcess(processBuilder, "j2c");
+
+        System.out.println("Source code analyzed!");
 
         return resList;
     }
 
-    private void runProcess(ProcessBuilder processBuilder) {
+    private void runProcess(ProcessBuilder processBuilder, String processName) {
         processBuilder.redirectErrorStream(true);
         try {
             Process process = processBuilder.start();
             BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
+
+            System.out.printf("Running %s...%n", processName);
+
             String line;
             while ((line = out.readLine()) != null) {
-                LOG.info(line);
+//                LOG.info(line);
             }
         } catch (IOException e) {
             LOG.error(e);
