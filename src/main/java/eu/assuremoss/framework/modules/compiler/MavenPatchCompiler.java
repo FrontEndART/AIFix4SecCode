@@ -10,9 +10,7 @@ import org.apache.maven.cli.MavenCli;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,13 +65,15 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
     }
 
     @Override
-    public List<Pair<File, Patch<String>>> applyAndCompile(File srcLocation, List<Pair<File, Patch<String>>> patches, boolean runTests) {
-        List<Pair<File, Patch<String>>> filteredPatches = new ArrayList<>();
+    public List<Pair<File, Pair<Patch<String>, String>>> applyAndCompile(File srcLocation, List<Pair<File, Pair<Patch<String>, String>>> patches, boolean runTests) {
+        List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = new ArrayList<>();
 
-        for (Pair<File, Patch<String>> patch : patches) {
+        for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : patches) {
+            Patch<String> rawPatch = patchWithExplanation.getB().getA();
+            Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
             applyPatch(patch, srcLocation);
             if (compile(srcLocation, runTests, false)) {
-                filteredPatches.add(patch);
+                filteredPatches.add(patchWithExplanation);
             }
             revertPatch(patch, srcLocation);
         }

@@ -4,13 +4,15 @@ import { PATCH_FOLDER, PROJECT_FOLDER } from '../constants';
 import { IFix, Iissue, IIssueRange } from '../interfaces';
 import { getIssues } from '../services/fakeAiFixCode';
 var path = require('path');
+var upath = require('upath');
 
-let issues: Iissue | undefined;
+let issueGroups: Iissue | undefined;
 let disposableAnalyzerProvider : vscode.Disposable;
 let disposableAnalyzerInfoProvider : vscode.Disposable;
 
 async function initIssues() {
-    issues = await getIssues();
+    issueGroups = await getIssues();
+    console.log(issueGroups);
 }
 
 export function initActionCommands(context: vscode.ExtensionContext) {
@@ -61,13 +63,15 @@ export class Analyzer implements vscode.CodeActionProvider {
         vscode.CodeActionKind.QuickFix
     ];
 
-    public provideCodeActions(document: vscode.TextDocument, range: vscode.Range): vscode.CodeAction[] | undefined {
+    public async provideCodeActions(document: vscode.TextDocument, range: vscode.Range): Promise<vscode.CodeAction[] | undefined> {
 
         let commandActions: vscode.CodeAction[] = [];
-        
-        if (issues) {
-            Object.values(issues).forEach(issue => {
-                const fixRange = issue.textRange;
+        issueGroups = await getIssues();
+        if (issueGroups) {
+            Object.values(issueGroups).forEach(issues => {
+                issues.forEach((issue: any) => {
+                if(issue.textRange.startLine - 1 === range.start.line){
+                const fixRange = issues.textRange;
                 issue.patches.forEach((fix: IFix) => {
                     const fixText = fix.explanation;
                     const patchPath = fix.path;
@@ -91,10 +95,26 @@ export class Analyzer implements vscode.CodeActionProvider {
                     let openedFilePath = vscode.window.activeTextEditor?.document.uri.path;
                     
                     let projectFolder = PROJECT_FOLDER
-                    if(path.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase() === vscode.Uri.file(openedFilePath!).fsPath.toLowerCase()){
-                        commandActions.push(this.createCommand(fixText, fixRange, patchPath));
+
+                    sourceFilePath = upath.normalize(upath.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase())
+                    openedFilePath = upath.normalize(vscode.Uri.file(openedFilePath!).fsPath.toLowerCase())
+                    if(process.platform === 'linux' || process.platform === 'darwin'){
+                        if(sourceFilePath![0] !== '/')
+                          sourceFilePath = '/' + sourceFilePath
+                        if(openedFilePath![0] !== '/')
+                          openedFilePath = '/' + openedFilePath
+                      }
+                    
+                    let editor = vscode.window.activeTextEditor;
+                    let cursorPosition = editor?.selection.start;
+                    if(cursorPosition){
+                        if(sourceFilePath === openedFilePath && cursorPosition!.line === range.start.line){
+                            commandActions.push(this.createCommand(fixText, fixRange, patchPath));
+                        }
                     }
                 });
+                }
+            });
             });
         }
 
