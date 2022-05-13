@@ -13,6 +13,7 @@ import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
 import eu.assuremoss.utils.Configuration;
+import eu.assuremoss.utils.MLogger;
 import eu.assuremoss.utils.Pair;
 import eu.assuremoss.utils.Utils;
 import eu.assuremoss.utils.factories.ToolFactory;
@@ -38,27 +39,32 @@ import static eu.assuremoss.utils.Utils.getConfigFile;
  */
 public class VulnRepairDriver {
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
+    private static MLogger MLOG;
     private int patchCounter = 1;
 
     public static void main(String[] args) throws IOException {
         VulnRepairDriver driver = new VulnRepairDriver();
         Configuration config = new Configuration(getConfigFile(args));
+        MLOG = new MLogger(config.properties, "log.txt");
 
         driver.bootstrap(config.properties);
     }
 
     public void bootstrap(Properties props) {
-        LOG.info("Start!");
+        MLOG.fInfo("Start!");
 
         // 0. Setup
         Utils.createDirectoryForResults(props);
+        Utils.createEmptyLogFile(props);
         String currentTime = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
         // 1. Get source code
+        MLOG.info("Project source acquiring started");
         SourceCodeCollector scc = new LocalSourceFolder(props.getProperty(PROJECT_PATH_KEY));
         scc.collectSourceCode();
 
         // 2. Analyze source code
+        MLOG.info("Code analysis started");
         CodeAnalyzer osa = ToolFactory.createOsa(props);
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation(), false);
 
@@ -70,6 +76,7 @@ public class VulnRepairDriver {
 
         // 3. Produces :- vulnerability locations
         List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
+        MLOG.info(String.format("Detected %d vulnerabilities", vulnerabilityLocations.size()));
 
         // == Transform code / repair ==
         Map<String, Integer> problemTypeCounter = new HashMap<>();
@@ -80,24 +87,26 @@ public class VulnRepairDriver {
             // - Init -
             PatchCompiler comp = new MavenPatchCompiler();
 
-            // == n. Vulnerability ==
-            showVulnerabilityID(vulnEntry, vulnIndex++);
-
             // - Generate repair patches -
+            MLOG.ninfo(String.format("Generating patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> patches = vulnRepairer.generateRepairPatches(scc.getSourceCodeLocation(), vulnEntry, codeModels);
 
             //  - Applying & Compiling patches -
-            System.out.printf(" = Applying & Compiling patches (%d) = \n", patches.size());
+            MLOG.info(String.format("Compiling patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
 
             //  - Testing Patches -
+            MLOG.info(String.format("Verifying patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, comp, filteredPatches);
 
             // - Save patches -
             Utils.createDirectoryForPatches(props);
             if (candidatePatches.isEmpty()) continue;
 
+            MLOG.info(String.format("Writing out patch candidates patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
             savePatches(props, problemTypeCounter, vsCodeConfig, vulnEntry, candidatePatches);
+
+            vulnIndex++;
         }
 
         try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath(props), "vscode-config.json")))) {
@@ -115,22 +124,11 @@ public class VulnRepairDriver {
         Utils.deleteIntermediatePatches(patchSavePath(props));
     }
 
-    private void showVulnerabilityID(VulnerabilityEntry vulnEntry, int vulnIndex) {
-        System.out.printf("\n == %d. VULNERABILITY == \n", vulnIndex);
-        System.out.println(" Description: " + vulnEntry.getDescription());
-        System.out.println();
-    }
-
     private List<Pair<File, Pair<Patch<String>, String>>> getCandidatePatches(Properties props, SourceCodeCollector scc, VulnerabilityEntry vulnEntry, PatchCompiler comp, List<Pair<File, Pair<Patch<String>, String>>> filteredPatches) {
-        System.out.printf("\n = Testing Patches (%d) = \n", filteredPatches.size());
-
         List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = new ArrayList<>();
         PatchValidator patchValidator = ToolFactory.createOsa(props);
-        int patchIndex = 1;
 
         for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : filteredPatches) {
-            System.out.printf(" -> %d. Patch\n", patchIndex++);
-
             Patch<String> rawPatch = patchWithExplanation.getB().getA();
             Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
 

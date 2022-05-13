@@ -27,13 +27,13 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-//                LOG.info("Deleting " + file.getName());
+                // TODO redirect into log file
+                // LOG.info("Deleting " + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);
             }
         }
-        System.out.println("INFO - Intermediate patches deleted!");
     }
 
     public static String getExtension() {
@@ -141,4 +141,14 @@ public class Utils {
         }
     }
 
+    public static void createEmptyLogFile(Properties props) {
+        String fileName = "log.txt";
+        String path = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), fileName));
+
+        try {
+            new FileWriter(path, false); //overwrites file
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
