@@ -39,12 +39,16 @@ import static eu.assuremoss.utils.Utils.getConfigFile;
  */
 public class VulnRepairDriver {
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
-    private static MLogger MLOG;
+    public static MLogger MLOG;
     private int patchCounter = 1;
 
     public static void main(String[] args) throws IOException {
         VulnRepairDriver driver = new VulnRepairDriver();
         Configuration config = new Configuration(getConfigFile(args));
+
+        Utils.createDirectoryForResults(config.properties);
+        Utils.createEmptyLogFile(config.properties);
+
         MLOG = new MLogger(config.properties, "log.txt");
 
         driver.bootstrap(config.properties);
@@ -54,8 +58,6 @@ public class VulnRepairDriver {
         MLOG.fInfo("Start!");
 
         // 0. Setup
-        Utils.createDirectoryForResults(props);
-        Utils.createEmptyLogFile(props);
         String currentTime = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
         // 1. Get source code
@@ -77,6 +79,7 @@ public class VulnRepairDriver {
         // 3. Produces :- vulnerability locations
         List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
         MLOG.info(String.format("Detected %d vulnerabilities", vulnerabilityLocations.size()));
+        vulnerabilityLocations.forEach(vulnEntry -> MLOG.fInfo(vulnEntry.getType() + " -> " + vulnEntry.getStartLine()));
 
         // == Transform code / repair ==
         Map<String, Integer> problemTypeCounter = new HashMap<>();

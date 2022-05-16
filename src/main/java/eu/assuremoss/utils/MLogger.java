@@ -13,10 +13,12 @@ import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
 public class MLogger {
     private final Writer fileWriter;
     public String logFileName;
+    public String logFilePath;
 
     public MLogger(Properties props, String logFileName) throws IOException {
         this.logFileName = logFileName;
-        this.fileWriter = new FileWriter(logFilePath(props));
+        this.logFilePath = logFilePath(props);
+        this.fileWriter = new FileWriter(logFilePath);
     }
 
     public void info(String message) {

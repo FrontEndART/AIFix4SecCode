@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static eu.assuremoss.VulnRepairDriver.MLOG;
 import static eu.assuremoss.utils.Configuration.*;
 import static eu.assuremoss.utils.Configuration.patchSavePath;
 
@@ -27,8 +28,7 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-                // TODO redirect into log file
-                // LOG.info("Deleting " + file.getName());
+                MLOG.fInfo("Deleting" + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);

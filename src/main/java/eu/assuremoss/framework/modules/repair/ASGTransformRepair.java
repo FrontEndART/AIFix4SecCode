@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static eu.assuremoss.VulnRepairDriver.MLOG;
+
 @AllArgsConstructor
 public class ASGTransformRepair implements VulnerabilityRepairer {
     private static final Logger LOG = LogManager.getLogger(ASGTransformRepair.class);
@@ -131,7 +133,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
             // Redirect standard output into log file
             PrintStream out = null;
             try {
-                out = new PrintStream(new FileOutputStream("log.txt", true), true);
+                out = new PrintStream(new FileOutputStream(MLOG.logFilePath, true), true);
                 System.setOut(out);
             } catch (FileNotFoundException f) {
                 LOG.error("FileNotFound: log.txt");
