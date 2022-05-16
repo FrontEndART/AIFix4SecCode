@@ -47,6 +47,7 @@ public class VulnRepairDriver {
         Configuration config = new Configuration(getConfigFile(args));
 
         Utils.createDirectoryForResults(config.properties);
+        Utils.createDirectoryForValidation(config.properties);
         Utils.createEmptyLogFile(config.properties);
 
         MLOG = new MLogger(config.properties, "log.txt");
