@@ -63,6 +63,7 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
         } catch (IOException e) {
             LOG.error(e.getMessage());
         }
+        MLOG.info("ERROR - BUILD FAILED!");
         return false;
     }
 

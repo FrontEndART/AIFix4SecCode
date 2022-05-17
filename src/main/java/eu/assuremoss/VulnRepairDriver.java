@@ -86,9 +86,10 @@ public class VulnRepairDriver {
         Map<String, Integer> problemTypeCounter = new HashMap<>();
         JSONObject vsCodeConfig = new JSONObject();
 
-        int vulnIndex = 1;
+        int vulnIndex = 0;
         for (VulnerabilityEntry vulnEntry : vulnerabilityLocations) {
             // - Init -
+            vulnIndex++;
             PatchCompiler comp = new MavenPatchCompiler();
 
             // - Generate repair patches -
@@ -105,12 +106,14 @@ public class VulnRepairDriver {
 
             // - Save patches -
             Utils.createDirectoryForPatches(props);
-            if (candidatePatches.isEmpty()) continue;
+            if (candidatePatches.isEmpty()) {
+                MLOG.info("No patch candidates were found, skipping!");
+                continue;
+            }
 
             MLOG.info(String.format("Writing out patch candidates patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
             savePatches(props, problemTypeCounter, vsCodeConfig, vulnEntry, candidatePatches);
 
-            vulnIndex++;
         }
 
         try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath(props), "vscode-config.json")))) {

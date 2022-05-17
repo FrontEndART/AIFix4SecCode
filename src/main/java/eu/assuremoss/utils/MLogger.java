@@ -11,7 +11,7 @@ import java.util.Properties;
 import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
 
 public class MLogger {
-    private final Writer fileWriter;
+    public Writer fileWriter;
     public String logFileName;
     public String logFilePath;
 
@@ -49,6 +49,28 @@ public class MLogger {
 
     private String logFilePath(Properties props) {
         return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), logFileName));
+    }
+
+    public void openFile(boolean append) {
+        try {
+            this.fileWriter = new FileWriter(logFilePath, append);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void openFile() {
+        openFile(false);
+    }
+
+
+    public void closeFile() {
+        try {
+            this.fileWriter.close();
+            this.fileWriter = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
