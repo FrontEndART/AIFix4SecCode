@@ -37,6 +37,8 @@ import static eu.assuremoss.VulnRepairDriver.MLOG;
 import static eu.assuremoss.utils.Utils.getNodeAttribute;
 import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
+import static eu.assuremoss.VulnRepairDriver.MLOG;
+
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
     private static final Logger LOG = LogManager.getLogger(OpenStaticAnalyzer.class);
