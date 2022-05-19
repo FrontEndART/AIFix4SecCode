@@ -24,6 +24,8 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static eu.assuremoss.VulnRepairDriver.MLOG;
+
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
     private static final Logger LOG = LogManager.getLogger(OpenStaticAnalyzer.class);
@@ -104,7 +106,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
             String line;
             while ((line = out.readLine()) != null) {
-                LOG.info(line);
+                MLOG.fInfo(line);
             }
         } catch (IOException e) {
             LOG.error(e);
