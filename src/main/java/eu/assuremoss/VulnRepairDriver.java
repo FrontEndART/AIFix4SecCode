@@ -45,11 +45,7 @@ public class VulnRepairDriver {
     public static void main(String[] args) throws IOException {
         VulnRepairDriver driver = new VulnRepairDriver();
         Configuration config = new Configuration(getConfigFile(args));
-
-        Utils.createDirectoryForResults(config.properties);
-        Utils.createDirectoryForValidation(config.properties);
-        Utils.createEmptyLogFile(config.properties);
-
+        initResourceFiles(config.properties);
         MLOG = new MLogger(config.properties, "log.txt");
 
         driver.bootstrap(config.properties);
@@ -104,7 +100,7 @@ public class VulnRepairDriver {
             List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, comp, filteredPatches);
 
             // - Save patches -
-            Utils.createDirectoryForPatches(props);
+            Utils.createDirectory(patchSavePath(props));
             if (candidatePatches.isEmpty()) {
                 MLOG.info("No patch candidates were found, skipping!");
                 continue;
@@ -218,4 +214,13 @@ public class VulnRepairDriver {
         return issueObject;
     }
 
+    /**
+     * Creates all resource files (directories, log files)
+     * @param props - a properties object that specifies the creation path of the files
+     */
+    private static void initResourceFiles(Properties props) {
+        Utils.createDirectory(props.getProperty(RESULTS_PATH_KEY));
+        Utils.createDirectory(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        Utils.createEmptyLogFile(props);
+    }
 }
