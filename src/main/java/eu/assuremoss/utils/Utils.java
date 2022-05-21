@@ -122,21 +122,13 @@ public class Utils {
         return DEFAULT_CONFIG_FILE_NAME;
     }
 
-    public static void createDirectoryForResults(Properties props) {
-        try {
-            Files.createDirectory(Paths.get(props.getProperty(RESULTS_PATH_KEY)));
-        } catch (IOException e) {
-            LOG.info("Unable to create results folder.");
-        }
-    }
-
-    public static void createDirectoryForPatches(Properties props) {
-        File patchSavePathDir = new File(patchSavePath(props));
-        if (!patchSavePathDir.exists()) {
+    public static void createDirectory(String path) {
+        File directory = new File(path);
+        if (!directory.exists()) {
             try {
-                Files.createDirectory(Paths.get(patchSavePath(props)));
+                Files.createDirectory(Paths.get(path));
             } catch (IOException e) {
-                LOG.error("Failed to create directory for patches.");
+                LOG.error("Unable to create directory: " + path);
             }
         }
     }
