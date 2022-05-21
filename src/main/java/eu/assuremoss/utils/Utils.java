@@ -141,6 +141,17 @@ public class Utils {
         }
     }
 
+    public static void createDirectoryForValidation(Properties props) {
+        File validationPathDir = new File(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        if (!validationPathDir.exists()) {
+            try {
+                Files.createDirectory(Paths.get(props.getProperty(VALIDATION_RESULTS_PATH_KEY)));
+            } catch (IOException e) {
+                LOG.error("Failed to create directory for validation.");
+            }
+        }
+    }
+
     public static void createEmptyLogFile(Properties props) {
         String fileName = "log.txt";
         String path = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), fileName));

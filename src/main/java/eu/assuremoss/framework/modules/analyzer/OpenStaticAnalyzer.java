@@ -55,7 +55,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
         List<CodeModel> resList = new ArrayList<>();
 
-        String[] command = new String[]{
+        String[] command = new String[] {
                 new File(osaPath, osaEdition + "Java" + Utils.getExtension()).getAbsolutePath(),
                 "-resultsDir=" + workingDir,
                 "-projectName=" + projectName,
@@ -64,6 +64,12 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-currentDate=0",
                 "-FBFileList=" + fbFileListPath,
                 "-runFB=true",
+                "-runPMD=false",
+                "-runMET=false",
+                "-runUDM=false",
+                "-runDCF=false",
+                "-runMetricHunter=false",
+                "-runLIM2Patterns=false",
                 "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), "target", "dependency")
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -80,7 +86,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.OSA_GRAPH_XML, new File(graphXMLPath)));
 
-        command = new String[]{
+        command = new String[] {
                 new File(j2cpPath, j2cpEdition + Utils.getExtension()).getAbsolutePath(),
                 asgPath,
                 "-from:" + Paths.get(srcLocation.getAbsolutePath(), "src", "main", "java") + File.separator,
@@ -110,7 +116,8 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     @Override
     public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation, List<CodeModel> analysisResults) {
         List<VulnerabilityEntry> resList = new ArrayList<>();
-        Optional<CodeModel> graphXML = analysisResults.stream().filter(cm -> cm.getType() == CodeModel.MODEL_TYPES.OSA_GRAPH_XML).findFirst();
+        Optional<CodeModel> graphXML = analysisResults.stream()
+                .filter(cm -> cm.getType() == CodeModel.MODEL_TYPES.OSA_GRAPH_XML).findFirst();
         if (!graphXML.isPresent()) {
             LOG.error("Could not locate GRAPH XML analysis results, no vulnerabilities were retrieved.");
             return resList;
@@ -224,7 +231,8 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
     @Override
     public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Pair<File, Patch<String>> patch) {
-        List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation, analyzeSourceCode(srcLocation, true));
+        List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation,
+                analyzeSourceCode(srcLocation, true));
         return !vulnerabilities.contains(ve);
     }
 }

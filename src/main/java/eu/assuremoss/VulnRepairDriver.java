@@ -47,6 +47,7 @@ public class VulnRepairDriver {
         Configuration config = new Configuration(getConfigFile(args));
 
         Utils.createDirectoryForResults(config.properties);
+        Utils.createDirectoryForValidation(config.properties);
         Utils.createEmptyLogFile(config.properties);
 
         MLOG = new MLogger(config.properties, "log.txt");
@@ -82,12 +83,12 @@ public class VulnRepairDriver {
         vulnerabilityLocations.forEach(vulnEntry -> MLOG.fInfo(vulnEntry.getType() + " -> " + vulnEntry.getStartLine()));
 
         // == Transform code / repair ==
-        Map<String, Integer> problemTypeCounter = new HashMap<>();
-        JSONObject vsCodeConfig = new JSONObject();
+        Map<String, List<JSONObject>> problemFixMap = new HashMap<>();
 
-        int vulnIndex = 1;
+        int vulnIndex = 0;
         for (VulnerabilityEntry vulnEntry : vulnerabilityLocations) {
             // - Init -
+            vulnIndex++;
             PatchCompiler comp = new MavenPatchCompiler();
 
             // - Generate repair patches -
@@ -104,13 +105,19 @@ public class VulnRepairDriver {
 
             // - Save patches -
             Utils.createDirectoryForPatches(props);
-            if (candidatePatches.isEmpty()) continue;
+            if (candidatePatches.isEmpty()) {
+                MLOG.info("No patch candidates were found, skipping!");
+                continue;
+            }
 
             MLOG.info(String.format("Writing out patch candidates patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
-            savePatches(props, problemTypeCounter, vsCodeConfig, vulnEntry, candidatePatches);
-
-            vulnIndex++;
+            if (!problemFixMap.containsKey(vulnEntry.getType())) {
+                problemFixMap.put(vulnEntry.getType(), new ArrayList());
+            }
+            problemFixMap.get(vulnEntry.getType()).add(generateFixEntity(props, vulnEntry, candidatePatches));
         }
+
+        JSONObject vsCodeConfig = getVSCodeConfig(problemFixMap);
 
         try (FileWriter fw = new FileWriter(String.valueOf(Paths.get(patchSavePath(props), "vscode-config.json")))) {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -125,6 +132,17 @@ public class VulnRepairDriver {
         }
 
         Utils.deleteIntermediatePatches(patchSavePath(props));
+    }
+
+    private JSONObject getVSCodeConfig(Map<String, List<JSONObject>> problemFixMap) {
+        JSONObject vsCodeConfig = new JSONObject();
+        for(String problemType : problemFixMap.keySet()) {
+            JSONArray fixesArray = new JSONArray();
+            fixesArray.addAll(problemFixMap.get(problemType));
+            vsCodeConfig.put(problemType, fixesArray);
+        }
+
+        return vsCodeConfig;
     }
 
     private List<Pair<File, Pair<Patch<String>, String>>> getCandidatePatches(Properties props, SourceCodeCollector scc, VulnerabilityEntry vulnEntry, PatchCompiler comp, List<Pair<File, Pair<Patch<String>, String>>> filteredPatches) {
@@ -145,8 +163,9 @@ public class VulnRepairDriver {
         return candidatePatches;
     }
 
-    private void savePatches(Properties props, Map<String, Integer> problemTypeCounter, JSONObject vsCodeConfig, VulnerabilityEntry vulnEntry, List<Pair<File, Pair<Patch<String>, String>>> candidatePatches) {
+    private JSONObject generateFixEntity(Properties props, VulnerabilityEntry vulnEntry, List<Pair<File, Pair<Patch<String>, String>>> candidatePatches) {
         JSONArray patchesArray = new JSONArray();
+        JSONObject issueObject = new JSONObject();
         for (int i = 0; i < candidatePatches.size(); i++) {
             File path = candidatePatches.get(i).getA();
             Patch<String> patch = candidatePatches.get(i).getB().getA();
@@ -186,7 +205,6 @@ public class VulnRepairDriver {
                 LOG.error("Failed to save candidate patch: " + patch);
             }
         }
-        JSONObject issueObject = new JSONObject();
 
         JSONObject textRangeObject = new JSONObject();
         textRangeObject.put("startLine", vulnEntry.getStartLine());
@@ -197,18 +215,7 @@ public class VulnRepairDriver {
         issueObject.put("patches", patchesArray);
         issueObject.put("textRange", textRangeObject);
 
-        String problemTypeCount;
-        if (problemTypeCounter.get(vulnEntry.getType()) == null) {
-            problemTypeCounter.put(vulnEntry.getType(), 1);
-            problemTypeCount = "";
-        } else {
-            int n = problemTypeCounter.get(vulnEntry.getType());
-            n++;
-            problemTypeCounter.put(vulnEntry.getType(), n);
-            problemTypeCount = "#" + n;
-        }
-
-        vsCodeConfig.put(vulnEntry.getType() + problemTypeCount, issueObject);
+        return issueObject;
     }
 
 }

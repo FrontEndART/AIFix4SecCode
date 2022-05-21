@@ -117,7 +117,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     }
 
     @Override
-    public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
+    public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels)  {
         List<Pair<File, Pair<Patch<String>, String>>> resList = new ArrayList<>();
         for (String strategy : fixStrategies.get(ve.getType()).keySet()) {
             generateDescription(ve, codeModels, strategy);
@@ -133,6 +133,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
             // Redirect standard output into log file
             PrintStream out = null;
             try {
+                MLOG.closeFile();
                 out = new PrintStream(new FileOutputStream(MLOG.logFilePath, true), true);
                 System.setOut(out);
             } catch (FileNotFoundException f) {
@@ -153,8 +154,10 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
 
             // Reset standard output stream
             if (out != null) {
+                out.flush();
                 out.close();
                 System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+                MLOG.openFile(true);
             }
         }
         return resList;
