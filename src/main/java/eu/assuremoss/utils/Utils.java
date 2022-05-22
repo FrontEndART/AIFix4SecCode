@@ -16,6 +16,10 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.*;
+import static eu.assuremoss.utils.Configuration.patchSavePath;
+
 public class Utils {
     private static final Logger LOG = LogManager.getLogger(Utils.class);
 
@@ -24,7 +28,7 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-                LOG.info("Deleting " + file.getName());
+                MLOG.fInfo("Deleting" + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);
@@ -108,5 +112,54 @@ public class Utils {
 
         zos.closeEntry();
         fis.close();
+    }
+
+    public static String getConfigFile(String[] args) {
+        if (args.length > 0) {
+            return args[1];
+        }
+
+        return DEFAULT_CONFIG_FILE_NAME;
+    }
+
+    public static void createDirectoryForResults(Properties props) {
+        try {
+            Files.createDirectory(Paths.get(props.getProperty(RESULTS_PATH_KEY)));
+        } catch (IOException e) {
+            LOG.info("Unable to create results folder.");
+        }
+    }
+
+    public static void createDirectoryForPatches(Properties props) {
+        File patchSavePathDir = new File(patchSavePath(props));
+        if (!patchSavePathDir.exists()) {
+            try {
+                Files.createDirectory(Paths.get(patchSavePath(props)));
+            } catch (IOException e) {
+                LOG.error("Failed to create directory for patches.");
+            }
+        }
+    }
+
+    public static void createDirectoryForValidation(Properties props) {
+        File validationPathDir = new File(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        if (!validationPathDir.exists()) {
+            try {
+                Files.createDirectory(Paths.get(props.getProperty(VALIDATION_RESULTS_PATH_KEY)));
+            } catch (IOException e) {
+                LOG.error("Failed to create directory for validation.");
+            }
+        }
+    }
+
+    public static void createEmptyLogFile(Properties props) {
+        String fileName = "log.txt";
+        String path = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), fileName));
+
+        try {
+            new FileWriter(path, false); //overwrites file
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

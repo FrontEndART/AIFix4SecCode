@@ -16,15 +16,15 @@ import org.jdom2.Element;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static eu.assuremoss.VulnRepairDriver.MLOG;
 
 @AllArgsConstructor
 public class ASGTransformRepair implements VulnerabilityRepairer {
@@ -117,7 +117,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     }
 
     @Override
-    public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
+    public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels)  {
         List<Pair<File, Pair<Patch<String>, String>>> resList = new ArrayList<>();
         for (String strategy : fixStrategies.get(ve.getType()).keySet()) {
             generateDescription(ve, codeModels, strategy);
@@ -129,6 +129,17 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
                     String.valueOf(Paths.get(resultsPath, "error.txt")),
             };
             RepairAlgorithmRunner rar = new RepairAlgorithmRunner();
+
+            // Redirect standard output into log file
+            PrintStream out = null;
+            try {
+                MLOG.closeFile();
+                out = new PrintStream(new FileOutputStream(MLOG.logFilePath, true), true);
+                System.setOut(out);
+            } catch (FileNotFoundException f) {
+                LOG.error("FileNotFound: log.txt");
+            }
+
             try {
                 rar.run(args, new RepairToolSwitcher());
                 List<String> patchLines = Files.readAllLines(Path.of(patchPath));
@@ -139,6 +150,14 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
                 ));
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+
+            // Reset standard output stream
+            if (out != null) {
+                out.flush();
+                out.close();
+                System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+                MLOG.openFile(true);
             }
         }
         return resList;
