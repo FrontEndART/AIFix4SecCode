@@ -37,7 +37,7 @@ import static eu.assuremoss.VulnRepairDriver.MLOG;
 import static eu.assuremoss.utils.Utils.getNodeAttribute;
 import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
