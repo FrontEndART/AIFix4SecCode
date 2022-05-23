@@ -10,7 +10,7 @@ import com.google.gson.JsonParser;
 import eu.assuremoss.framework.api.*;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
-import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
+import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
 import eu.assuremoss.utils.Configuration;
 import eu.assuremoss.utils.MLogger;
@@ -40,15 +40,23 @@ import static eu.assuremoss.utils.Utils.getConfigFile;
 public class VulnRepairDriver {
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
     public static MLogger MLOG;
+    public static Properties properties;
+    private final PatchCompiler patchCompiler;
     private int patchCounter = 1;
 
     public static void main(String[] args) throws IOException {
-        VulnRepairDriver driver = new VulnRepairDriver();
         Configuration config = new Configuration(getConfigFile(args));
-        initResourceFiles(config.properties);
-        MLOG = new MLogger(config.properties, "log.txt");
+        VulnRepairDriver driver = new VulnRepairDriver(config.properties);
 
         driver.bootstrap(config.properties);
+    }
+
+    public VulnRepairDriver(Properties properties) throws IOException {
+        this.patchCompiler = PatchCompilerFactory.getPatchCompiler(properties.getProperty(PROJECT_BUILD_TOOL_KEY));
+        VulnRepairDriver.properties = properties;
+
+        initResourceFiles(properties);
+        MLOG = new MLogger(properties, "log.txt");
     }
 
     public void bootstrap(Properties props) {
@@ -85,7 +93,6 @@ public class VulnRepairDriver {
         for (VulnerabilityEntry vulnEntry : vulnerabilityLocations) {
             // - Init -
             vulnIndex++;
-            PatchCompiler comp = new MavenPatchCompiler();
 
             // - Generate repair patches -
             MLOG.ninfo(String.format("Generating patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
@@ -93,11 +100,11 @@ public class VulnRepairDriver {
 
             //  - Applying & Compiling patches -
             MLOG.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
-            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
+            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
 
             //  - Testing Patches -
             MLOG.info(String.format("Verifying patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
-            List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, comp, filteredPatches);
+            List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, patchCompiler, filteredPatches);
 
             // - Save patches -
             Utils.createDirectory(patchSavePath(props));

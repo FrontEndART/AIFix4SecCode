@@ -1,7 +1,5 @@
 package eu.assuremoss.framework.modules.compiler;
 
-import com.github.difflib.patch.Patch;
-import eu.assuremoss.utils.Pair;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -18,6 +16,11 @@ import static eu.assuremoss.VulnRepairDriver.MLOG;
 
 public class MavenPatchCompiler extends GenericPatchCompiler {
     private static final Logger LOG = LogManager.getLogger(MavenPatchCompiler.class);
+
+    @Override
+    protected void initBuildDirectoryName() {
+        buildDirectoryName = "target";
+    }
 
     @Override
     public boolean compile(File srcLocation, boolean runTests, boolean copyDependencies) {
@@ -65,22 +68,5 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
         }
         MLOG.info("ERROR - BUILD FAILED!");
         return false;
-    }
-
-    @Override
-    public List<Pair<File, Pair<Patch<String>, String>>> applyAndCompile(File srcLocation, List<Pair<File, Pair<Patch<String>, String>>> patches, boolean runTests) {
-        List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = new ArrayList<>();
-
-        for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : patches) {
-            Patch<String> rawPatch = patchWithExplanation.getB().getA();
-            Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
-            applyPatch(patch, srcLocation);
-            if (compile(srcLocation, runTests, false)) {
-                filteredPatches.add(patchWithExplanation);
-            }
-            revertPatch(patch, srcLocation);
-        }
-
-        return filteredPatches;
     }
 }

@@ -1,13 +1,16 @@
 package eu.assuremoss.framework.modules.analyzer;
 
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.CodeAnalyzer;
+import eu.assuremoss.framework.api.PatchCompiler;
 import eu.assuremoss.framework.api.PatchValidator;
 import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
-import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
+import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.ProcessRunner;
 import eu.assuremoss.utils.Utils;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
@@ -24,7 +27,7 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
@@ -41,14 +44,14 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation) {
-        MavenPatchCompiler mpc = new MavenPatchCompiler();
-        mpc.compile(srcLocation, true, true);
+        PatchCompiler patchCompiler = PatchCompilerFactory.getPatchCompiler(VulnRepairDriver.properties.getProperty(PROJECT_BUILD_TOOL_KEY));
+        patchCompiler.compile(srcLocation, true, true);
 
         String workingDir = isValidation ? validation_results_path : resultsPath;
 
         String fbFileListPath = String.valueOf(Paths.get(workingDir, "fb_file_list.txt"));
         try (FileWriter fw = new FileWriter(fbFileListPath)) {
-            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), "target", "classes")));
+            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName(), "classes")));
         } catch (IOException e) {
             LOG.error(e);
         }
@@ -70,10 +73,10 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-runDCF=false",
                 "-runMetricHunter=false",
                 "-runLIM2Patterns=false",
-                "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), "target", "dependency")
+                "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName(), "dependency")
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
-        runProcess(processBuilder);
+        ProcessRunner.run(processBuilder);
 
         String asgPath = String.valueOf(Paths.get(workingDir,
                 projectName,
@@ -93,25 +96,11 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-to:"
         };
         processBuilder = new ProcessBuilder(command);
-        runProcess(processBuilder);
+        ProcessRunner.run(processBuilder);
 
         return resList;
     }
 
-    private void runProcess(ProcessBuilder processBuilder) {
-        processBuilder.redirectErrorStream(true);
-        try {
-            Process process = processBuilder.start();
-            BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-            String line;
-            while ((line = out.readLine()) != null) {
-                MLOG.fInfo(line);
-            }
-        } catch (IOException e) {
-            LOG.error(e);
-        }
-    }
 
     @Override
     public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation, List<CodeModel> analysisResults) {
