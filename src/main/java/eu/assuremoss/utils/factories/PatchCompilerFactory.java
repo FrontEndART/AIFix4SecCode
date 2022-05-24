@@ -1,6 +1,7 @@
 package eu.assuremoss.utils.factories;
 
 import eu.assuremoss.framework.api.PatchCompiler;
+import eu.assuremoss.framework.modules.compiler.AntCLIPatchCompiler;
 import eu.assuremoss.framework.modules.compiler.GradleCLIPatchCompiler;
 import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
 
@@ -14,6 +15,8 @@ public class PatchCompilerFactory {
                 return new MavenPatchCompiler();
             case "gradle":
                 return new GradleCLIPatchCompiler();
+            case "ant":
+                return new AntCLIPatchCompiler();
             default:
                 throw new InvalidParameterException("ERROR: config.project_build_tool= " + buildTool + " - unknown build tool");
         }
