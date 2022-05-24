@@ -51,7 +51,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
         String fbFileListPath = String.valueOf(Paths.get(workingDir, "fb_file_list.txt"));
         try (FileWriter fw = new FileWriter(fbFileListPath)) {
-            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName(), "classes")));
+            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName())));
         } catch (IOException e) {
             LOG.error(e);
         }

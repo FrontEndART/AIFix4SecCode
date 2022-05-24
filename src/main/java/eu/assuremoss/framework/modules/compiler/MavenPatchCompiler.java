@@ -19,7 +19,7 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
 
     @Override
     protected void initBuildDirectoryName() {
-        buildDirectoryName = "target";
+        buildDirectoryName = String.valueOf(Paths.get("target", "classes"));
     }
 
     @Override
