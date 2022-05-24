@@ -11,7 +11,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -20,7 +19,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 
 public class ColumnInfoParser {
-    public static final HashMap<String, String> map = new HashMap<String, String>() {{
+    public static final HashMap<String, String> vulnMap = new HashMap<>() {{
         put("FB_EiER", "EI_EXPOSE_REP2");
         put("FB_EER", "EI_EXPOSE_REP2");
         put("FB_NNPD", "NP_NULL_PARAM_DEREF");
@@ -28,21 +27,15 @@ public class ColumnInfoParser {
         put("FB_MSBF", "MS_SHOULD_BE_FINAL");
     }};
 
-    private ASTParser parser;
+    private static final HashMap<Class, String> acceptedASTNodes = new HashMap<>() {{
+        put(MethodInvocation.class, "MethodInvocation");
+        put(Assignment.class, "Assignment");
+        put(VariableDeclarationExpression.class, "VariableDeclarationExpression");
+        put(ReturnStatement.class, "ReturnStatement");
+        put(VariableDeclarationFragment.class, "VariableDeclarationFragment");
+    }};
 
     public ColumnInfoParser() {
-        setupASTParser();
-    }
-
-    private void setupASTParser() {
-        // Set up ASTParser
-        parser = ASTParser.newParser(AST.JLS8);
-        parser.setResolveBindings(true);
-        parser.setKind(ASTParser.K_STATEMENTS);
-        parser.setBindingsRecovery(true);
-        Map options = JavaCore.getOptions();
-        parser.setCompilerOptions(options);
-        parser.setUnitName("test");
     }
 
     public Pair<Integer, Integer> getColumnInfoFromFindBugsXML(String filePath, String vulnType, String lineNum, CodeModel findBugsCM) {
@@ -81,8 +74,8 @@ public class ColumnInfoParser {
             List<Node> bugInstances = nodeListToArrayList(doc.getElementsByTagName("BugInstance"));
             for (Node bugInstance : bugInstances) {
                 String bugType = getNodeAttribute(bugInstance, "type");
-                if (!map.containsKey(vulnType)) continue; // vuln type is unsupported
-                if (!map.get(vulnType).equals(bugType)) continue;
+                if (!vulnMap.containsKey(vulnType)) continue; // vuln type is unsupported
+                if (!vulnMap.get(vulnType).equals(bugType)) continue;
 
                 String foundLineNum = null;
                 Node localVariable = null;
@@ -116,7 +109,7 @@ public class ColumnInfoParser {
 
                 if (foundLineNum.equals(lineNum)) {
                     String variableName = getNodeAttribute(localVariable, "name");
-                    System.out.println("Found Vulnerability: " + bugType + " (" + map.get(vulnType) + ")");
+                    System.out.println("Found Vulnerability: " + bugType + " (" + vulnMap.get(vulnType) + ")");
                     System.out.println("LineNum: " + lineNum);
                     System.out.println("Variable name: " + variableName);
 
@@ -145,32 +138,48 @@ public class ColumnInfoParser {
             return null;
         }
 
-        String line;
+        String lineSrc;
 
         try {
-            line = fileContent.get(lineNum);
+            lineSrc = fileContent.get(lineNum);
         } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
             return null;
         }
 
-        int index = line.indexOf(variableName);
+        ASTParser parser = ASTParser.newParser(AST.JLS8);
+        parser.setResolveBindings(true);
+        parser.setKind(ASTParser.K_STATEMENTS);
+        parser.setBindingsRecovery(true);
+        Map options = JavaCore.getOptions();
+        parser.setCompilerOptions(options);
+        parser.setUnitName("test");
 
-        while (index != -1 && line.charAt(index-1) == '.') {
-            // preceded by a "this." or some other modifier, ignore!
-            // TODO: this might mean that the variable is a field; more checks should be set in place
+        String[] classpath = {"/home/sei/Programs/jdk-11.0.15"};
 
-            index = line.indexOf(variableName, index+1);
-        }
+        parser.setEnvironment(classpath, new String[]{}, new String[] { }, true);
+        parser.setSource(lineSrc.toCharArray());
+        final Block block = (Block) parser.createAST(null);
+        System.out.println(block);
+        block.accept(new ASTVisitor() {
+            @Override
+            public void preVisit(ASTNode node) {
+                for (Map.Entry<Class, String> nodeEntry : acceptedASTNodes.entrySet()) {
+                    if (nodeEntry.getKey().isInstance(node)) {
+                        System.out.println("Found " + nodeEntry.getValue());
+                        System.out.println(node.getStartPosition());
+                        System.out.println(node.getStartPosition()+node.getLength());
+                    }
+                }
+            }
+        });
 
-        if (index == -1) {
-            // trim trailing whitespace and set that as column start
-            String trimmed = line.trim();
+        return new Pair<>(0,0);
+    }
 
-            index = line.indexOf(trimmed);
-        }
-
-        return new Pair<>(index+1, 0); // +1 because column count starts from 1
-
+    private boolean handleNode(ASTNode node) {
+        System.out.println(node.getStartPosition());
+        System.out.println(node.getStartPosition()+node.getLength());
+        return false;
     }
 }
