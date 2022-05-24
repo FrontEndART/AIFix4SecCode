@@ -13,8 +13,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public class VulnParser {
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.*;
+
+public class ColumnInfoParser {
     public static final HashMap<String, String> map = new HashMap<String, String>() {{
         put("FB_EiER", "EI_EXPOSE_REP2");
         put("FB_EER", "EI_EXPOSE_REP2");
@@ -23,20 +28,47 @@ public class VulnParser {
         put("FB_MSBF", "MS_SHOULD_BE_FINAL");
     }};
 
-    public static boolean compare(String from, String to) {
-        if (map.containsKey(from)) {
-            return map.get(from).equals(to);
-        }
-        if (map.containsKey(to)) {
-            return map.get(to).equals(from);
-        }
+    private ASTParser parser;
 
-        return false;
+    public ColumnInfoParser() {
+        setupASTParser();
     }
 
-    public static int getColumnInfoFromFindBugsXML(String srcLocation, String vulnType, String lineNum, CodeModel findBugsCM) {
+    private void setupASTParser() {
+        // Set up ASTParser
+        parser = ASTParser.newParser(AST.JLS8);
+        parser.setResolveBindings(true);
+        parser.setKind(ASTParser.K_STATEMENTS);
+        parser.setBindingsRecovery(true);
+        Map options = JavaCore.getOptions();
+        parser.setCompilerOptions(options);
+        parser.setUnitName("test");
+    }
+
+    public Pair<Integer, Integer> getColumnInfoFromFindBugsXML(String filePath, String vulnType, String lineNum, CodeModel findBugsCM) {
+        System.out.println("-----------------------------------------");
+        System.out.println("FILE: " + filePath);
+        String variableName = findVariableInFindBugsXML(vulnType, lineNum, findBugsCM);
+        return getColumnInfo(filePath, variableName, lineNum);
+    }
+
+    private boolean hasNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key) != null;
+    }
+
+    private String getNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key).getNodeValue();
+    }
+
+    private List<Node> nodeListToArrayList(NodeList nodeList) {
+        return IntStream.range(0, nodeList.getLength())
+                .mapToObj(nodeList::item)
+                .collect(Collectors.toList());
+    }
+
+    public String findVariableInFindBugsXML(String vulnType, String lineNum, CodeModel findBugsCM) {
         System.out.println("Trying to find " + vulnType);
-        if (findBugsCM.getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return -1;
+        if (findBugsCM.getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return "--null--";
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
@@ -45,33 +77,30 @@ public class VulnParser {
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(findBugsCM.getModelPath().getAbsolutePath());
-            NodeList bugInstances = doc.getElementsByTagName("BugInstance");
-            for (int i = 0; i < bugInstances.getLength(); i++) {
-                Node node = bugInstances.item(i);
-                String bugType = node.getAttributes().getNamedItem("type").getNodeValue();
+
+            List<Node> bugInstances = nodeListToArrayList(doc.getElementsByTagName("BugInstance"));
+            for (Node bugInstance : bugInstances) {
+                String bugType = getNodeAttribute(bugInstance, "type");
                 if (!map.containsKey(vulnType)) continue; // vuln type is unsupported
                 if (!map.get(vulnType).equals(bugType)) continue;
 
                 String foundLineNum = null;
-                String filePath = null;
                 Node localVariable = null;
-                NodeList children = node.getChildNodes();
-                for (int j = 0; j < children.getLength(); j++) {
-                    // Get line num
-                    Node child = children.item(j);
 
+                List<Node> children = nodeListToArrayList(bugInstance.getChildNodes());
+                for (Node child : children) {
+                    // Get line num
                     switch (child.getNodeName()) {
                         case "SourceLine":
-                            foundLineNum = child.getAttributes().getNamedItem("start").getNodeValue();
-                            filePath = child.getAttributes().getNamedItem("sourcepath").getNodeValue();
+                            foundLineNum = getNodeAttribute(child, "start");
 
-                            if (child.getAttributes().getNamedItem("role") == null) break;
+                            if (!hasNodeAttribute(child, "role")) break;
+                            if (!getNodeAttribute(child, "role").equals("SOURCE_LINE_KNOWN_NULL")) break;
 
-                            if (child.getAttributes().getNamedItem("role").getNodeValue().equals("SOURCE_LINE_KNOWN_NULL")) {
-                                System.out.println("Known null at line " + foundLineNum + ", returning!");
-                                return getColumnInfo(Path.of(srcLocation, filePath), "--null--", Integer.parseInt(foundLineNum));
-                            }
-                            break;
+                            // Known Null errors have no associated variable, return
+                            System.out.println("Known null at line " + foundLineNum + ", returning!");
+                            return "--null--";
+
                         case "LocalVariable":
                         case "Field":
                             localVariable = child;
@@ -86,46 +115,43 @@ public class VulnParser {
                 if (foundLineNum == null || localVariable == null) continue;
 
                 if (foundLineNum.equals(lineNum)) {
-                    String variableName = localVariable.getAttributes().getNamedItem("name").getNodeValue();
-                    System.out.println("FILE: " + Path.of(srcLocation, filePath).toString());
+                    String variableName = getNodeAttribute(localVariable, "name");
                     System.out.println("Found Vulnerability: " + bugType + " (" + map.get(vulnType) + ")");
                     System.out.println("LineNum: " + lineNum);
                     System.out.println("Variable name: " + variableName);
-                    System.out.println("-----------------------------------------");
 
-                    return getColumnInfo(Path.of(srcLocation, filePath), variableName, Integer.parseInt(lineNum));
+                    return variableName;
                 }
             }
-            // System.out.println(bugInstances);
         } catch (Exception e) {
             e.printStackTrace();
-            // System.out.println(e);
         }
 
-        return -1;
+        return "--null--";
     }
 
-    private static int getColumnInfo(Path filePath, String variableName, int lineNum) {
-        lineNum -= 1; // line count starts from 1
+    private Pair<Integer, Integer> getColumnInfo(String filePath, String variableName, String lineNumStr) {
+        int lineNum = Integer.parseInt(lineNumStr);
+        lineNum -= 1; // line count starts from 1, start it from 0
 
         ArrayList<String> fileContent = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath.toString()))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             while(reader.ready()) {
                 fileContent.add(reader.readLine());
             }
         } catch (IOException e) {
             e.printStackTrace();
-            return -1;
+            return null;
         }
 
-        String line = null;
+        String line;
 
         try {
             line = fileContent.get(lineNum);
         } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
-            return -1;
+            return null;
         }
 
         int index = line.indexOf(variableName);
@@ -144,6 +170,7 @@ public class VulnParser {
             index = line.indexOf(trimmed);
         }
 
-        return index+1; // +1 because column count starts from 1
+        return new Pair<>(index+1, 0); // +1 because column count starts from 1
+
     }
 }

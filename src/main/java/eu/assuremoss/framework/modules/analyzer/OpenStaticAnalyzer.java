@@ -12,11 +12,12 @@ import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.utils.Pair;
 import eu.assuremoss.utils.ProcessRunner;
 import eu.assuremoss.utils.Utils;
-import eu.assuremoss.utils.VulnParser;
+import eu.assuremoss.utils.ColumnInfoParser;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
@@ -27,6 +28,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 
@@ -106,6 +109,16 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     }
 
 
+    private String getNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key).getNodeValue();
+    }
+
+    private List<Node> nodeListToArrayList(NodeList nodeList) {
+        return IntStream.range(0, nodeList.getLength())
+                .mapToObj(nodeList::item)
+                .collect(Collectors.toList());
+    }
+
     @Override
     public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation, List<CodeModel> analysisResults) {
         for (CodeModel cm : analysisResults) {
@@ -127,32 +140,56 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         }
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        ColumnInfoParser columnInfoParser = new ColumnInfoParser();
 
         try {
             // process XML securely, avoid attacks like XML External Entities (XXE)
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(graphXML.get().getModelPath().getAbsolutePath());
-            NodeList attributes = doc.getElementsByTagName("attribute");
-            for (int i = 0; i < attributes.getLength(); i++) {
+            NodeList nodeList = doc.getElementsByTagName("attribute");
+
+            // Convert to a List for better clarity
+            List<Node> attributes = nodeListToArrayList(nodeList);
+
+            for (Node node : attributes) {
+                String nodeName = getNodeAttribute(node, "name");
+                String context = getNodeAttribute(node, "context");
+                String problemType = supportedProblemTypes.get(nodeName);
+
+                if (!context.equals("warning")) continue;
+                if (problemType == null) continue;
+
+                MLOG.info("Found " + problemType + ", now trying to map column info...");
+
+                // TODO: replace .item(3) with actually finding the LineNum Node
+                String filePath = getNodeAttribute(node.getChildNodes().item(1), "value");
+                String lineNumStr = getNodeAttribute(node.getChildNodes().item(3), "value");
+
+                Pair<Integer, Integer> columnInfo = columnInfoParser
+                        .getColumnInfoFromFindBugsXML(filePath, nodeName, lineNumStr, findBugsXML.get());
+                MLOG.info("Line: " + lineNumStr + ", Column: " + columnInfo.getA());
+
+                NodeList warnAttributes = node.getChildNodes();
+                resList.add(createVulnerabilityEntry(warnAttributes, problemType));
+            }
+
+            /*for (int i = 0; i < attributes.getLength(); i++) {
                 String nodeName = attributes.item(i).getAttributes().getNamedItem("name").getNodeValue();
                 String nodeContext = attributes.item(i).getAttributes().getNamedItem("context").getNodeValue();
                 if ("warning".equals(nodeContext) && supportedProblemTypes.containsKey(nodeName)) {
-                    // MLOG.info(nodeName);
-                    // MLOG.info(nodeContext);
                     NodeList warnAttributes = attributes.item(i).getChildNodes();
                     String problemType = supportedProblemTypes.get(nodeName);
                     resList.add(createVulnerabilityEntry(warnAttributes, problemType));
                     MLOG.info("Found " + problemType + ", now trying to map column info...");
-                    // MLOG.info("LENGTH: " + attributes.item(i).getChildNodes().getLength());
 
                     // TODO: replace .item(3) with actually finding the LineNum Node
                     String lineNumStr = attributes.item(i).getChildNodes().item(3).getAttributes().getNamedItem("value").getNodeValue();
-                    // MLOG.info("LINENUM: " + attributes.item(i).getChildNodes().item(3).getAttributes().getNamedItem("value").getNodeValue());
-                    int columnInfo = VulnParser.getColumnInfoFromFindBugsXML(srcLocation.toString() + "/src/main/java", nodeName, lineNumStr, findBugsXML.get());
+
+                    int columnInfo = columnInfoParser.getColumnInfoFromFindBugsXML(nodeName, lineNumStr, findBugsXML.get());
                     MLOG.info("Line: " + lineNumStr + ", Column: " + columnInfo);
                 }
-            }
+            }*/
         } catch (FileNotFoundException e) {
             LOG.error(e);
         } catch (IOException e) {
