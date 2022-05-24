@@ -143,12 +143,14 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                     NodeList warnAttributes = attributes.item(i).getChildNodes();
                     String problemType = supportedProblemTypes.get(nodeName);
                     resList.add(createVulnerabilityEntry(warnAttributes, problemType));
+                    MLOG.info("Found " + problemType + ", now trying to map column info...");
                     // MLOG.info("LENGTH: " + attributes.item(i).getChildNodes().getLength());
 
                     // TODO: replace .item(3) with actually finding the LineNum Node
                     String lineNumStr = attributes.item(i).getChildNodes().item(3).getAttributes().getNamedItem("value").getNodeValue();
                     // MLOG.info("LINENUM: " + attributes.item(i).getChildNodes().item(3).getAttributes().getNamedItem("value").getNodeValue());
-                    VulnParser.findVulnVariableInFindBugsXML(nodeName, lineNumStr, findBugsXML.get());
+                    int columnInfo = VulnParser.getColumnInfoFromFindBugsXML(srcLocation.toString() + "/src/main/java", nodeName, lineNumStr, findBugsXML.get());
+                    MLOG.info("Line: " + lineNumStr + ", Column: " + columnInfo);
                 }
             }
         } catch (FileNotFoundException e) {
