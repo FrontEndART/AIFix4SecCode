@@ -1,11 +1,13 @@
 package eu.assuremoss.utils;
 
+import com.github.javaparser.Range;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
-import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import eu.assuremoss.framework.model.CodeModel;
@@ -47,7 +49,7 @@ public class ColumnInfoParser {
         System.out.println("-----------------------------------------");
         System.out.println("FILE: " + filePath);
         String variableName = findVariableInFindBugsXML(vulnType, lineNum, findBugsCM);
-        return getColumnInfo(filePath, variableName, lineNum);
+        return getColumnInfo(vulnType, filePath, variableName, lineNum);
     }
 
     private boolean hasNodeAttribute(Node node, String key) {
@@ -97,7 +99,7 @@ public class ColumnInfoParser {
 
                             // Known Null errors have no associated variable, return
                             System.out.println("Known null at line " + foundLineNum + ", returning!");
-                            return "--null--";
+                            return null;
 
                         case "LocalVariable":
                         case "Field":
@@ -125,12 +127,11 @@ public class ColumnInfoParser {
             e.printStackTrace();
         }
 
-        return "--null--";
+        return null;
     }
 
-    private Pair<Integer, Integer> getColumnInfo(String filePath, String variableName, String lineNumStr) {
+    private Pair<Integer, Integer> getColumnInfo(String vulnType, String filePath, String variableName, String lineNumStr) {
         int lineNum = Integer.parseInt(lineNumStr);
-        lineNum -= 1; // line count starts from 1, start it from 0
 
         ArrayList<String> fileContent = new ArrayList<>();
 
@@ -161,49 +162,64 @@ public class ColumnInfoParser {
         CompilationUnit cu = StaticJavaParser.parse(contentStr);
         // now you attach a LexicalPreservingPrinter tso the AST
 
-        System.out.println(LexicalPreservingPrinter.print(cu));
+        String sourceCode = LexicalPreservingPrinter.print(cu);
 
-        new TraceVisitor().visit(cu, null);
+        //System.out.println(sourceCode);
 
-        /*ASTParser parser = ASTParser.newParser(AST.JLS8);
-        parser.setResolveBindings(true);
-        parser.setKind(ASTParser.K_STATEMENTS);
-        parser.setBindingsRecovery(true);
-        Map options = JavaCore.getOptions();
-        parser.setCompilerOptions(options);
-        parser.setUnitName("test");
-
-        String[] classpath = {"/home/sei/Programs/jdk-11.0.15"};
-
-        parser.setEnvironment(classpath, new String[]{}, new String[] { }, true);
-        parser.setSource(lineSrc.toCharArray());
-        final Block block = (Block) parser.createAST(null);
-        System.out.println(block);
-        block.accept(new ASTVisitor() {
-            @Override
-            public void preVisit(ASTNode node) {
-                for (Map.Entry<Class, String> nodeEntry : acceptedASTNodes.entrySet()) {
-                    if (nodeEntry.getKey().isInstance(node)) {
-                        System.out.println("Found " + nodeEntry.getValue());
-                        System.out.println(node.getStartPosition());
-                        System.out.println(node.getStartPosition()+node.getLength());
-                    }
-                }
-            }
-        });*/
+        processNodeTree(cu, lineNum, vulnType, variableName);
 
         return new Pair<>(0,0);
     }
 
-    /**
-     * Simple visitor implementation for visiting nodes.
-     */
-    private static class TraceVisitor extends VoidVisitorAdapter<Void> {
+    private Pair<Integer, Integer> processNodeTree(com.github.javaparser.ast.Node node, int lineNum, String vulnType, String variableName) {
+        Range range = node.getRange().get();
 
-        @Override
-        public void visit(ExpressionStmt node, Void arg) {
-            System.out.println("ExpressionStmt: " + node.getExpression());
-            super.visit(node, arg);
+        if (node instanceof NameExpr) {
+            NameExpr expression = (NameExpr) node;
+
+            String name = expression.getNameAsString();
+            //System.out.println(vulnType + " == " + "FB_EiER");
+            //System.out.println(range.begin.line + " == " + lineNum);
+            //System.out.println(name + " == " + variableName);
+            if ((vulnType.equals("FB_EiER") || vulnType.equals("FB_EER") || vulnType.equals("FB_NNOSP")) && range.begin.line == lineNum && (name.equals(variableName) || variableName == null)) {
+                System.out.println("==============");
+                System.out.println("NameExpr: " + expression);
+                System.out.println("Name: " + expression.getName());
+                System.out.println("Column range: " + range);
+                System.out.println("==============");
+                return new Pair<>(range.begin.column, range.end.column+1);
+            }
         }
+
+        if (node instanceof VariableDeclarator) {
+            VariableDeclarator declarator = (VariableDeclarator) node;
+            SimpleName nameNode = declarator.getName();
+            String name = nameNode.getIdentifier();
+            range = nameNode.getRange().get();
+
+            //System.out.println(vulnType + " == " + "FB_MSBF");
+            //System.out.println(range.begin.line + " == " + lineNum);
+            //System.out.println(name + " == " + variableName);
+            if (vulnType.equals("FB_MSBF") && range.begin.line == lineNum && name.equals(variableName)) {
+                System.out.println("==============");
+                System.out.println("VariableDeclarator: " + declarator);
+                System.out.println("Name: " + declarator.getNameAsString());
+                System.out.println("Column range: " + range);
+                System.out.println("==============");
+                return new Pair<>(range.begin.column, range.end.column+1);
+            }
+        }
+
+        if (node.getChildNodes() != null) {
+            for (com.github.javaparser.ast.Node child:node.getChildNodes()) {
+                Pair<Integer, Integer> childReturnValue = processNodeTree(child, lineNum, vulnType, variableName);
+                if (childReturnValue != null) {
+                    // We caught a correct output that isnt null, return it all the way to the caller
+                    return childReturnValue;
+                }
+            }
+        }
+
+        return null;
     }
 }
