@@ -1,5 +1,13 @@
 package eu.assuremoss.utils;
 
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
+import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import eu.assuremoss.framework.model.CodeModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -15,9 +23,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.dom.*;
-
 public class ColumnInfoParser {
     public static final HashMap<String, String> vulnMap = new HashMap<>() {{
         put("FB_EiER", "EI_EXPOSE_REP2");
@@ -27,13 +32,13 @@ public class ColumnInfoParser {
         put("FB_MSBF", "MS_SHOULD_BE_FINAL");
     }};
 
-    private static final HashMap<Class, String> acceptedASTNodes = new HashMap<>() {{
+    /*private static final HashMap<Class, String> acceptedASTNodes = new HashMap<>() {{
         put(MethodInvocation.class, "MethodInvocation");
         put(Assignment.class, "Assignment");
         put(VariableDeclarationExpression.class, "VariableDeclarationExpression");
         put(ReturnStatement.class, "ReturnStatement");
         put(VariableDeclarationFragment.class, "VariableDeclarationFragment");
-    }};
+    }};*/
 
     public ColumnInfoParser() {
     }
@@ -139,6 +144,11 @@ public class ColumnInfoParser {
         }
 
         String lineSrc;
+        String contentStr = "";
+
+        for (String line : fileContent) {
+            contentStr += line + "\n";
+        }
 
         try {
             lineSrc = fileContent.get(lineNum);
@@ -147,7 +157,15 @@ public class ColumnInfoParser {
             return null;
         }
 
-        ASTParser parser = ASTParser.newParser(AST.JLS8);
+        // you have to parse the code using JavaParser, as usual
+        CompilationUnit cu = StaticJavaParser.parse(contentStr);
+        // now you attach a LexicalPreservingPrinter tso the AST
+
+        System.out.println(LexicalPreservingPrinter.print(cu));
+
+        new TraceVisitor().visit(cu, null);
+
+        /*ASTParser parser = ASTParser.newParser(AST.JLS8);
         parser.setResolveBindings(true);
         parser.setKind(ASTParser.K_STATEMENTS);
         parser.setBindingsRecovery(true);
@@ -172,14 +190,20 @@ public class ColumnInfoParser {
                     }
                 }
             }
-        });
+        });*/
 
         return new Pair<>(0,0);
     }
 
-    private boolean handleNode(ASTNode node) {
-        System.out.println(node.getStartPosition());
-        System.out.println(node.getStartPosition()+node.getLength());
-        return false;
+    /**
+     * Simple visitor implementation for visiting nodes.
+     */
+    private static class TraceVisitor extends VoidVisitorAdapter<Void> {
+
+        @Override
+        public void visit(ExpressionStmt node, Void arg) {
+            System.out.println("ExpressionStmt: " + node.getExpression());
+            super.visit(node, arg);
+        }
     }
 }
