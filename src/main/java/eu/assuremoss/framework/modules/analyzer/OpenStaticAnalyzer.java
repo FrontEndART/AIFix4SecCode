@@ -168,10 +168,10 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
                 Pair<Integer, Integer> columnInfo = columnInfoParser
                         .getColumnInfoFromFindBugsXML(filePath, nodeName, lineNumStr, findBugsXML.get());
-                MLOG.info("Line: " + lineNumStr + ", Column: " + columnInfo.getA());
+                MLOG.info("Line: " + lineNumStr + ", Column: [" + columnInfo.getA() + ", " + columnInfo.getB() + "]");
 
                 NodeList warnAttributes = node.getChildNodes();
-                resList.add(createVulnerabilityEntry(warnAttributes, problemType));
+                resList.add(createVulnerabilityEntry(warnAttributes, problemType, columnInfo));
             }
 
             /*for (int i = 0; i < attributes.getLength(); i++) {
@@ -203,7 +203,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         return resList;
     }
 
-    private VulnerabilityEntry createVulnerabilityEntry(NodeList warnAttributes, String problemType) {
+    private VulnerabilityEntry createVulnerabilityEntry(NodeList warnAttributes, String problemType, Pair<Integer, Integer> columnInfo) {
         VulnerabilityEntry ve = new VulnerabilityEntry();
 
         ve.setType(problemType);
@@ -223,13 +223,13 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                         ve.setStartLine(Integer.parseInt(attrVal));
                         break;
                     case "Column":
-                        ve.setStartCol(24);
+                        //ve.setStartCol(24);
                         break;
                     case "EndLine":
                         ve.setEndLine(Integer.parseInt(attrVal));
                         break;
                     case "EndColumn":
-                        ve.setEndCol(61);
+                        //ve.setEndCol(61);
                         break;
                     case "WarningText":
                         ve.setDescription(attrVal);
@@ -238,7 +238,9 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             }
         }
         // Workaround while VSCode visualization is not fixed
-        alignLineAndColNumbers(ve);
+        ve.setStartCol(columnInfo.getA());
+        ve.setEndCol(columnInfo.getB());
+        //alignLineAndColNumbers(ve);
         return ve;
     }
 
@@ -247,34 +249,50 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             case 3:
                 ve.setStartCol(26);
                 ve.setEndCol(37);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
             case 7:
                 ve.setStartCol(20);
                 ve.setEndCol(23);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
             case 12:
                 ve.setStartCol(16);
                 ve.setEndCol(20);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
             case 16:
                 ve.setStartCol(21);
                 ve.setEndCol(25);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
             case 24:
                 ve.setStartCol(34);
                 ve.setEndCol(51);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
             case 29:
                 ve.setStartCol(36);
                 ve.setEndCol(55);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
             case 34:
                 ve.setStartCol(39);
                 ve.setEndCol(61);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
             case 40:
                 ve.setStartCol(24);
                 ve.setEndCol(31);
+                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
+                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
                 break;
         }
     }

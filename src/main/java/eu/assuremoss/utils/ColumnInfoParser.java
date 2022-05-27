@@ -166,9 +166,7 @@ public class ColumnInfoParser {
 
         //System.out.println(sourceCode);
 
-        processNodeTree(cu, lineNum, vulnType, variableName);
-
-        return new Pair<>(0,0);
+        return processNodeTree(cu, lineNum, vulnType, variableName);
     }
 
     private Pair<Integer, Integer> processNodeTree(com.github.javaparser.ast.Node node, int lineNum, String vulnType, String variableName) {
