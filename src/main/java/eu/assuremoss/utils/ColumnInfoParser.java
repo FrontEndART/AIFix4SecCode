@@ -9,25 +9,20 @@ import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.utils.CodeGenerationUtils;
 import com.github.javaparser.utils.SourceRoot;
+import eu.assuremoss.framework.model.VulnerabilityEntry;
 import lombok.Builder;
 
 public abstract class ColumnInfoParser {
 
-    public static Pair<Integer, Integer> getColumnInfoFromFindBugsXML(String filePath, String vulnType, String lineNum, String variableName) {
-        Pair<Integer, Integer> columnInfo = getColumnInfo(vulnType, filePath, variableName, Integer.parseInt(lineNum));
-        System.out.println("=> column: [" + columnInfo.getA() + ", " + columnInfo.getB() + "]");
-        return columnInfo;
-    }
-
-    private static Pair<Integer, Integer> getColumnInfo(String vulnType, String filePath, String variableName, int lineNum) {
-        String fileContent = Utils.readFileString(filePath);
+    public static Pair<Integer, Integer> getColumnInfoFromFindBugsXML(VulnerabilityEntry vulnEntry) {
+        String fileContent = Utils.readFileString(vulnEntry.getPath());
         if (fileContent == null) return null;
 
         CompilationUnit cu = StaticJavaParser.parse(fileContent);
         TraceVisitor traceVisitor = TraceVisitor.builder()
-                .lineNum(lineNum)
-                .variableName(variableName)
-                .vulnType(vulnType)
+                .lineNum(vulnEntry.getStartLine())
+                .variableName(vulnEntry.getVariable())
+                .vulnType(vulnEntry.getVulnType())
                 .build();
 
         cu.accept(traceVisitor, null);

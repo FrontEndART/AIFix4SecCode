@@ -31,6 +31,7 @@ import java.util.*;
 
 import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.framework.model.VulnerabilityEntry.createVulnerabilityEntry;
 import static eu.assuremoss.utils.Utils.getNodeAttribute;
 import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
@@ -154,21 +155,10 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             Document doc = db.parse(graphXML.get().getModelPath().getAbsolutePath());
             NodeList nodeList = doc.getElementsByTagName("attribute");
 
-            // Convert to a List for better clarity
-            List<Node> attributes = nodeListToArrayList(nodeList);
-
-            for (Node node : attributes) {
+            for (Node node : attributes(nodeList)) {
                 if (!context(node).equals("warning") || problemType(node) == null) continue;
 
-                System.out.println("\n== Vulnerability: " + problemType(node) + " ==");
-                System.out.println("+ In file: " + filePath(node));
-                System.out.println("+ In line: " + lineNumStr(node));
-                System.out.println("+ Variable: " + variableName(findBugsXML, node));
-
-                Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfoFromFindBugsXML(filePath(node), nodeName(node), lineNumStr(node), variableName(findBugsXML, node));
-
-                NodeList warnAttributes = node.getChildNodes();
-                resList.add(createVulnerabilityEntry(warnAttributes, problemType(node), columnInfo));
+                resList.add(createVulnerabilityEntry(warnAttributes(node), problemType(node), variableName(findBugsXML, node), nodeName(node)));
             }
         } catch (IOException | ParserConfigurationException | SAXException e) {
             LOG.error(e);
@@ -177,8 +167,12 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         return resList;
     }
 
-    private String variableName(Optional<CodeModel> findBugsXML, Node node) {
-        return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), findBugsXML.get());
+    private NodeList warnAttributes(Node node) {
+        return node.getChildNodes();
+    }
+
+    private List<Node> attributes(NodeList nodeList) {
+        return nodeListToArrayList(nodeList);
     }
 
     public static String findVariableInFindBugsXML(String vulnType, String lineNum, CodeModel findBugsCM) {
@@ -239,12 +233,12 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         return null;
     }
 
-    private String lineNumStr(Node node) {
-        return getNodeAttribute(node.getChildNodes().item(3), "value");
+    private String variableName(Optional<CodeModel> findBugsXML, Node node) {
+        return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), findBugsXML.get());
     }
 
-    private String filePath(Node node) {
-        return getNodeAttribute(node.getChildNodes().item(1), "value");
+    private String lineNumStr(Node node) {
+        return getNodeAttribute(node.getChildNodes().item(3), "value");
     }
 
     private String problemType(Node node) {
@@ -260,39 +254,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     }
 
 
-    private VulnerabilityEntry createVulnerabilityEntry(NodeList warnAttributes, String problemType, Pair<Integer, Integer> columnInfo) {
-        VulnerabilityEntry ve = new VulnerabilityEntry();
 
-        ve.setType(problemType);
-
-        for (int j = 0; j < warnAttributes.getLength(); j++) {
-            if (warnAttributes.item(j).getAttributes() != null) {
-                String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
-                if ("ExtraInfo".equals(attrType)) {
-                    continue;
-                }
-                String attrVal = warnAttributes.item(j).getAttributes().getNamedItem("value").getNodeValue();
-                switch (attrType) {
-                    case "Path":
-                        ve.setPath(attrVal);
-                        break;
-                    case "Line":
-                        ve.setStartLine(Integer.parseInt(attrVal));
-                        break;
-                    case "EndLine":
-                        ve.setEndLine(Integer.parseInt(attrVal));
-                        break;
-                    case "WarningText":
-                        ve.setDescription(attrVal);
-                        break;
-                }
-            }
-        }
-
-        ve.setStartCol(columnInfo.getA());
-        ve.setEndCol(columnInfo.getB());
-        return ve;
-    }
 
     @Override
     public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Pair<File, Patch<String>> patch) {
