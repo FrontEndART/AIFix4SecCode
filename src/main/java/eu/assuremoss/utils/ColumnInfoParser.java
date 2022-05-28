@@ -21,6 +21,7 @@ import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
 public abstract class ColumnInfoParser {
     public static final HashMap<String, String> vulnMap = new HashMap<>() {{
+        // TODO: read from config file
         put("FB_EiER", "EI_EXPOSE_REP2");
         put("FB_EER", "EI_EXPOSE_REP2");
         put("FB_NNPD", "NP_NULL_PARAM_DEREF");
@@ -52,6 +53,7 @@ public abstract class ColumnInfoParser {
             return null;
         }
 
+        // TODO: clean this up
         List<Node> bugInstances = nodeListToArrayList(doc.getElementsByTagName("BugInstance"));
         for (Node bugInstance : bugInstances) {
             String bugType = getNodeAttribute(bugInstance, "type");
@@ -76,6 +78,7 @@ public abstract class ColumnInfoParser {
                 }
             }
 
+            // TODO: clean this up
             if (foundLineNum != null && localVariable == null) {
                 System.out.println("Found " + bugType + " on line " + foundLineNum + " without associated variable!");
                 return null;
@@ -123,6 +126,7 @@ public abstract class ColumnInfoParser {
             String name = node.getNameAsString();
             Range range = node.getRange().get();
 
+            // TODO: clean this up
             if ((vulnType.equals("FB_EiER") || vulnType.equals("FB_EER") || vulnType.equals("FB_NNOSP")) && range.begin.line == lineNum && (name.equals(variableName) || variableName == null)) {
                 System.out.println("==============");
                 System.out.println("NameExpr: " + node);
@@ -141,6 +145,7 @@ public abstract class ColumnInfoParser {
             String name = nameNode.getIdentifier();
             Range range = nameNode.getRange().get();
 
+            // TODO: clean this up
             if (vulnType.equals("FB_MSBF") && range.begin.line == lineNum && name.equals(variableName)) {
                 System.out.println("==============");
                 System.out.println("VariableDeclarator: " + node);
