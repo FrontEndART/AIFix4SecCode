@@ -3,9 +3,15 @@ package eu.assuremoss.utils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -188,5 +194,13 @@ public class Utils {
         return IntStream.range(0, nodeList.getLength())
                 .mapToObj(nodeList::item)
                 .collect(Collectors.toList());
+    }
+
+    public static Document getXML(String path) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        // process XML securely, avoid attacks like XML External Entities (XXE)
+        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        return db.parse(path);
     }
 }

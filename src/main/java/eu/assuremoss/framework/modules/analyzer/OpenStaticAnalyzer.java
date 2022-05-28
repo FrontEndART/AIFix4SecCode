@@ -12,7 +12,7 @@ import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.utils.Pair;
 import eu.assuremoss.utils.ProcessRunner;
 import eu.assuremoss.utils.Utils;
-import eu.assuremoss.utils.ColumnInfoParser;
+import eu.assuremoss.utils.factories.VulnEntryFactory;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -28,10 +28,12 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.zip.DataFormatException;
 
 import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 import static eu.assuremoss.VulnRepairDriver.MLOG;
-import static eu.assuremoss.framework.model.VulnerabilityEntry.createVulnerabilityEntry;
 import static eu.assuremoss.utils.Utils.getNodeAttribute;
 import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
@@ -131,69 +133,56 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     }
 
     @Override
+    public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Pair<File, Patch<String>> patch) {
+        List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation,
+                analyzeSourceCode(srcLocation, true));
+        return !vulnerabilities.contains(ve);
+    }
+
+    @Override
     public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation, List<CodeModel> analysisResults) {
-        List<VulnerabilityEntry> resList = new ArrayList<>();
-        Optional<CodeModel> graphXML = analysisResults.stream()
-                .filter(cm -> cm.getType() == CodeModel.MODEL_TYPES.OSA_GRAPH_XML).findFirst();
-        if (!graphXML.isPresent()) {
-            LOG.error("Could not locate GRAPH XML analysis results, no vulnerabilities were retrieved.");
-            return resList;
-        }
+        List<VulnerabilityEntry> result = new ArrayList<>();
 
-        Optional<CodeModel> findBugsXML = analysisResults.stream()
-                .filter(cm -> cm.getType() == CodeModel.MODEL_TYPES.FINDBUGS_XML).findFirst();
-        if (!findBugsXML.isPresent()) {
-            LOG.error("Could not locate FindBugs XML analysis results, no vulnerabilities were retrieved.");
-            return resList;
-        }
-
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         try {
-            // process XML securely, avoid attacks like XML External Entities (XXE)
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(graphXML.get().getModelPath().getAbsolutePath());
-            NodeList nodeList = doc.getElementsByTagName("attribute");
+            Optional<CodeModel> graphXML = getCodeModel(analysisResults, CodeModel.MODEL_TYPES.OSA_GRAPH_XML);
+            Optional<CodeModel> findBugsXML = getCodeModel(analysisResults, CodeModel.MODEL_TYPES.FINDBUGS_XML);
 
-            for (Node node : attributes(nodeList)) {
-                if (!context(node).equals("warning") || problemType(node) == null) continue;
+            result = filteredVulnerabilities(getNodeList(graphXML, "attribute")).map(node ->
+                    VulnEntryFactory.getVulnEntry(warnAttributes(node), problemType(node), variableName(findBugsXML, node), nodeName(node))
+            ).collect(Collectors.toList());
 
-                resList.add(createVulnerabilityEntry(warnAttributes(node), problemType(node), variableName(findBugsXML, node), nodeName(node)));
-            }
-        } catch (IOException | ParserConfigurationException | SAXException e) {
+        } catch (DataFormatException e) {
             LOG.error(e);
         }
 
-        return resList;
+        return result;
     }
 
-    private NodeList warnAttributes(Node node) {
-        return node.getChildNodes();
+    private Optional<CodeModel> getCodeModel(List<CodeModel> analysisResults, CodeModel.MODEL_TYPES CodeModelType) throws DataFormatException {
+        Optional<CodeModel> codeModel = analysisResults.stream().filter(cm -> cm.getType() == CodeModelType).findFirst();
+        if (codeModel.isEmpty()) throw new DataFormatException("Could not locate " + CodeModelType + " analysis results, no vulnerabilities were retrieved.");
+        return codeModel;
     }
 
-    private List<Node> attributes(NodeList nodeList) {
-        return nodeListToArrayList(nodeList);
-    }
-
-    public static String findVariableInFindBugsXML(String vulnType, String lineNum, CodeModel findBugsCM) {
-        if (findBugsCM.getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
-
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        DocumentBuilder db;
-        Document doc;
-
+    private NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {
         try {
-            // process XML securely, avoid attacks like XML External Entities (XXE)
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            db = dbf.newDocumentBuilder();
-            doc = db.parse(findBugsCM.getModelPath().getAbsolutePath());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            Document xml = Utils.getXML(codeModel.get().getModelPath().getAbsolutePath());
+            return xml.getElementsByTagName(tagName);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            LOG.error(e);
+            throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
         }
+    }
 
-        // TODO: clean this up
-        List<Node> bugInstances = nodeListToArrayList(doc.getElementsByTagName("BugInstance"));
+    private Stream<Node> filteredVulnerabilities(NodeList nodeList) {
+        return attributes(nodeList).stream().filter(node -> context(node).equals("warning") && problemType(node) != null);
+    }
+
+    private String findVariableInFindBugsXML(String vulnType, String lineNum, Optional<CodeModel>  findBugsCM) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
+        if (findBugsCM.get().getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
+
+        var bugInstances = attributes(getNodeList(findBugsCM, "BugInstance"));
+
         for (Node bugInstance : bugInstances) {
             String bugType = getNodeAttribute(bugInstance, "type");
             if (!vulnMap.containsKey(vulnType)) continue; // vuln type is unsupported
@@ -233,8 +222,15 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         return null;
     }
 
-    private String variableName(Optional<CodeModel> findBugsXML, Node node) {
-        return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), findBugsXML.get());
+
+    /** Queries for temp variables */
+
+    private List<Node> attributes(NodeList nodeList) {
+        return nodeListToArrayList(nodeList);
+    }
+
+    private NodeList warnAttributes(Node node) {
+        return node.getChildNodes();
     }
 
     private String lineNumStr(Node node) {
@@ -253,13 +249,13 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         return getNodeAttribute(node, "name");
     }
 
-
-
-
-    @Override
-    public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Pair<File, Patch<String>> patch) {
-        List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation,
-                analyzeSourceCode(srcLocation, true));
-        return !vulnerabilities.contains(ve);
+    private String variableName(Optional<CodeModel> findBugsXML, Node node) {
+        try {
+            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), findBugsXML);
+        } catch (ParserConfigurationException | SAXException | IOException | DataFormatException e) {
+            LOG.error(e);
+            return "";
+        }
     }
+
 }

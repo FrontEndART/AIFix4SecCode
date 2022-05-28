@@ -7,14 +7,12 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.github.javaparser.utils.CodeGenerationUtils;
-import com.github.javaparser.utils.SourceRoot;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import lombok.Builder;
 
 public abstract class ColumnInfoParser {
 
-    public static Pair<Integer, Integer> getColumnInfoFromFindBugsXML(VulnerabilityEntry vulnEntry) {
+    public static Pair<Integer, Integer> getColumnInfo(VulnerabilityEntry vulnEntry) {
         String fileContent = Utils.readFileString(vulnEntry.getPath());
         if (fileContent == null) return null;
 
@@ -43,12 +41,8 @@ public abstract class ColumnInfoParser {
             Range range = node.getRange().get();
 
             // TODO: clean this up
-            if ((vulnType.equals("FB_EiER") || vulnType.equals("FB_EER") || vulnType.equals("FB_NNOSP")) && range.begin.line == lineNum && (name.equals(variableName) || variableName == null)) {
-//                System.out.println("==============");
-//                System.out.println("NameExpr: " + node);
-//                System.out.println("Name: " + node.getName());
-//                System.out.println("Column range: " + range);
-//                System.out.println("==============");
+            if ((vulnType.equals("FB_EiER") || vulnType.equals("FB_EER") || vulnType.equals("FB_NNOSP"))
+                    && range.begin.line == lineNum && (name.equals(variableName) || variableName == null)) {
                 resultRange = range;
             }
 
@@ -63,11 +57,6 @@ public abstract class ColumnInfoParser {
 
             // TODO: clean this up
             if (vulnType.equals("FB_MSBF") && range.begin.line == lineNum && name.equals(variableName)) {
-//                System.out.println("==============");
-//                System.out.println("VariableDeclarator: " + node);
-//                System.out.println("Name: " + node.getNameAsString());
-//                System.out.println("Column range: " + range);
-//                System.out.println("==============");
                 resultRange = range;
             }
 
@@ -75,7 +64,7 @@ public abstract class ColumnInfoParser {
         }
 
         public Pair<Integer, Integer> getResultPair() {
-            return new Pair<>(resultRange.begin.column, resultRange.end.column+1);
+            return new Pair<>(resultRange.begin.column, resultRange.end.column + 1);
         }
     }
 }
