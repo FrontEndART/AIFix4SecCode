@@ -140,8 +140,6 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         }
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        ColumnInfoParser columnInfoParser = new ColumnInfoParser();
-
         try {
             // process XML securely, avoid attacks like XML External Entities (XXE)
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -166,7 +164,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 String filePath = getNodeAttribute(node.getChildNodes().item(1), "value");
                 String lineNumStr = getNodeAttribute(node.getChildNodes().item(3), "value");
 
-                Pair<Integer, Integer> columnInfo = columnInfoParser
+                Pair<Integer, Integer> columnInfo = ColumnInfoParser
                         .getColumnInfoFromFindBugsXML(filePath, nodeName, lineNumStr, findBugsXML.get());
                 MLOG.info("Line: " + lineNumStr + ", Column: [" + columnInfo.getA() + ", " + columnInfo.getB() + "]");
 

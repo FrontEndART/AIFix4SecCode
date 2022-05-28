@@ -8,10 +8,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -153,5 +150,26 @@ public class Utils {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static ArrayList<String> readFile(String filePath) {
+        ArrayList<String> fileContent = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            while(reader.ready()) {
+                fileContent.add(reader.readLine());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return fileContent;
+    }
+
+    public static String readFileString(String filePath) {
+        ArrayList<String> fileContent = readFile(filePath);
+        if (fileContent == null) return null;
+
+        return String.join("\n", fileContent);
     }
 }
