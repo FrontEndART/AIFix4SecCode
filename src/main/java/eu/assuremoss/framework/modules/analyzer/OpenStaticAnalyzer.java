@@ -21,21 +21,14 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.DataFormatException;
-
-import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
-import static eu.assuremoss.VulnRepairDriver.MLOG;
-import static eu.assuremoss.utils.Utils.getNodeAttribute;
-import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
 import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 
