@@ -10,14 +10,14 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import eu.assuremoss.framework.model.CodeModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+
+import static eu.assuremoss.utils.Utils.getNodeAttribute;
+import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
 public abstract class ColumnInfoParser {
     public static final HashMap<String, String> vulnMap = new HashMap<>() {{
@@ -33,20 +33,6 @@ public abstract class ColumnInfoParser {
         System.out.println("FILE: " + filePath);
         String variableName = findVariableInFindBugsXML(vulnType, lineNum, findBugsCM);
         return getColumnInfo(vulnType, filePath, variableName, lineNum);
-    }
-
-    private static boolean hasNodeAttribute(Node node, String key) {
-        return node.getAttributes().getNamedItem(key) != null;
-    }
-
-    private static String getNodeAttribute(Node node, String key) {
-        return node.getAttributes().getNamedItem(key).getNodeValue();
-    }
-
-    private static List<Node> nodeListToArrayList(NodeList nodeList) {
-        return IntStream.range(0, nodeList.getLength())
-                .mapToObj(nodeList::item)
-                .collect(Collectors.toList());
     }
 
     public static String findVariableInFindBugsXML(String vulnType, String lineNum, CodeModel findBugsCM) {
@@ -81,13 +67,7 @@ public abstract class ColumnInfoParser {
                 switch (child.getNodeName()) {
                     case "SourceLine":
                         foundLineNum = getNodeAttribute(child, "start");
-
-                        if (!hasNodeAttribute(child, "role")) break;
-                        if (!getNodeAttribute(child, "role").equals("SOURCE_LINE_KNOWN_NULL")) break;
-
-                        // Known Null errors have no associated variable, return
-                        System.out.println("Known null at line " + foundLineNum + ", returning!");
-                        return null;
+                        break;
 
                     case "LocalVariable":
                     case "Field":
@@ -98,6 +78,7 @@ public abstract class ColumnInfoParser {
 
             if (foundLineNum != null && localVariable == null) {
                 System.out.println("Found " + bugType + " on line " + foundLineNum + " without associated variable!");
+                return null;
             }
 
             if (foundLineNum == null || localVariable == null) continue;

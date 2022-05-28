@@ -28,10 +28,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
+import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Utils.getNodeAttribute;
+import static eu.assuremoss.utils.Utils.nodeListToArrayList;
 
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
@@ -171,23 +172,6 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 NodeList warnAttributes = node.getChildNodes();
                 resList.add(createVulnerabilityEntry(warnAttributes, problemType, columnInfo));
             }
-
-            /*for (int i = 0; i < attributes.getLength(); i++) {
-                String nodeName = attributes.item(i).getAttributes().getNamedItem("name").getNodeValue();
-                String nodeContext = attributes.item(i).getAttributes().getNamedItem("context").getNodeValue();
-                if ("warning".equals(nodeContext) && supportedProblemTypes.containsKey(nodeName)) {
-                    NodeList warnAttributes = attributes.item(i).getChildNodes();
-                    String problemType = supportedProblemTypes.get(nodeName);
-                    resList.add(createVulnerabilityEntry(warnAttributes, problemType));
-                    MLOG.info("Found " + problemType + ", now trying to map column info...");
-
-                    // TODO: replace .item(3) with actually finding the LineNum Node
-                    String lineNumStr = attributes.item(i).getChildNodes().item(3).getAttributes().getNamedItem("value").getNodeValue();
-
-                    int columnInfo = columnInfoParser.getColumnInfoFromFindBugsXML(nodeName, lineNumStr, findBugsXML.get());
-                    MLOG.info("Line: " + lineNumStr + ", Column: " + columnInfo);
-                }
-            }*/
         } catch (FileNotFoundException e) {
             LOG.error(e);
         } catch (IOException e) {
@@ -220,14 +204,8 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                     case "Line":
                         ve.setStartLine(Integer.parseInt(attrVal));
                         break;
-                    case "Column":
-                        //ve.setStartCol(24);
-                        break;
                     case "EndLine":
                         ve.setEndLine(Integer.parseInt(attrVal));
-                        break;
-                    case "EndColumn":
-                        //ve.setEndCol(61);
                         break;
                     case "WarningText":
                         ve.setDescription(attrVal);
@@ -235,64 +213,10 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 }
             }
         }
-        // Workaround while VSCode visualization is not fixed
+
         ve.setStartCol(columnInfo.getA());
         ve.setEndCol(columnInfo.getB());
-        //alignLineAndColNumbers(ve);
         return ve;
-    }
-
-    private void alignLineAndColNumbers(VulnerabilityEntry ve) {
-        switch (ve.getStartLine()) {
-            case 3:
-                ve.setStartCol(26);
-                ve.setEndCol(37);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-            case 7:
-                ve.setStartCol(20);
-                ve.setEndCol(23);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-            case 12:
-                ve.setStartCol(16);
-                ve.setEndCol(20);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-            case 16:
-                ve.setStartCol(21);
-                ve.setEndCol(25);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-            case 24:
-                ve.setStartCol(34);
-                ve.setEndCol(51);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-            case 29:
-                ve.setStartCol(36);
-                ve.setEndCol(55);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-            case 34:
-                ve.setStartCol(39);
-                ve.setEndCol(61);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-            case 40:
-                ve.setStartCol(24);
-                ve.setEndCol(31);
-                MLOG.info("Line " + ve.getStartLine() + ": " + ve.getType());
-                MLOG.info("Column start:" + ve.getStartCol() + ", end: " + ve.getEndCol());
-                break;
-        }
     }
 
     @Override

@@ -3,6 +3,8 @@ package eu.assuremoss.utils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -10,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -171,5 +174,19 @@ public class Utils {
         if (fileContent == null) return null;
 
         return String.join("\n", fileContent);
+    }
+
+    public static boolean hasNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key) != null;
+    }
+
+    public static String getNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key).getNodeValue();
+    }
+
+    public static List<Node> nodeListToArrayList(NodeList nodeList) {
+        return IntStream.range(0, nodeList.getLength())
+                .mapToObj(nodeList::item)
+                .collect(Collectors.toList());
     }
 }
