@@ -36,28 +36,20 @@ public class Configuration {
      * @param confFileName The configuration file/resource path
      * @throws IOException Thrown when the file/resource doesn't exist
      */
-    public Configuration(String confFileName, String mapFileName) throws IOException {
+    public Configuration(String generalFileName, String mapFileName) throws IOException {
         loader = Thread.currentThread().getContextClassLoader();
-
+        properties = new Properties();
+        loadConfiguration(generalFileName);
+        loadConfiguration(mapFileName);
+    }
+    private void loadConfiguration(String confFileName) throws IOException {
         URL resource = loader.getResource(confFileName);
-
         if (resource == null) {
-            properties = loadPropertiesFromFile(confFileName);
+            properties.putAll(loadPropertiesFromFile(confFileName));
         } else {
-            properties = loadPropertiesFromResource(confFileName);
+            properties.putAll(loadPropertiesFromResource(confFileName));
         }
-
-        LOG.info("Successfully loaded configuration properties.");
-
-        resource = loader.getResource(mapFileName);
-
-        if (resource == null) {
-            properties.putAll(loadPropertiesFromFile(mapFileName));
-        } else {
-            properties.putAll(loadPropertiesFromResource(mapFileName));
-        }
-
-        LOG.info("Successfully loaded mapping properties.");
+        LOG.info("Successfully loaded " + confFileName);
     }
 
     /**
