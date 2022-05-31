@@ -122,6 +122,14 @@ public class Utils {
         return DEFAULT_CONFIG_FILE_NAME;
     }
 
+    public static String getMappingFile(String[] args) {
+        if (args.length > 1) {
+            return args[2];
+        }
+
+        return DEFAULT_MAPPING_FILE_NAME;
+    }
+
     public static void createDirectoryForResults(Properties props) {
         try {
             Files.createDirectory(Paths.get(props.getProperty(RESULTS_PATH_KEY)));

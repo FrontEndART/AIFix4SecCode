@@ -32,6 +32,7 @@ import java.util.*;
 
 import static eu.assuremoss.utils.Configuration.*;
 import static eu.assuremoss.utils.Utils.getConfigFile;
+import static eu.assuremoss.utils.Utils.getMappingFile;
 
 
 /**
@@ -44,7 +45,7 @@ public class VulnRepairDriver {
 
     public static void main(String[] args) throws IOException {
         VulnRepairDriver driver = new VulnRepairDriver();
-        Configuration config = new Configuration(getConfigFile(args));
+        Configuration config = new Configuration(getConfigFile(args), getMappingFile(args));
 
         Utils.createDirectoryForResults(config.properties);
         Utils.createDirectoryForValidation(config.properties);
