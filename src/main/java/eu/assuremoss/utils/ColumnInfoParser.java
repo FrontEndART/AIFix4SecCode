@@ -64,7 +64,15 @@ public abstract class ColumnInfoParser {
         }
 
         public Pair<Integer, Integer> getResultPair() {
-            return new Pair<>(resultRange.begin.column, resultRange.end.column + 1);
+            Pair<Integer, Integer> result;
+
+            try {
+                result = new Pair<>(resultRange.begin.column, resultRange.end.column + 1);
+            } catch (NullPointerException npe) {
+                result = new Pair<>(0, 0);
+            }
+
+            return result;
         }
     }
 }
