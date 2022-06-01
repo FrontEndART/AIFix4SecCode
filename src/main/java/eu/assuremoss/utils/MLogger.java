@@ -48,7 +48,7 @@ public class MLogger {
     }
 
     private String logFilePath(Properties props) {
-        return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), logFileName));
+        return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", logFileName));
     }
 
     public void openFile(boolean append) {

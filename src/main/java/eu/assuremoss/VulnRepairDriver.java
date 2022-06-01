@@ -84,7 +84,8 @@ public class VulnRepairDriver {
         // 3. Produces :- vulnerability locations
         List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
         MLOG.info(String.format("Detected %d vulnerabilities", vulnerabilityLocations.size()));
-        vulnerabilityLocations.forEach(vulnEntry -> MLOG.fInfo(vulnEntry.getType() + " -> " + vulnEntry.getStartLine()));
+        Utils.saveVulnerabilityStatistics(props, vulnerabilityLocations);
+        Utils.saveVulnerabilityEntries(props, vulnerabilityLocations);
 
         // == Transform code / repair ==
         Map<String, List<JSONObject>> problemFixMap = new HashMap<>();
@@ -228,6 +229,7 @@ public class VulnRepairDriver {
     private static void initResourceFiles(Properties props) {
         Utils.createDirectory(props.getProperty(RESULTS_PATH_KEY));
         Utils.createDirectory(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        Utils.createDirectory(String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs")));
         Utils.createEmptyLogFile(props);
     }
 }
