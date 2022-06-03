@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static eu.assuremoss.utils.Configuration.*;
 import static eu.assuremoss.utils.Utils.getConfigFile;
@@ -64,7 +65,8 @@ public class VulnRepairDriver {
         MLOG.fInfo("Start!");
 
         // 0. Setup
-        String currentTime = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+        Date startTime = new Date();
+        String startTimeStr = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(startTime);
 
         // 1. Get source code
         MLOG.info("Project source acquiring started");
@@ -139,10 +141,13 @@ public class VulnRepairDriver {
         }
 
         if (archiveEnabled(props)) {
-            Utils.archiveResults(patchSavePath(props), props.getProperty(ARCHIVE_PATH), descriptionPath(props), currentTime);
+            Utils.archiveResults(patchSavePath(props), props.getProperty(ARCHIVE_PATH), descriptionPath(props), startTimeStr);
         }
 
         Utils.deleteIntermediatePatches(patchSavePath(props));
+
+        Utils.saveElapsedTime(startTime);
+        MLOG.info("Framework repair finished!");
     }
 
     private JSONObject getVSCodeConfig(Map<String, List<JSONObject>> problemFixMap) {

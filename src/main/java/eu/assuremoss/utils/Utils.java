@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
@@ -253,5 +254,16 @@ public class Utils {
         }
 
         return result;
+    }
+
+    public static void saveElapsedTime(Date startTime) {
+        Date endTime = new Date();
+        long diff = endTime.getTime() - startTime.getTime();
+        long hours = TimeUnit.MILLISECONDS.toHours(diff);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(diff);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
+        String millis = String.valueOf(TimeUnit.MILLISECONDS.toMillis(diff)).substring(0, 3);
+
+        MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
     }
 }
