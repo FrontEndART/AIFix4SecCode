@@ -44,15 +44,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     private final String validation_results_path;
     private final String projectName;
     private final Map<String, String> supportedProblemTypes;
-
-    public static final HashMap<String, String> vulnMap = new HashMap<>() {{
-        // TODO: read from config file
-        put("FB_EiER", "EI_EXPOSE_REP2");
-        put("FB_EER", "EI_EXPOSE_REP2");
-        put("FB_NNPD", "NP_NULL_PARAM_DEREF");
-        put("FB_NNOSP", "NP_NULL_ON_SOME_PATH");
-        put("FB_MSBF", "MS_SHOULD_BE_FINAL");
-    }};
+    public static final Map<String, String> vulnMap = Utils.getMappingConfig();
 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation) {

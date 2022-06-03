@@ -1,5 +1,6 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
@@ -234,5 +235,23 @@ public class Utils {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static Map<String, String> getMappingConfig() {
+        Map<String, String> result = new HashMap<>();
+
+        Properties props = VulnRepairDriver.properties;
+        Enumeration<String> en = (Enumeration<String>) props.propertyNames();
+
+        while (en.hasMoreElements()) {
+            String propName = en.nextElement();
+            String propValue = props.getProperty(propName);
+
+            if (propName.startsWith("mapping")) {
+                result.put(propName.split("\\.")[1], propValue);
+            }
+        }
+
+        return result;
     }
 }
