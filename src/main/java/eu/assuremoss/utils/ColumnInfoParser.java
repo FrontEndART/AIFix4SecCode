@@ -69,7 +69,7 @@ public abstract class ColumnInfoParser {
             try {
                 result = new Pair<>(resultRange.begin.column, resultRange.end.column + 1);
             } catch (NullPointerException npe) {
-                result = new Pair<>(0, 0);
+                result = new Pair<>(-1, -1);
             }
 
             return result;

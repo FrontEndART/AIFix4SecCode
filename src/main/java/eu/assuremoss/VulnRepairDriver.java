@@ -95,6 +95,12 @@ public class VulnRepairDriver {
             // - Init -
             vulnIndex++;
 
+            // - Skip if column info was not retrieved -
+            if (vulnEntry.getStartCol() == -1 && vulnEntry.getEndCol() == -1) {
+                MLOG.ninfo(String.format("No column info were retrieved, skipping vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+                continue;
+            }
+
             // - Generate repair patches -
             MLOG.ninfo(String.format("Generating patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> patches = vulnRepairer.generateRepairPatches(scc.getSourceCodeLocation(), vulnEntry, codeModels);
