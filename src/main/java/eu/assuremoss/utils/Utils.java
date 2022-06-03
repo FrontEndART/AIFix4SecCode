@@ -128,6 +128,14 @@ public class Utils {
         return DEFAULT_CONFIG_FILE_NAME;
     }
 
+    public static String getMappingFile(String[] args) {
+        if (args.length > 1) {
+            return args[2];
+        }
+
+        return DEFAULT_MAPPING_FILE_NAME;
+    }
+
     public static void createDirectory(String path) {
         File directory = new File(path);
         if (!directory.exists()) {
@@ -192,8 +200,9 @@ public class Utils {
         try (Writer fileWriter = new FileWriter(vulnStatsPath)){
             fileWriter.write("Detected " + vulnLocations.size() + " vulnerabilities\n");
             for (String vulnType : vulnTypes) {
+                // TODO use logger
                 fileWriter.write(" - " + Collections.frequency(allVulnTypes, vulnType) + "x " + vulnType + "\n");
-                System.out.println(" - " + Collections.frequency(allVulnTypes, vulnType) + "x " + vulnType + "\n");
+                //  System.out.println(" - " + Collections.frequency(allVulnTypes, vulnType) + "x " + vulnType + "\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -207,7 +216,8 @@ public class Utils {
         try (Writer fileWriter = new FileWriter(vulnStatsPath)){
             for (int i = 0; i < vulnLocations.size(); i++) {
                 VulnerabilityEntry vulnEntry = vulnLocations.get(i);
-                MLOG.info((i + 1) + ". " + vulnEntry);
+                // TODO use logger
+                // MLOG.info((i + 1) + ". " + vulnEntry);
                 fileWriter.write((i + 1) + ". " + vulnEntry + "\n");
             }
         } catch (IOException e) {

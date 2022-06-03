@@ -11,7 +11,7 @@ You can install the framework by cloning its GitHub repository and building it w
 ```
 git clone https://github.com/FrontEndART/AIFix4SecCode.git
 cd AIFix4SecCode
-mvn install:install-file -Dfile=src\\main\\resources\\CodeRepair-1.0-SNAPSHOT-jar-with-dependencies.jar -DgroupId=com.fea -DartifactId=coderepair -Dversion=1.0 -Dpackaging=jar -DgeneratePom=true
+mvn install:install-file -Dfile=src\\main\\resources\\CodeRepair-1.0.1-SNAPSHOT-jar-with-dependencies.jar -DgroupId=com.fea -DartifactId=coderepair -Dversion=1.0.1 -Dpackaging=jar -DgeneratePom=true
 mvn package
 cd vscode-plugin
 npm install

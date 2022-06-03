@@ -22,7 +22,7 @@ class ColumnInfoParserTest {
 
     @BeforeAll
     static void beforeAll() throws IOException {
-        Configuration config = new Configuration("config.properties");
+        Configuration config = new Configuration("config.properties", "mapping.properties");
         vulnDetector = ToolFactory.createOsa(config.properties);
     }
 

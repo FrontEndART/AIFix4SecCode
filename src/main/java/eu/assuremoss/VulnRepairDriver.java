@@ -32,6 +32,7 @@ import java.util.*;
 
 import static eu.assuremoss.utils.Configuration.*;
 import static eu.assuremoss.utils.Utils.getConfigFile;
+import static eu.assuremoss.utils.Utils.getMappingFile;
 
 
 /**
@@ -45,7 +46,7 @@ public class VulnRepairDriver {
     private int patchCounter = 1;
 
     public static void main(String[] args) throws IOException {
-        Configuration config = new Configuration(getConfigFile(args));
+        Configuration config = new Configuration(getConfigFile(args), getMappingFile(args));
         VulnRepairDriver driver = new VulnRepairDriver(config.properties);
 
         driver.bootstrap(config.properties);
@@ -146,7 +147,7 @@ public class VulnRepairDriver {
 
     private JSONObject getVSCodeConfig(Map<String, List<JSONObject>> problemFixMap) {
         JSONObject vsCodeConfig = new JSONObject();
-        for(String problemType : problemFixMap.keySet()) {
+        for (String problemType : problemFixMap.keySet()) {
             JSONArray fixesArray = new JSONArray();
             fixesArray.addAll(problemFixMap.get(problemType));
             vsCodeConfig.put(problemType, fixesArray);
@@ -230,6 +231,7 @@ public class VulnRepairDriver {
 
     /**
      * Creates all resource files (directories, log files)
+     *
      * @param props - a properties object that specifies the creation path of the files
      */
     private static void initResourceFiles(Properties props) {
