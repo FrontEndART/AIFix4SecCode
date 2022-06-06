@@ -1,7 +1,6 @@
 package eu.assuremoss.utils;
 
 import eu.assuremoss.VulnRepairDriver;
-import eu.assuremoss.framework.model.VulnerabilityEntry;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -190,41 +189,6 @@ public class Utils {
         dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         DocumentBuilder db = dbf.newDocumentBuilder();
         return db.parse(path);
-    }
-
-    public static void saveVulnerabilityStatistics(Properties props, List<VulnerabilityEntry> vulnLocations)  {
-        Set<String> vulnTypes = vulnLocations.stream().map(VulnerabilityEntry::getType).collect(Collectors.toSet());
-        List<String> allVulnTypes = vulnLocations.stream().map(VulnerabilityEntry::getType).collect(Collectors.toList());
-
-        String fileName = "vulnerability_statistics.txt";
-        String vulnStatsPath = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", fileName));
-
-        try (Writer fileWriter = new FileWriter(vulnStatsPath)){
-            fileWriter.write("Detected " + vulnLocations.size() + " vulnerabilities\n");
-            for (String vulnType : vulnTypes) {
-                // TODO use logger
-                fileWriter.write(" - " + Collections.frequency(allVulnTypes, vulnType) + "x " + vulnType + "\n");
-                //  System.out.println(" - " + Collections.frequency(allVulnTypes, vulnType) + "x " + vulnType + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void saveVulnerabilityEntries(Properties props, List<VulnerabilityEntry> vulnLocations) {
-        String fileName = "vulnerabilities.txt";
-        String vulnStatsPath = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", fileName));
-
-        try (Writer fileWriter = new FileWriter(vulnStatsPath)){
-            for (int i = 0; i < vulnLocations.size(); i++) {
-                VulnerabilityEntry vulnEntry = vulnLocations.get(i);
-                // TODO use logger
-                // MLOG.info((i + 1) + ". " + vulnEntry);
-                fileWriter.write((i + 1) + ". " + vulnEntry + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public static void createEmptyLogFile(Properties props) {

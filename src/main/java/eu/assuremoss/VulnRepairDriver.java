@@ -10,12 +10,9 @@ import com.google.gson.JsonParser;
 import eu.assuremoss.framework.api.*;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.utils.*;
 import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
-import eu.assuremoss.utils.Configuration;
-import eu.assuremoss.utils.MLogger;
-import eu.assuremoss.utils.Pair;
-import eu.assuremoss.utils.Utils;
 import eu.assuremoss.utils.factories.ToolFactory;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -29,7 +26,6 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static eu.assuremoss.utils.Configuration.*;
 import static eu.assuremoss.utils.Utils.getConfigFile;
@@ -44,6 +40,8 @@ public class VulnRepairDriver {
     public static MLogger MLOG;
     public static Properties properties;
     private final PatchCompiler patchCompiler;
+    private final PathHandler path;
+    private final Statistics statistics;
     private int patchCounter = 1;
 
     public static void main(String[] args) throws IOException {
@@ -55,6 +53,8 @@ public class VulnRepairDriver {
 
     public VulnRepairDriver(Properties properties) throws IOException {
         this.patchCompiler = PatchCompilerFactory.getPatchCompiler(properties.getProperty(PROJECT_BUILD_TOOL_KEY));
+        this.path = new PathHandler(properties);
+        this.statistics = new Statistics(path);
         VulnRepairDriver.properties = properties;
 
         initResourceFiles(properties);
@@ -87,8 +87,7 @@ public class VulnRepairDriver {
         // 3. Produces :- vulnerability locations
         List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
         MLOG.info(String.format("Detected %d vulnerabilities", vulnerabilityLocations.size()));
-        Utils.saveVulnerabilityStatistics(props, vulnerabilityLocations);
-        Utils.saveVulnerabilityEntries(props, vulnerabilityLocations);
+        statistics.saveVulnerabilityStatistics(props, vulnerabilityLocations);
 
         // == Transform code / repair ==
         Map<String, List<JSONObject>> problemFixMap = new HashMap<>();
@@ -145,8 +144,9 @@ public class VulnRepairDriver {
         }
 
         Utils.deleteIntermediatePatches(patchSavePath(props));
-
         Utils.saveElapsedTime(startTime);
+        statistics.createResultStatistics(vulnerabilityLocations);
+
         MLOG.info("Framework repair finished!");
     }
 

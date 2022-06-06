@@ -33,6 +33,12 @@ public class MLogger {
         logIntoFile(formattedMessage);
     }
 
+    public void error(String message) {
+        String formattedMessage = String.format("[%s] ERROR %s\n", timestamp(), message);
+        System.out.print(formattedMessage);
+        logIntoFile(formattedMessage);
+    }
+
     public void fInfo(String message) {
         String formattedMessage = String.format("[%s] %s\n", timestamp(), message);
         logIntoFile(String.valueOf(formattedMessage));
