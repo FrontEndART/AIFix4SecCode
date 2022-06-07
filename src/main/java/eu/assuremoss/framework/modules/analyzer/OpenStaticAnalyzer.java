@@ -1,30 +1,36 @@
 package eu.assuremoss.framework.modules.analyzer;
 
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.CodeAnalyzer;
+import eu.assuremoss.framework.api.PatchCompiler;
 import eu.assuremoss.framework.api.PatchValidator;
 import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
-import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
+import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.ProcessRunner;
 import eu.assuremoss.utils.Utils;
+import eu.assuremoss.utils.factories.VulnEntryFactory;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.zip.DataFormatException;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
@@ -38,17 +44,18 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     private final String validation_results_path;
     private final String projectName;
     private final Map<String, String> supportedProblemTypes;
+    public static final Map<String, String> vulnMap = Utils.getMappingConfig();
 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation) {
-        MavenPatchCompiler mpc = new MavenPatchCompiler();
-        mpc.compile(srcLocation, true, true);
+        PatchCompiler patchCompiler = PatchCompilerFactory.getPatchCompiler(VulnRepairDriver.properties.getProperty(PROJECT_BUILD_TOOL_KEY));
+        patchCompiler.compile(srcLocation, true, true);
 
         String workingDir = isValidation ? validation_results_path : resultsPath;
 
         String fbFileListPath = String.valueOf(Paths.get(workingDir, "fb_file_list.txt"));
         try (FileWriter fw = new FileWriter(fbFileListPath)) {
-            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), "target", "classes")));
+            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName())));
         } catch (IOException e) {
             LOG.error(e);
         }
@@ -70,10 +77,10 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-runDCF=false",
                 "-runMetricHunter=false",
                 "-runLIM2Patterns=false",
-                "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), "target", "dependency")
+                "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName(), "dependency")
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
-        runProcess(processBuilder);
+        ProcessRunner.run(processBuilder);
 
         String asgPath = String.valueOf(Paths.get(workingDir,
                 projectName,
@@ -86,6 +93,9 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.OSA_GRAPH_XML, new File(graphXMLPath)));
 
+        String findBugsXMLPath = String.valueOf(Paths.get(workingDir, projectName, "java", "0", "openstaticanalyzer", "temp", projectName + "-FindBugs.xml"));
+        resList.add(new CodeModel(CodeModel.MODEL_TYPES.FINDBUGS_XML, new File(findBugsXMLPath)));
+
         command = new String[] {
                 new File(j2cpPath, j2cpEdition + Utils.getExtension()).getAbsolutePath(),
                 asgPath,
@@ -93,140 +103,20 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-to:"
         };
         processBuilder = new ProcessBuilder(command);
-        runProcess(processBuilder);
+        ProcessRunner.run(processBuilder);
 
         return resList;
     }
 
-    private void runProcess(ProcessBuilder processBuilder) {
-        processBuilder.redirectErrorStream(true);
-        try {
-            Process process = processBuilder.start();
-            BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-            String line;
-            while ((line = out.readLine()) != null) {
-                MLOG.fInfo(line);
-            }
-        } catch (IOException e) {
-            LOG.error(e);
-        }
+    private String getNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key).getNodeValue();
     }
 
-    @Override
-    public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation, List<CodeModel> analysisResults) {
-        List<VulnerabilityEntry> resList = new ArrayList<>();
-        Optional<CodeModel> graphXML = analysisResults.stream()
-                .filter(cm -> cm.getType() == CodeModel.MODEL_TYPES.OSA_GRAPH_XML).findFirst();
-        if (!graphXML.isPresent()) {
-            LOG.error("Could not locate GRAPH XML analysis results, no vulnerabilities were retrieved.");
-            return resList;
-        }
-
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-
-        try {
-            // process XML securely, avoid attacks like XML External Entities (XXE)
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(graphXML.get().getModelPath().getAbsolutePath());
-            NodeList attributes = doc.getElementsByTagName("attribute");
-            for (int i = 0; i < attributes.getLength(); i++) {
-                String nodeName = attributes.item(i).getAttributes().getNamedItem("name").getNodeValue();
-                String nodeContext = attributes.item(i).getAttributes().getNamedItem("context").getNodeValue();
-                if ("warning".equals(nodeContext) && supportedProblemTypes.containsKey(nodeName)) {
-                    NodeList warnAttributes = attributes.item(i).getChildNodes();
-                    String problemType = supportedProblemTypes.get(nodeName);
-                    resList.add(createVulnerabilityEntry(warnAttributes, problemType));
-                }
-            }
-        } catch (FileNotFoundException e) {
-            LOG.error(e);
-        } catch (IOException e) {
-            LOG.error(e);
-        } catch (ParserConfigurationException e) {
-            LOG.error(e);
-        } catch (SAXException e) {
-            LOG.error(e);
-        }
-
-        return resList;
-    }
-
-    private VulnerabilityEntry createVulnerabilityEntry(NodeList warnAttributes, String problemType) {
-        VulnerabilityEntry ve = new VulnerabilityEntry();
-
-        ve.setType(problemType);
-
-        for (int j = 0; j < warnAttributes.getLength(); j++) {
-            if (warnAttributes.item(j).getAttributes() != null) {
-                String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
-                if ("ExtraInfo".equals(attrType)) {
-                    continue;
-                }
-                String attrVal = warnAttributes.item(j).getAttributes().getNamedItem("value").getNodeValue();
-                switch (attrType) {
-                    case "Path":
-                        ve.setPath(attrVal);
-                        break;
-                    case "Line":
-                        ve.setStartLine(Integer.parseInt(attrVal));
-                        break;
-                    case "Column":
-                        ve.setStartCol(24);
-                        break;
-                    case "EndLine":
-                        ve.setEndLine(Integer.parseInt(attrVal));
-                        break;
-                    case "EndColumn":
-                        ve.setEndCol(61);
-                        break;
-                    case "WarningText":
-                        ve.setDescription(attrVal);
-                        break;
-                }
-            }
-        }
-        // Workaround while VSCode visualization is not fixed
-        alignLineAndColNumbers(ve);
-        return ve;
-    }
-
-    private void alignLineAndColNumbers(VulnerabilityEntry ve) {
-        switch (ve.getStartLine()) {
-            case 3:
-                ve.setStartCol(26);
-                ve.setEndCol(37);
-                break;
-            case 7:
-                ve.setStartCol(20);
-                ve.setEndCol(23);
-                break;
-            case 12:
-                ve.setStartCol(16);
-                ve.setEndCol(20);
-                break;
-            case 16:
-                ve.setStartCol(21);
-                ve.setEndCol(25);
-                break;
-            case 24:
-                ve.setStartCol(34);
-                ve.setEndCol(51);
-                break;
-            case 29:
-                ve.setStartCol(36);
-                ve.setEndCol(55);
-                break;
-            case 34:
-                ve.setStartCol(39);
-                ve.setEndCol(61);
-                break;
-            case 40:
-                ve.setStartCol(24);
-                ve.setEndCol(31);
-                break;
-        }
+    private List<Node> nodeListToArrayList(NodeList nodeList) {
+        return IntStream.range(0, nodeList.getLength())
+                .mapToObj(nodeList::item)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -235,4 +125,124 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 analyzeSourceCode(srcLocation, true));
         return !vulnerabilities.contains(ve);
     }
+
+    @Override
+    public List<VulnerabilityEntry> getVulnerabilityLocations(File srcLocation, List<CodeModel> analysisResults) {
+        List<VulnerabilityEntry> result = new ArrayList<>();
+
+        try {
+            Optional<CodeModel> graphXML = getCodeModel(analysisResults, CodeModel.MODEL_TYPES.OSA_GRAPH_XML);
+            Optional<CodeModel> findBugsXML = getCodeModel(analysisResults, CodeModel.MODEL_TYPES.FINDBUGS_XML);
+
+            result = filteredVulnerabilities(getNodeList(graphXML, "attribute")).map(node ->
+                    VulnEntryFactory.getVulnEntry(warnAttributes(node), problemType(node), variableName(findBugsXML, node), nodeName(node))
+            ).collect(Collectors.toList());
+
+        } catch (DataFormatException e) {
+            LOG.error(e);
+        }
+
+        return result;
+    }
+
+    private Optional<CodeModel> getCodeModel(List<CodeModel> analysisResults, CodeModel.MODEL_TYPES CodeModelType) throws DataFormatException {
+        Optional<CodeModel> codeModel = analysisResults.stream().filter(cm -> cm.getType() == CodeModelType).findFirst();
+        if (codeModel.isEmpty()) throw new DataFormatException("Could not locate " + CodeModelType + " analysis results, no vulnerabilities were retrieved.");
+        return codeModel;
+    }
+
+    private NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {
+        try {
+            Document xml = Utils.getXML(codeModel.get().getModelPath().getAbsolutePath());
+            return xml.getElementsByTagName(tagName);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            LOG.error(e);
+            throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
+        }
+    }
+
+    private Stream<Node> filteredVulnerabilities(NodeList nodeList) {
+        return attributes(nodeList).stream().filter(node -> context(node).equals("warning") && problemType(node) != null);
+    }
+
+    private String findVariableInFindBugsXML(String vulnType, String lineNum, Optional<CodeModel>  findBugsCM) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
+        if (findBugsCM.get().getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
+
+        var bugInstances = attributes(getNodeList(findBugsCM, "BugInstance"));
+
+        for (Node bugInstance : bugInstances) {
+            String bugType = getNodeAttribute(bugInstance, "type");
+            if (!vulnMap.containsKey(vulnType)) continue; // vuln type is unsupported
+            if (!vulnMap.get(vulnType).equals(bugType)) continue;
+
+            String foundLineNum = null;
+            Node localVariable = null;
+
+            List<Node> children = nodeListToArrayList(bugInstance.getChildNodes());
+            for (Node child : children) {
+                // Get line num
+                switch (child.getNodeName()) {
+                    case "SourceLine":
+                        foundLineNum = getNodeAttribute(child, "start");
+                        break;
+
+                    case "LocalVariable":
+                    case "Field":
+                        localVariable = child;
+                        break;
+                }
+            }
+
+            // TODO: clean this up
+            if (foundLineNum != null && localVariable == null) {
+//                System.out.println("Found " + bugType + " on line " + foundLineNum + " without associated variable!");
+                return null;
+            }
+
+            if (foundLineNum == null) continue;
+
+            if (foundLineNum.equals(lineNum)) {
+                return getNodeAttribute(localVariable, "name");
+            }
+        }
+
+        return null;
+    }
+
+
+    /** Queries for temp variables */
+
+    private List<Node> attributes(NodeList nodeList) {
+        return nodeListToArrayList(nodeList);
+    }
+
+    private NodeList warnAttributes(Node node) {
+        return node.getChildNodes();
+    }
+
+    private String lineNumStr(Node node) {
+        return getNodeAttribute(node.getChildNodes().item(3), "value");
+    }
+
+    private String problemType(Node node) {
+        return supportedProblemTypes.get(nodeName(node));
+    }
+
+    private String context(Node node) {
+        return getNodeAttribute(node, "context");
+    }
+
+    private String nodeName(Node node) {
+        return getNodeAttribute(node, "name");
+    }
+
+    private String variableName(Optional<CodeModel> findBugsXML, Node node) {
+        try {
+            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), findBugsXML);
+        } catch (ParserConfigurationException | SAXException | IOException | DataFormatException e) {
+            LOG.error(e);
+            return "";
+        }
+    }
+
 }

@@ -4,7 +4,7 @@ package example;
  * EI_EXPOSE_REP issue for array usage
  */
 
-import java.util.Arrays;
+
 import java.util.UUID;
 
 public class ArrayDemo {
@@ -37,7 +37,7 @@ public class ArrayDemo {
 
 
     public ArrayDemo withActions(String[] actions) {
-        this.actions = actions;
+        this.actions = actions.clone();
         return this;
     }
 
