@@ -15,7 +15,8 @@ public class CodeModel {
         EMBEDDING,
         CFG,
         OSA_GRAPH,
-        OSA_GRAPH_XML
+        OSA_GRAPH_XML,
+        FINDBUGS_XML
     }
 
     public CodeModel(MODEL_TYPES modelType, File codeModel) {
