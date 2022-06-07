@@ -144,10 +144,20 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
                 rar.run(args, new RepairToolSwitcher());
                 List<String> patchLines = Files.readAllLines(Path.of(patchPath));
                 Patch<String> patch = UnifiedDiffUtils.parseUnifiedDiff(patchLines);
-                resList.add(new Pair<>(
-                        new File(ve.getPath()),
-                        new Pair<>(patch, fixStrategies.get(ve.getType()).get(strategy))
-                ));
+
+                if (!patch.getDeltas().isEmpty()) {
+                    resList.add(new Pair<>(
+                            new File(ve.getPath()),
+                            new Pair<>(patch, fixStrategies.get(ve.getType()).get(strategy))
+                    ));
+                } else {
+                    File emptyPatch = new File(patchPath);
+                    if (emptyPatch.delete()) {
+                        System.out.println((patchPath + " deleted successfully!"));
+                        PATCH_COUNTER--;
+                    } else System.out.println("Error occurred while deleting empty patch: " + patchPath);
+                }
+
             } catch (IOException e) {
                 e.printStackTrace();
             }

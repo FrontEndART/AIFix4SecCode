@@ -29,6 +29,7 @@ Once the framework and the OpenStaticAnalyzer components are installed, you can 
 
 config.project_name=NAME OF THE PROJECT # e.g. test-project
 config.project_path=ABSOLUTE PATH TO THE PROJECT SRC # e.g. d:\\AIFix4SecCode\\test-project
+config.project_build_tool=NAME OF THE BUILD TOOL # maven / mavenCLI / gradle / ant
 config.osa_path=PATH TO THE JAVA OPEN STATIC ANALYZER # e.g. d:\\OpenStaticAnalyzer-4.1.0-x64-Windows\\Java
 config.osa_edition=ANALYZER EDITION # SourceMeter or OpenStaticAnalyzer
 config.results_path=FOLDER TO PUT ANALYSIS RESULTS # e.g. d:\\AIFix4SecCode\\test-project\\results

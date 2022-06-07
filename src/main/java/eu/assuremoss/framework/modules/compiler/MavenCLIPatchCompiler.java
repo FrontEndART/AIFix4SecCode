@@ -1,21 +1,21 @@
 package eu.assuremoss.framework.modules.compiler;
 
+import com.github.difflib.patch.Patch;
+import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.ProcessRunner;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.apache.maven.cli.MavenCli;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
-
-public class MavenPatchCompiler extends GenericPatchCompiler {
-    private static final Logger LOG = LogManager.getLogger(MavenPatchCompiler.class);
+public class MavenCLIPatchCompiler extends GenericPatchCompiler {
+    private static final Logger LOG = LogManager.getLogger(MavenCLIPatchCompiler.class);
 
     @Override
     protected void initBuildDirectoryName() {
@@ -24,13 +24,20 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
 
     @Override
     public boolean compile(File srcLocation, boolean runTests, boolean copyDependencies) {
-        MavenCli cli = new MavenCli();
-
         List<String> argList = new ArrayList<>();
-        System.setProperty("maven.multiModuleProjectDirectory", srcLocation.getAbsolutePath());
-        if (!runTests) {
-            argList.add("-DskipTests=true");
-        }
+
+        String rootProjectPath = srcLocation.getAbsolutePath();
+
+        System.setProperty("maven.multiModuleProjectDirectory", rootProjectPath);
+
+        argList.add("mvn");
+        argList.add("-f");
+        argList.add(rootProjectPath);
+
+        // argList.add("-Dpmd.failOnViolation=false");
+
+        argList.add("-DskipTests=true");
+
         if (copyDependencies) {
             try {
                 URL inputUrl = Thread.currentThread().getContextClassLoader().getResource("dep-pom.xml");
@@ -51,22 +58,10 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
         String[] args = new String[argList.size()];
         argList.toArray(args);
 
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final String utf8 = StandardCharsets.UTF_8.name();
-        try (PrintStream buffer = new PrintStream(baos, true, utf8)) {
-            cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer);
-            String mvnOutput = baos.toString();
-            MLOG.fInfo(mvnOutput);
-            if (mvnOutput.contains("BUILD SUCCESS")) {
-                return true;
-            }
-            baos.close();
-        } catch (UnsupportedEncodingException e) {
-            LOG.error(e.getMessage());
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-        }
-        MLOG.info("ERROR - BUILD FAILED!");
-        return false;
+        ProcessBuilder processBuilder = new ProcessBuilder(args);
+        String message = ProcessRunner.runAndReturnMessage(processBuilder);
+
+        return message.contains("BUILD SUCCESS");
     }
+
 }

@@ -10,12 +10,9 @@ import com.google.gson.JsonParser;
 import eu.assuremoss.framework.api.*;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
-import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
+import eu.assuremoss.utils.*;
+import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
-import eu.assuremoss.utils.Configuration;
-import eu.assuremoss.utils.MLogger;
-import eu.assuremoss.utils.Pair;
-import eu.assuremoss.utils.Utils;
 import eu.assuremoss.utils.factories.ToolFactory;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -41,26 +38,35 @@ import static eu.assuremoss.utils.Utils.getMappingFile;
 public class VulnRepairDriver {
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
     public static MLogger MLOG;
+    public static Properties properties;
+    private final PatchCompiler patchCompiler;
+    private final PathHandler path;
+    private final Statistics statistics;
     private int patchCounter = 1;
 
     public static void main(String[] args) throws IOException {
-        VulnRepairDriver driver = new VulnRepairDriver();
         Configuration config = new Configuration(getConfigFile(args), getMappingFile(args));
-
-        Utils.createDirectoryForResults(config.properties);
-        Utils.createDirectoryForValidation(config.properties);
-        Utils.createEmptyLogFile(config.properties);
-
-        MLOG = new MLogger(config.properties, "log.txt");
+        VulnRepairDriver driver = new VulnRepairDriver(config.properties);
 
         driver.bootstrap(config.properties);
+    }
+
+    public VulnRepairDriver(Properties properties) throws IOException {
+        this.patchCompiler = PatchCompilerFactory.getPatchCompiler(properties.getProperty(PROJECT_BUILD_TOOL_KEY));
+        this.path = new PathHandler(properties);
+        this.statistics = new Statistics(path);
+        VulnRepairDriver.properties = properties;
+
+        initResourceFiles(properties);
+        MLOG = new MLogger(properties, "log.txt");
     }
 
     public void bootstrap(Properties props) {
         MLOG.fInfo("Start!");
 
         // 0. Setup
-        String currentTime = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+        Date startTime = new Date();
+        String startTimeStr = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(startTime);
 
         // 1. Get source code
         MLOG.info("Project source acquiring started");
@@ -81,7 +87,7 @@ public class VulnRepairDriver {
         // 3. Produces :- vulnerability locations
         List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
         MLOG.info(String.format("Detected %d vulnerabilities", vulnerabilityLocations.size()));
-        vulnerabilityLocations.forEach(vulnEntry -> MLOG.fInfo(vulnEntry.getType() + " -> " + vulnEntry.getStartLine()));
+        statistics.saveVulnerabilityStatistics(props, vulnerabilityLocations);
 
         // == Transform code / repair ==
         Map<String, List<JSONObject>> problemFixMap = new HashMap<>();
@@ -90,28 +96,33 @@ public class VulnRepairDriver {
         for (VulnerabilityEntry vulnEntry : vulnerabilityLocations) {
             // - Init -
             vulnIndex++;
-            PatchCompiler comp = new MavenPatchCompiler();
+
+            // - Skip if column info was not retrieved -
+            if (vulnEntry.getStartCol() == -1 && vulnEntry.getEndCol() == -1) {
+                MLOG.ninfo(String.format("No column info were retrieved, skipping vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+                continue;
+            }
 
             // - Generate repair patches -
-            MLOG.ninfo(String.format("Generating patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
+            MLOG.ninfo(String.format("Generating patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> patches = vulnRepairer.generateRepairPatches(scc.getSourceCodeLocation(), vulnEntry, codeModels);
 
             //  - Applying & Compiling patches -
-            MLOG.info(String.format("Compiling patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
-            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = comp.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
+            MLOG.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
 
             //  - Testing Patches -
-            MLOG.info(String.format("Verifying patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
-            List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, comp, filteredPatches);
+            MLOG.info(String.format("Verifying patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+            List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, patchCompiler, filteredPatches);
 
             // - Save patches -
-            Utils.createDirectoryForPatches(props);
+            Utils.createDirectory(patchSavePath(props));
             if (candidatePatches.isEmpty()) {
                 MLOG.info("No patch candidates were found, skipping!");
                 continue;
             }
 
-            MLOG.info(String.format("Writing out patch candidates patches for %d/%d vulnerability", vulnIndex, vulnerabilityLocations.size()));
+            MLOG.info(String.format("Writing out candidate patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             if (!problemFixMap.containsKey(vulnEntry.getType())) {
                 problemFixMap.put(vulnEntry.getType(), new ArrayList());
             }
@@ -129,15 +140,19 @@ public class VulnRepairDriver {
         }
 
         if (archiveEnabled(props)) {
-            Utils.archiveResults(patchSavePath(props), props.getProperty(ARCHIVE_PATH), descriptionPath(props), currentTime);
+            Utils.archiveResults(patchSavePath(props), props.getProperty(ARCHIVE_PATH), descriptionPath(props), startTimeStr);
         }
 
         Utils.deleteIntermediatePatches(patchSavePath(props));
+        Utils.saveElapsedTime(startTime);
+        statistics.createResultStatistics(vulnerabilityLocations);
+
+        MLOG.info("Framework repair finished!");
     }
 
     private JSONObject getVSCodeConfig(Map<String, List<JSONObject>> problemFixMap) {
         JSONObject vsCodeConfig = new JSONObject();
-        for(String problemType : problemFixMap.keySet()) {
+        for (String problemType : problemFixMap.keySet()) {
             JSONArray fixesArray = new JSONArray();
             fixesArray.addAll(problemFixMap.get(problemType));
             vsCodeConfig.put(problemType, fixesArray);
@@ -219,4 +234,15 @@ public class VulnRepairDriver {
         return issueObject;
     }
 
+    /**
+     * Creates all resource files (directories, log files)
+     *
+     * @param props - a properties object that specifies the creation path of the files
+     */
+    private static void initResourceFiles(Properties props) {
+        Utils.createDirectory(props.getProperty(RESULTS_PATH_KEY));
+        Utils.createDirectory(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        Utils.createDirectory(String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs")));
+        Utils.createEmptyLogFile(props);
+    }
 }

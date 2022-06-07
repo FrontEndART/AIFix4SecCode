@@ -1,24 +1,31 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.VulnRepairDriver;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static eu.assuremoss.VulnRepairDriver.MLOG;
 import static eu.assuremoss.utils.Configuration.*;
-import static eu.assuremoss.utils.Configuration.patchSavePath;
 
 public class Utils {
     private static final Logger LOG = LogManager.getLogger(Utils.class);
@@ -130,44 +137,97 @@ public class Utils {
         return DEFAULT_MAPPING_FILE_NAME;
     }
 
-    public static void createDirectoryForResults(Properties props) {
-        try {
-            Files.createDirectory(Paths.get(props.getProperty(RESULTS_PATH_KEY)));
+    public static void createDirectory(String path) {
+        File directory = new File(path);
+        if (!directory.exists()) {
+            try {
+                Files.createDirectory(Paths.get(path));
+            } catch (IOException e) {
+                LOG.error("Unable to create directory: " + path);
+            }
+        }
+    }
+
+    public static ArrayList<String> readFile(String filePath) {
+        ArrayList<String> fileContent = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            while(reader.ready()) {
+                fileContent.add(reader.readLine());
+            }
         } catch (IOException e) {
-            LOG.info("Unable to create results folder.");
+            e.printStackTrace();
+            return null;
         }
+        return fileContent;
     }
 
-    public static void createDirectoryForPatches(Properties props) {
-        File patchSavePathDir = new File(patchSavePath(props));
-        if (!patchSavePathDir.exists()) {
-            try {
-                Files.createDirectory(Paths.get(patchSavePath(props)));
-            } catch (IOException e) {
-                LOG.error("Failed to create directory for patches.");
-            }
-        }
+    public static String readFileString(String filePath) {
+        ArrayList<String> fileContent = readFile(filePath);
+        if (fileContent == null) return null;
+
+        return String.join("\n", fileContent);
     }
 
-    public static void createDirectoryForValidation(Properties props) {
-        File validationPathDir = new File(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
-        if (!validationPathDir.exists()) {
-            try {
-                Files.createDirectory(Paths.get(props.getProperty(VALIDATION_RESULTS_PATH_KEY)));
-            } catch (IOException e) {
-                LOG.error("Failed to create directory for validation.");
-            }
-        }
+    public static boolean hasNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key) != null;
+    }
+
+    public static String getNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key).getNodeValue();
+    }
+
+    public static List<Node> nodeListToArrayList(NodeList nodeList) {
+        return IntStream.range(0, nodeList.getLength())
+                .mapToObj(nodeList::item)
+                .collect(Collectors.toList());
+    }
+
+    public static Document getXML(String path) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        // process XML securely, avoid attacks like XML External Entities (XXE)
+        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        return db.parse(path);
     }
 
     public static void createEmptyLogFile(Properties props) {
         String fileName = "log.txt";
-        String path = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), fileName));
+        String path = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", fileName));
 
         try {
-            new FileWriter(path, false); //overwrites file
+            new FileWriter(path);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static Map<String, String> getMappingConfig() {
+        Map<String, String> result = new HashMap<>();
+
+        Properties props = VulnRepairDriver.properties;
+        Enumeration<String> en = (Enumeration<String>) props.propertyNames();
+
+        while (en.hasMoreElements()) {
+            String propName = en.nextElement();
+            String propValue = props.getProperty(propName);
+
+            if (propName.startsWith("mapping")) {
+                result.put(propName.split("\\.")[1], propValue);
+            }
+        }
+
+        return result;
+    }
+
+    public static void saveElapsedTime(Date startTime) {
+        Date endTime = new Date();
+        long diff = endTime.getTime() - startTime.getTime();
+        long hours = TimeUnit.MILLISECONDS.toHours(diff);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(diff);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
+        String millis = String.valueOf(TimeUnit.MILLISECONDS.toMillis(diff)).substring(0, 3);
+
+        MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
     }
 }

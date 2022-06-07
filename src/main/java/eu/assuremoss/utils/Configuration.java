@@ -1,6 +1,5 @@
 package eu.assuremoss.utils;
 
-import eu.assuremoss.VulnRepairDriver;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -22,6 +21,7 @@ public class Configuration {
     public static final String DEFAULT_MAPPING_FILE_NAME = "mapping.properties";
     public static final String PROJECT_NAME_KEY = "config.project_name";
     public static final String PROJECT_PATH_KEY = "config.project_path";
+    public static final String PROJECT_BUILD_TOOL_KEY = "config.project_build_tool";
     public static final String OSA_PATH_KEY = "config.osa_path";
     public static final String OSA_EDITION_KEY = "config.osa_edition";
     public static final String RESULTS_PATH_KEY = "config.results_path";
@@ -33,7 +33,8 @@ public class Configuration {
     private final ClassLoader loader;
 
     /**
-     * @param confFileName The configuration file/resource path
+     * @param generalFileName general configuration file/resource path
+     * @param mapFileName mapping configuration file/resource path
      * @throws IOException Thrown when the file/resource doesn't exist
      */
     public Configuration(String generalFileName, String mapFileName) throws IOException {
@@ -42,6 +43,7 @@ public class Configuration {
         loadConfiguration(generalFileName);
         loadConfiguration(mapFileName);
     }
+
     private void loadConfiguration(String confFileName) throws IOException {
         URL resource = loader.getResource(confFileName);
         if (resource == null) {
@@ -75,7 +77,7 @@ public class Configuration {
             prop.load(stream);
         }
 
-        return  prop;
+        return prop;
     }
 
 
