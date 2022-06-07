@@ -52,7 +52,7 @@ public class VulnEntryFactory {
 
         vulnEntry.setType(supportedProblemTypes.get(nodeName(node)));
         vulnEntry.setVulnType(getNodeAttribute(node, "name"));
-        vulnEntry.setVariable(getVariable(node, findBugsXML));
+        vulnEntry.setVariable(getVariable(node, vulnEntry.getPath(), findBugsXML));
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
@@ -63,17 +63,16 @@ public class VulnEntryFactory {
     }
 
 
-    private static String getVariable(Node node, Optional<CodeModel> findBugsXML) {
+    private static String getVariable(Node node, String path, Optional<CodeModel> findBugsXML) {
         try {
-//            System.out.println(supportedProblemTypes.get(nodeName(node)) + " " + lineNumStr(node));
-            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), findBugsXML);
+            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), path, findBugsXML);
         } catch (ParserConfigurationException | SAXException | IOException | DataFormatException e) {
             e.printStackTrace();
             return "";
         }
     }
 
-    private static String findVariableInFindBugsXML(String vulnType, String lineNum, Optional<CodeModel>  findBugsCM) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
+    private static String findVariableInFindBugsXML(String vulnType, String lineNum, String path, Optional<CodeModel>  findBugsCM) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
         if (findBugsCM.get().getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
 
         var bugInstances = attributes(getNodeList(findBugsCM, "BugInstance"));
@@ -85,13 +84,15 @@ public class VulnEntryFactory {
 
             String foundLineNum = null;
             Node localVariable = null;
+            String foundPath = "";
 
+            // Get vulnerability information from FindBugs.xml
             List<Node> children = nodeListToArrayList(bugInstance.getChildNodes());
             for (Node child : children) {
-                // Get line num
                 switch (child.getNodeName()) {
                     case "SourceLine":
                         foundLineNum = getNodeAttribute(child, "start");
+                        foundPath = getNodeAttribute(child, "sourcepath");
                         break;
 
                     case "LocalVariable":
@@ -101,15 +102,12 @@ public class VulnEntryFactory {
                 }
             }
 
-            // TODO: clean this up
-            if (foundLineNum != null && localVariable == null) {
-//                System.out.println("Found " + bugType + " on line " + foundLineNum + " without associated variable!");
-                return null;
-            }
+            // Compare Graph.xml data with newly found data in FindBugs.xml
+            if (foundLineNum != null && localVariable == null) return null;
 
             if (foundLineNum == null) continue;
 
-            if (foundLineNum.equals(lineNum)) {
+            if (foundLineNum.equals(lineNum) && path.contains(foundPath)) {
                 return getNodeAttribute(localVariable, "name");
             }
         }
