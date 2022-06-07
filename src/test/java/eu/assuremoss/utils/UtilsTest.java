@@ -1,7 +1,7 @@
 package eu.assuremoss.utils;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
@@ -11,8 +11,8 @@ public class UtilsTest {
 
     private static Properties properties = new Properties();
 
-    @BeforeClass
-    public static void initProperties() {
+    @BeforeAll
+    static void initProperties() {
         properties.setProperty("mapping.FB_EiER", "EI_EXPOSE_REP2");
         properties.setProperty("mapping.FB_EER", "EI_EXPOSE_REP2");
         properties.setProperty("strategy.EI_EXPOSE_REP2", "EI_EXPOSE_REP2_ARRAY|EI_EXPOSE_REP2_DATEOBJECT|EI_EXPOSE_REP2");

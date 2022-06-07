@@ -6,13 +6,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static eu.assuremoss.VulnRepairDriver.MLOG;
-import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
-import static eu.assuremoss.utils.Configuration.descriptionPath;
 
 /**
  * Class for creating statistics on the results
