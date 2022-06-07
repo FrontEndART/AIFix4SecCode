@@ -1,6 +1,7 @@
 package eu.assuremoss.utils;
 
 import eu.assuremoss.VulnRepairDriver;
+import eu.assuremoss.framework.model.CodeModel;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -21,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -169,10 +171,6 @@ public class Utils {
         return String.join("\n", fileContent);
     }
 
-    public static boolean hasNodeAttribute(Node node, String key) {
-        return node.getAttributes().getNamedItem(key) != null;
-    }
-
     public static String getNodeAttribute(Node node, String key) {
         return node.getAttributes().getNamedItem(key).getNodeValue();
     }
@@ -236,5 +234,15 @@ public class Utils {
         long millis = TimeUnit.MILLISECONDS.toMillis(diff);
 
         MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
+    }
+
+    public static NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {
+        try {
+            Document xml = Utils.getXML(codeModel.get().getModelPath().getAbsolutePath());
+            return xml.getElementsByTagName(tagName);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            LOG.error(e);
+            throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
+        }
     }
 }
