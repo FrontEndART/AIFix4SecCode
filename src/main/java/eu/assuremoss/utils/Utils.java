@@ -223,10 +223,17 @@ public class Utils {
     public static void saveElapsedTime(Date startTime) {
         Date endTime = new Date();
         long diff = endTime.getTime() - startTime.getTime();
+
         long hours = TimeUnit.MILLISECONDS.toHours(diff);
+        diff -= TimeUnit.HOURS.toMillis(hours);
+
         long minutes = TimeUnit.MILLISECONDS.toMinutes(diff);
+        diff -= TimeUnit.MINUTES.toMillis(minutes);
+
         long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
-        String millis = String.valueOf(TimeUnit.MILLISECONDS.toMillis(diff)).substring(0, 3);
+        diff -= TimeUnit.SECONDS.toMillis(seconds);
+
+        long millis = TimeUnit.MILLISECONDS.toMillis(diff);
 
         MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
     }
