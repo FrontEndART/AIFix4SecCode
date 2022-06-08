@@ -26,6 +26,7 @@ public class VulnEntryFactory {
 
         VulnerabilityEntry vulnEntry = new VulnerabilityEntry();
 
+        // Get vulnerability information from Graph.xml
         for (int j = 0; j < warnAttributes.getLength(); j++) {
             if (warnAttributes.item(j).getAttributes() != null) {
                 String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
@@ -52,8 +53,11 @@ public class VulnEntryFactory {
 
         vulnEntry.setType(supportedProblemTypes.get(nodeName(node)));
         vulnEntry.setVulnType(getNodeAttribute(node, "name"));
+
+        // Extract variable name from SpotBugs.xml
         vulnEntry.setVariable(getVariable(node, vulnEntry.getPath(), findBugsXML));
 
+        // Extract column info from SpotBugs.xml
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
         vulnEntry.setStartCol(columnInfo.getA());
@@ -91,6 +95,8 @@ public class VulnEntryFactory {
             for (Node child : children) {
                 switch (child.getNodeName()) {
                     case "SourceLine":
+                        // if (isNodeRoleSourceLineEqualsKnownNull(child)) break;
+
                         foundLineNum = getNodeAttribute(child, "start");
                         foundPath = getNodeAttribute(child, "sourcepath");
                         break;
@@ -113,6 +119,22 @@ public class VulnEntryFactory {
         }
 
         return null;
+    }
+
+
+    /**
+     * NP_NNOSP has 2 SourceLines: SOURCE_LINE_DEREF and SOURCE_LINE_KNOWN_NULL <br>
+     * OSA fixes this vuln by changing the SOURCE_LINE_DEREF occurrence <br>
+     * Should ignore SourceLine node with role=SOURCE_LINE_KNOWN_NULL
+     * @param node SourceLine node
+     * @return true if the role is SOURCE_LINE_KNOWN_NULL, else false
+     */
+    private static boolean isNodeRoleSourceLineEqualsKnownNull(Node node) {
+        if (!Utils.hasNodeAttribute(node, "role")) {
+            return false;
+        }
+
+        return getNodeAttribute(node, "role").equals("SOURCE_LINE_KNOWN_NULL");
     }
 
 
