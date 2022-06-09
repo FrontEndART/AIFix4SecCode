@@ -209,7 +209,7 @@ public class Statistics {
     }
 
     private String statisticsCSVHeader() {
-        return "ID,Type,Status,Message\n";
+        return "ID,Type,Status,Message,Generated,Filtered,Verified\n";
     }
 
     private String statisticsCSVFormat(int id, VulnerabilityEntry vulnEntry, String status) {
@@ -218,11 +218,16 @@ public class Statistics {
         if ("✖".equals(status))
             message = "Build failure";
 
+        if (vulnEntry.getGeneratedPatches() == 0)
+            message = "No patches";
+
         if ("✖".equals(status) && vulnEntry.getStartCol() == -1 && vulnEntry.getEndCol() == -1)
             message = "Column info missing";
 
+
         // Header: ID,Type,Status,Message
-        return String.format("%s,%s,%s,%s\n", id, vulnEntry.getType(), status, escapeComma(message));
+        return String.format("%s,%s,%s,%s,%d,%d,%d\n", id, vulnEntry.getType(), status, escapeComma(message),
+                vulnEntry.getGeneratedPatches(), vulnEntry.getFilteredPatches(), vulnEntry.getVerifiedPatches());
     }
 
     /**
