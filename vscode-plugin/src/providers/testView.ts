@@ -247,7 +247,7 @@ function getTreeElement(element: any) {
       //patch = issues[i].map((issue: any) => issue.patches.find((patch: any) => patch.path === element)).filter((x: any) => x !== undefined)[0]
       //i++;
     //}
-    return issues[Object.keys(tree).indexOf(element.split('#')[0])][0].patches[0];
+    return issues[Object.keys(tree).indexOf(element.split('#')[0])][element.split('#')[1] - 1].patches[0];
   }
   return parent;
 }

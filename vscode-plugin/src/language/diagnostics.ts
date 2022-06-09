@@ -112,7 +112,7 @@ function createDiagnostic(
   const range = new vscode.Range(
     issueRange.startLine - 1,
     issueRange.startColumn,
-    issueRange.endLine,
+    issueRange.endLine - 1,
     issueRange.endColumn
   );
 

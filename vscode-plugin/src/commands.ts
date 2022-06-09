@@ -861,11 +861,15 @@ export function init(
     if (ANALYZER_USE_DIFF_MODE == "view Diffs") {
       let activeWebview = getActiveDiffPanelWebview();
       let origPath = "";
+      let patchPath = "";
       if ("leftPath" in activeWebview.params) {
         origPath = activeWebview.params.leftPath!;
       }
+      if ("patchPath" in activeWebview.params){
+        patchPath = activeWebview.params.patchPath!;
+      }
 
-      let fixes = await fakeAiFixCode.getFixes(origPath);
+      let fixes = await fakeAiFixCode.getFixes(origPath, patchPath);
       let nextFixId = currentFixId + step;
       if (!fixes[nextFixId]) {
         nextFixId = nextFixId > 0 ? 0 : fixes.length - 1;
@@ -911,7 +915,7 @@ export function init(
       if (process.platform === "linux" || process.platform === "darwin") {
         if (leftPath[0] !== "/") leftPath = "/" + leftPath;
       }
-      let fixes = await fakeAiFixCode.getFixes(leftPath);
+      let fixes = await fakeAiFixCode.getFixes(leftPath, patchFilepath);
       console.log(fixes);
       let nextFixId = currentFixId + step;
       if (!fixes[nextFixId]) {
