@@ -125,7 +125,7 @@ public class Utils {
 
     public static String getConfigFile(String[] args) {
         if (args.length > 0) {
-            return args[1];
+            return args[0];
         }
 
         return DEFAULT_CONFIG_FILE_NAME;
@@ -173,6 +173,10 @@ public class Utils {
 
     public static String getNodeAttribute(Node node, String key) {
         return node.getAttributes().getNamedItem(key).getNodeValue();
+    }
+
+    public static boolean hasNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key) != null;
     }
 
     public static List<Node> nodeListToArrayList(NodeList nodeList) {
