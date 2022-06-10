@@ -21,12 +21,8 @@ public class AntCLIPatchCompiler extends GenericPatchCompiler{
         args.add("-f");
         args.add(srcLocation.getAbsolutePath());
 
-        if (copyDependencies) {
-            args.add("build");
-        } else {
-            args.add("clean");
-            args.add("build");
-        }
+        args.add("clean");
+        args.add("build");
 
         ProcessBuilder processBuilder = new ProcessBuilder(args);
         String message = ProcessRunner.runAndReturnMessage(processBuilder);
