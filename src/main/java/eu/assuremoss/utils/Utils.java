@@ -133,7 +133,7 @@ public class Utils {
 
     public static String getMappingFile(String[] args) {
         if (args.length > 1) {
-            return args[2];
+            return args[1];
         }
 
         return DEFAULT_MAPPING_FILE_NAME;
