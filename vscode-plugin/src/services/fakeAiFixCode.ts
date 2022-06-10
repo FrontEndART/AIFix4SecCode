@@ -77,42 +77,44 @@ export function getIssuesSync() {
   return issuesJson;
 }
 
-export async function getFixes(leftPath: string) {
+export async function getFixes(leftPath: string, patchPath: string) {
   let issueGroups = await getIssues();
   let fixes: any[] = [];
 
   if (issueGroups) {
     Object.values(issueGroups).forEach((issues) => {
       issues.forEach((issue: any) => {
-        issue.patches.forEach((fix: IFix) => {
-          var patch = "";
-          try {
-            patch = readFileSync(upath.join(PATCH_FOLDER, fix.path), "utf8");
-          } catch (err) {
-            console.log(err);
-          }
-
-          var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
-          var sourceFile: string;
-          if (sourceFileMatch && sourceFileMatch[1]) {
-            sourceFile = sourceFileMatch[1];
-          } else {
-            throw Error("Unable to find source file in '" + fix.path + "'");
-          }
-
-          let patch_folder = PATCH_FOLDER;
-          sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
-          leftPath = upath.normalize(leftPath);
-          if (process.platform === "linux" || process.platform === "darwin") {
-            if (sourceFile[0] !== "/") {
-              sourceFile = "/" + sourceFile;
+        if(issue.patches.find((fix: IFix) => fix.path === upath.basename(patchPath))){
+          issue.patches.forEach((fix: IFix) => {
+            var patch = "";
+            try {
+              patch = readFileSync(upath.join(PATCH_FOLDER, fix.path), "utf8");
+            } catch (err) {
+              console.log(err);
             }
-          }
 
-          if (sourceFile === leftPath) {
-            fixes.push(fix);
-          }
-        });
+            var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
+            var sourceFile: string;
+            if (sourceFileMatch && sourceFileMatch[1]) {
+              sourceFile = sourceFileMatch[1];
+            } else {
+              throw Error("Unable to find source file in '" + fix.path + "'");
+            }
+
+            let patch_folder = PATCH_FOLDER;
+            sourceFile = upath.normalize(upath.join(PROJECT_FOLDER, sourceFile));
+            leftPath = upath.normalize(leftPath);
+            if (process.platform === "linux" || process.platform === "darwin") {
+              if (sourceFile[0] !== "/") {
+                sourceFile = "/" + sourceFile;
+              }
+            }
+
+            if (sourceFile === leftPath) {
+              fixes.push(fix);
+            }
+          });
+        }
       });
     });
   }

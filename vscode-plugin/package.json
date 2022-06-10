@@ -2,7 +2,7 @@
   "name": "aifix4seccode-vscode",
   "displayName": "AIFix4SecCode",
   "description": "Fixes security vulnerabilities with the help of AI in your code.",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "license": "",
   "keywords": [
     "vulnerability",
@@ -56,6 +56,7 @@
     "mocha": "^6.1.4",
     "parse-diff": "^0.8.1",
     "parse-json": "^5.2.0",
+    "properties-reader": "^2.2.0",
     "ts-md5": "^1.2.9",
     "ts-mocha": "^8.0.0",
     "tslint": "^5.12.1",

@@ -6,6 +6,13 @@ import { getVSCodeDownloadUrl } from 'vscode-test/out/util';
 import { JsonOutlineProvider } from './providers/jsonOutline';
 import { initActionCommands } from './language/codeActions';
 import * as logging from './services/logging';
+import * as constants from './constants';
+
+var upath = require("upath");
+var path = require("path");
+
+var propertiesReader = require('properties-reader');
+var properties = propertiesReader(upath.join(path.resolve(__dirname, '..'), 'config.properties'), {writer: { saveSections: true }});
 
 export let analysisDiagnostics = vscode.languages.createDiagnosticCollection('aifix4seccode');
 
@@ -18,6 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
   
   init(context, jsonOutlineProvider);
   log(process.env);
+  saveConfigParameters();
 
   // status bar items:
   // Start analysis status bar item:
@@ -40,6 +48,9 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.workspace.onDidChangeConfiguration(event => {
     const action = 'Reload';
 
+    // save extension settings parameters to config file:
+    saveConfigParameters();
+
     vscode.window
       .showInformationMessage(
         `Reload window in order for change in extension AIFix4SecCode configuration to take effect.`,
@@ -59,4 +70,15 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.executeCommand('workbench.action.openSettings', 'AIFix4SecCode');
   });
   logging.ShowInfoMessage("AIFix4SecCode installed. Welcome!");
+}
+
+function saveConfigParameters(){
+  properties.set('config.executing_parameters', constants.ANALYZER_PARAMETERS);
+  properties.set('config.executable_path', constants.ANALYZER_EXE_PATH);
+  properties.set('config.generated_patches_path', constants.PATCH_FOLDER);
+  properties.set('config.issues_path', constants.ISSUES_PATH);
+  properties.set('config.subject_project_path', constants.PROJECT_FOLDER);
+  properties.set('config.use_diff_mode', constants.ANALYZER_USE_DIFF_MODE);
+  
+  properties.save(upath.join(path.resolve(__dirname, '..'), 'config.properties'));
 }
