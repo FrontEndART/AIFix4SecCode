@@ -11,12 +11,15 @@ public class PathHandler {
     // Directories
     private final String patchesDir = "patches";
     private final String logsDir = "logs";
+    private final String buildLogsDir = "build_logs";
 
     // Files
     private final String vulnFound = "vuln_found.txt";
     private final String vulnFoundResult = "vuln_found_result.txt";
     private final String vulnEntries = "vuln_entries.csv";
     private final String vulnEntriesResult = "vuln_entries_result.csv";
+    private final String vulnBuildFile = "vuln_?.txt";
+    private final String logFinish = "log_finish.txt";
 
 
     public static String joinPath(String first, String... args) {
@@ -26,6 +29,22 @@ public class PathHandler {
     public PathHandler(Properties props) {
         this.props = props;
     }
+
+    // Directories
+
+    public String logsDir() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir);
+    }
+
+    public String buildDir() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, buildLogsDir);
+    }
+
+    public String generatedPatches() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), patchesDir);
+    }
+
+    // Files
 
     public String vulnFound() {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnFound);
@@ -43,7 +62,11 @@ public class PathHandler {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnEntriesResult);
     }
 
-    public String generatedPatches() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), patchesDir);
+    public String vulnBuildLogFile(int vulnIndex) {
+        return joinPath(buildDir(), vulnBuildFile.replace("?", String.valueOf(vulnIndex)));
+    }
+
+    public String logFinishFile() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, logFinish);
     }
 }

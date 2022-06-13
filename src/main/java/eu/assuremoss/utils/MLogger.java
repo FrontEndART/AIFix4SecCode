@@ -79,6 +79,14 @@ public class MLogger {
         }
     }
 
+    public void changeOutPutFile(String newFile) {
+        closeFile();
+
+        this.logFilePath = newFile;
+
+        openFile();
+    }
+
     /**
      * Returns the current date in the following format: yyyy/MM/dd HH:mm:ss <br />
      * e.g: 2022/01/01 12:00:00

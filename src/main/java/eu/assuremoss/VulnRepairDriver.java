@@ -57,7 +57,7 @@ public class VulnRepairDriver {
         this.statistics = new Statistics(path);
         VulnRepairDriver.properties = properties;
 
-        initResourceFiles(properties);
+        initResourceFiles(properties, path);
         MLOG = new MLogger(properties, "log.txt");
     }
 
@@ -102,6 +102,8 @@ public class VulnRepairDriver {
             // - Init -
             vulnIndex++;
 
+            MLOG.changeOutPutFile(path.vulnBuildLogFile(vulnIndex));
+
             // - Skip if column info was not retrieved -
             if (vulnEntry.getStartCol() == -1 && vulnEntry.getEndCol() == -1) {
                 MLOG.ninfo(String.format("No column info were retrieved, skipping vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
@@ -136,6 +138,8 @@ public class VulnRepairDriver {
             }
             problemFixMap.get(vulnEntry.getType()).add(generateFixEntity(props, vulnEntry, candidatePatches));
         }
+
+        MLOG.changeOutPutFile(path.logFinishFile());
 
         JSONObject vsCodeConfig = getVSCodeConfig(problemFixMap);
 
@@ -246,11 +250,14 @@ public class VulnRepairDriver {
      * Creates all resource files (directories, log files)
      *
      * @param props - a properties object that specifies the creation path of the files
+     * @param path - a pathHandler object that specifies the creation path of the files
      */
-    private static void initResourceFiles(Properties props) {
+    private static void initResourceFiles(Properties props, PathHandler path) {
         Utils.createDirectory(props.getProperty(RESULTS_PATH_KEY));
         Utils.createDirectory(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
-        Utils.createDirectory(String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs")));
+        Utils.createDirectory(path.logsDir());
+        Utils.createDirectory(path.buildDir());
+
         Utils.createEmptyLogFile(props);
     }
 }
