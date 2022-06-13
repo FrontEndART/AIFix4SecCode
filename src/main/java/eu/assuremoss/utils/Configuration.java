@@ -21,6 +21,7 @@ public class Configuration {
     public static final String DEFAULT_MAPPING_FILE_NAME = "mapping.properties";
     public static final String PROJECT_NAME_KEY = "config.project_name";
     public static final String PROJECT_PATH_KEY = "config.project_path";
+    public static final String PROJECT_SOURCE_PATH_KEY = "config.project_source_path";
     public static final String PROJECT_BUILD_TOOL_KEY = "config.project_build_tool";
     public static final String OSA_PATH_KEY = "config.osa_path";
     public static final String OSA_EDITION_KEY = "config.osa_edition";

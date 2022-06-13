@@ -23,11 +23,11 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.DataFormatException;
 
 import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
+import static eu.assuremoss.utils.Configuration.PROJECT_SOURCE_PATH_KEY;
 
 @AllArgsConstructor
 public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, PatchValidator {
@@ -95,7 +95,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         command = new String[] {
                 new File(j2cpPath, j2cpEdition + Utils.getExtension()).getAbsolutePath(),
                 asgPath,
-                "-from:" + Paths.get(srcLocation.getAbsolutePath(), "src", "main", "java") + File.separator,
+                "-from:" + Paths.get(srcLocation.getAbsolutePath(), VulnRepairDriver.properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator,
                 "-to:"
         };
         processBuilder = new ProcessBuilder(command);

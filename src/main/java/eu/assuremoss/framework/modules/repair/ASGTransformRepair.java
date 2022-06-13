@@ -4,6 +4,7 @@ import coderepair.communication.base.RepairAlgorithmRunner;
 import coderepair.repair.RepairToolSwitcher;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.PROJECT_SOURCE_PATH_KEY;
 
 @AllArgsConstructor
 public class ASGTransformRepair implements VulnerabilityRepairer {
@@ -57,7 +59,9 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         String path = vulnerabilityEntry.getPath();
         Element entry3 = createEntryElement();
         entry3.addContent(createStringElement().addContent("coderepair.base.sourceCodeLocation"));
-        entry3.addContent(createStringElement().addContent((Paths.get(projectPath, "src", "main", "java") + File.separator).replaceAll("\\\\", "/")));
+        entry3.addContent(createStringElement().addContent((
+                Paths.get(projectPath,  VulnRepairDriver.properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator)
+                .replaceAll("\\\\", "/")));
 
         Element entry4 = createEntryElement();
         entry4.addContent(createStringElement().addContent("coderepair.base.schemaLocation"));
@@ -102,7 +106,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
 
         Element problemPosition = new Element("coderepair.communication.base.ProblemPosition");
 
-        String pathToRemove = Paths.get(projectPath, "src", "main", "java") + File.separator;
+        String pathToRemove = Paths.get(projectPath, VulnRepairDriver.properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator;
         problemPosition.addContent(new Element("path").addContent(ve.getPath().substring(pathToRemove.length()).replaceAll("\\\\", "/")));
 
         problemPosition.addContent(new Element("startLine").addContent(ve.getStartLine() + ""));
@@ -153,7 +157,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
                 } else {
                     File emptyPatch = new File(patchPath);
                     if (emptyPatch.delete()) {
-                        System.out.println((patchPath + " deleted successfully!"));
+                        System.out.println((patchPath + " EMPTY PATCH deleted successfully!"));
                         PATCH_COUNTER--;
                     } else System.out.println("Error occurred while deleting empty patch: " + patchPath);
                 }
