@@ -20,6 +20,7 @@ public class PathHandler {
     private final String vulnEntriesResult = "vuln_entries_result.csv";
     private final String vulnBuildFile = "vuln_?.txt";
     private final String logFinish = "log_finish.txt";
+    private final String patchUnitTestsCSV = "patch_unit_tests.csv";
 
 
     public static String joinPath(String first, String... args) {
@@ -68,5 +69,9 @@ public class PathHandler {
 
     public String logFinishFile() {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, logFinish);
+    }
+
+    public String patchUnitTests() {
+        return joinPath(logsDir(), patchUnitTestsCSV);
     }
 }

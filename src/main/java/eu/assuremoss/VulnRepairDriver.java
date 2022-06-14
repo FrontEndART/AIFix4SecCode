@@ -58,7 +58,7 @@ public class VulnRepairDriver {
         VulnRepairDriver.properties = properties;
 
         initResourceFiles(properties, path);
-        MLOG = new MLogger(properties, "log.txt");
+        MLOG = new MLogger(properties, "log.txt", path);
     }
 
     public void bootstrap(Properties props) {

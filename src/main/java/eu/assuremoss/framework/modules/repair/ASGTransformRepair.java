@@ -138,7 +138,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
             PrintStream out = null;
             try {
                 MLOG.closeFile();
-                out = new PrintStream(new FileOutputStream(MLOG.logFilePath, true), true);
+                out = new PrintStream(new FileOutputStream(MLOG.getLogFilePath(), true), true);
                 System.setOut(out);
             } catch (FileNotFoundException f) {
                 LOG.error("FileNotFound: log.txt");
