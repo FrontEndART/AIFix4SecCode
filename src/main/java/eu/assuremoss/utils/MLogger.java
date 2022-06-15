@@ -16,7 +16,7 @@ public class MLogger {
     private Writer unitTestInfoWriter;
     private String logFileName;
     private String logFilePath;
-    private PathHandler path;
+    private final PathHandler path;
 
     public MLogger(Properties props, String logFileName, PathHandler path) throws IOException {
         this.logFileName = logFileName;
