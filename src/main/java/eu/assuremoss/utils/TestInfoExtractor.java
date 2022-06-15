@@ -4,14 +4,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TestInfoExtractor {
-    public static int patch = 1;
+    public static int patch = 0;
     public static String fileName = "";
 
     /**
      * @return the header of the CSV
      */
     public static String getUnitTestHeaderCSV() {
-        return "Patch,Tests run,Failures,Errors,Skipped\n";
+        return "Vuln_ID,Patch,Tests run,Failures,Errors,Skipped\n";
     }
 
     /**
@@ -27,7 +27,7 @@ public class TestInfoExtractor {
         String errors = getValue(line, "Errors: ([0-9]+)");
         String skipped = getValue(line, "Skipped: ([0-9]+)");
 
-        return String.format("%s,%s,%s,%s,%s\n", getPatchName(logFileName), testsRun, failures, errors, skipped);
+        return String.format("%s,%s,%s,%s,%s,%s\n", getPatchName(logFileName), patch, testsRun, failures, errors, skipped);
     }
 
     /**
@@ -61,6 +61,6 @@ public class TestInfoExtractor {
             patch = 1;
         }
 
-        return logFileName.split("\\.")[0] + "_" + patch;
+        return logFileName.split("\\.")[0];
     }
 }
