@@ -16,12 +16,9 @@ import eu.assuremoss.utils.factories.VulnEntryFactory;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
@@ -44,7 +41,6 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     private final String validation_results_path;
     private final String projectName;
     private final Map<String, String> supportedProblemTypes;
-    public static final Map<String, String> vulnMap = Utils.getMappingConfig();
 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation) {
@@ -108,17 +104,6 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         return resList;
     }
 
-
-    private String getNodeAttribute(Node node, String key) {
-        return node.getAttributes().getNamedItem(key).getNodeValue();
-    }
-
-    private List<Node> nodeListToArrayList(NodeList nodeList) {
-        return IntStream.range(0, nodeList.getLength())
-                .mapToObj(nodeList::item)
-                .collect(Collectors.toList());
-    }
-
     @Override
     public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Pair<File, Patch<String>> patch) {
         List<VulnerabilityEntry> vulnerabilities = getVulnerabilityLocations(srcLocation,
@@ -134,9 +119,9 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
             Optional<CodeModel> graphXML = getCodeModel(analysisResults, CodeModel.MODEL_TYPES.OSA_GRAPH_XML);
             Optional<CodeModel> findBugsXML = getCodeModel(analysisResults, CodeModel.MODEL_TYPES.FINDBUGS_XML);
 
-            result = filteredVulnerabilities(getNodeList(graphXML, "attribute")).map(node ->
-                    VulnEntryFactory.getVulnEntry(warnAttributes(node), problemType(node), variableName(findBugsXML, node), nodeName(node))
-            ).collect(Collectors.toList());
+            result = filteredVulnerabilities(Utils.getNodeList(graphXML, "attribute"))
+                    .map(node -> VulnEntryFactory.getVulnEntry(node, findBugsXML))
+                    .collect(Collectors.toList());
 
         } catch (DataFormatException e) {
             LOG.error(e);
@@ -151,98 +136,14 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         return codeModel;
     }
 
-    private NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {
-        try {
-            Document xml = Utils.getXML(codeModel.get().getModelPath().getAbsolutePath());
-            return xml.getElementsByTagName(tagName);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
-            LOG.error(e);
-            throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
-        }
-    }
-
     private Stream<Node> filteredVulnerabilities(NodeList nodeList) {
-        return attributes(nodeList).stream().filter(node -> context(node).equals("warning") && problemType(node) != null);
+        return Utils.nodeListToArrayList(nodeList).stream()
+                .filter(node -> getNodeAttribute(node, "context").equals("warning")
+                                && supportedProblemTypes.get(getNodeAttribute(node, "name")) != null);
     }
 
-    private String findVariableInFindBugsXML(String vulnType, String lineNum, Optional<CodeModel>  findBugsCM) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
-        if (findBugsCM.get().getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
-
-        var bugInstances = attributes(getNodeList(findBugsCM, "BugInstance"));
-
-        for (Node bugInstance : bugInstances) {
-            String bugType = getNodeAttribute(bugInstance, "type");
-            if (!vulnMap.containsKey(vulnType)) continue; // vuln type is unsupported
-            if (!vulnMap.get(vulnType).equals(bugType)) continue;
-
-            String foundLineNum = null;
-            Node localVariable = null;
-
-            List<Node> children = nodeListToArrayList(bugInstance.getChildNodes());
-            for (Node child : children) {
-                // Get line num
-                switch (child.getNodeName()) {
-                    case "SourceLine":
-                        foundLineNum = getNodeAttribute(child, "start");
-                        break;
-
-                    case "LocalVariable":
-                    case "Field":
-                        localVariable = child;
-                        break;
-                }
-            }
-
-            // TODO: clean this up
-            if (foundLineNum != null && localVariable == null) {
-//                System.out.println("Found " + bugType + " on line " + foundLineNum + " without associated variable!");
-                return null;
-            }
-
-            if (foundLineNum == null) continue;
-
-            if (foundLineNum.equals(lineNum)) {
-                return getNodeAttribute(localVariable, "name");
-            }
-        }
-
-        return null;
-    }
-
-
-    /** Queries for temp variables */
-
-    private List<Node> attributes(NodeList nodeList) {
-        return nodeListToArrayList(nodeList);
-    }
-
-    private NodeList warnAttributes(Node node) {
-        return node.getChildNodes();
-    }
-
-    private String lineNumStr(Node node) {
-        return getNodeAttribute(node.getChildNodes().item(3), "value");
-    }
-
-    private String problemType(Node node) {
-        return supportedProblemTypes.get(nodeName(node));
-    }
-
-    private String context(Node node) {
-        return getNodeAttribute(node, "context");
-    }
-
-    private String nodeName(Node node) {
-        return getNodeAttribute(node, "name");
-    }
-
-    private String variableName(Optional<CodeModel> findBugsXML, Node node) {
-        try {
-            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), findBugsXML);
-        } catch (ParserConfigurationException | SAXException | IOException | DataFormatException e) {
-            LOG.error(e);
-            return "";
-        }
+    private String getNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key).getNodeValue();
     }
 
 }
