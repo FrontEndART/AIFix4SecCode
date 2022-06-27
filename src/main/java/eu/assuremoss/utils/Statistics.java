@@ -6,13 +6,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static eu.assuremoss.VulnRepairDriver.MLOG;
-import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
-import static eu.assuremoss.utils.Configuration.descriptionPath;
 
 /**
  * Class for creating statistics on the results
@@ -26,39 +23,32 @@ public class Statistics {
 
 
     /**
-     * Save information about detected vulnerabilities
+     * Saves information about the detected vulnerabilities
      *
-     * @param props
-     * @param vulnEntries
+     * @param vulnEntries the vulnerability entries that will be saved
      */
-    public void saveVulnerabilityStatistics(Properties props, List<VulnerabilityEntry> vulnEntries) {
-        saveFoundVulnerabilities(props, vulnEntries);
+    public void saveVulnerabilityStatistics(List<VulnerabilityEntry> vulnEntries) {
+        saveFoundVulnerabilities(vulnEntries);
         saveVulnerabilityEntries(vulnEntries);
     }
 
     /**
-     * Writes the summarized vulnerabilities into a text file
+     * Writes the summarized vulnerabilities to a text file
      * e.g.: Detected N vulnerabilities <br>
      *  - Xx EI_EXPOSE_REP <br>
      *  - Yx NP_NULL_ON_SOME_PATH <br>
      *  - Zx MS_SHOULD_BE_FINAL <br>
      *
-     * @param props
      * @param vulnEntries the vulnerability entries that will be saved
      */
-    public void saveFoundVulnerabilities(Properties props, List<VulnerabilityEntry> vulnEntries)  {
+    public void saveFoundVulnerabilities(List<VulnerabilityEntry> vulnEntries)  {
         Set<String> vulnTypes = vulnEntries.stream().map(VulnerabilityEntry::getType).collect(Collectors.toSet());
         List<String> allVulnTypes = vulnEntries.stream().map(VulnerabilityEntry::getType).collect(Collectors.toList());
 
-        String fileName = "vuln_found.txt";
-        String vulnStatsPath = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", fileName));
-
-        try (Writer fileWriter = new FileWriter(vulnStatsPath)){
+        try (Writer fileWriter = new FileWriter(path.vulnFound())){
             fileWriter.write("Detected " + vulnEntries.size() + " vulnerabilities\n");
             for (String vulnType : vulnTypes) {
-                // TODO use logger
                 fileWriter.write(" - " + Collections.frequency(allVulnTypes, vulnType) + "x " + vulnType + "\n");
-                //  System.out.println(" - " + Collections.frequency(allVulnTypes, vulnType) + "x " + vulnType + "\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -66,9 +56,9 @@ public class Statistics {
     }
 
     /**
-     * Writes all vulnerability entries to a CSV file
+     * Writes all vulnerabilities to a CSV file
      *
-     * @param vulnEntries
+     * @param vulnEntries the vulnerability entries that will be written to the file
      */
     public void saveVulnerabilityEntries(List<VulnerabilityEntry> vulnEntries) {
         try (Writer writer = new FileWriter(path.vulnEntries())){
@@ -93,7 +83,7 @@ public class Statistics {
     }
 
     /**
-     * Create statistics on the repaired vulnerabilities
+     * Creates statistics on the repaired vulnerabilities
      *
      * @param vulnEntries the vulnerability entries used in the statistics
      */
@@ -140,8 +130,8 @@ public class Statistics {
     /** Writes all vulnerability entries into a csv file with the result status.
      * Result status is based on whether the vulnerability has been fixed.
      *
-     * @param vulnEntries
-     * @param patchesPath
+     * @param vulnEntries list of the found vulnerabilities
+     * @param patchesPath path of the generated patches
      */
     public void createVulnStatistic(List<VulnerabilityEntry> vulnEntries, String patchesPath) {
         File directory = new File(patchesPath);
@@ -174,9 +164,9 @@ public class Statistics {
      * Counts how many of a given vulnerability are among the generated vulnerabilities.
      * The counting is performed on a Set of patches, therefore multiple patches for a vulnerability not counted.
      *
-     * @param patchFiles - List of generated repair patches
-     * @param vulnType - The vulnerability that we want to count
-     * @return number of
+     * @param patchFiles list of generated repair patches
+     * @param vulnType the vulnerability that is counted
+     * @return the number of different generated patches
      */
     private int countRepairedVuln(File[] patchFiles, String vulnType) {
         var patchesSet = Arrays.stream(patchFiles)
@@ -188,9 +178,14 @@ public class Statistics {
         return (int) patchesSet.stream().filter(patchName -> patchName.contains(vulnType + "_")).count();
     }
 
+    /**
+     * Checks if a patch were generated for a vulnerability
+     *
+     * @param patchFiles list of all the generated patch files
+     * @param vulnEntry the vulnerability entry that we
+     * @return true if the patch were found, else false
+     */
     private boolean isPatchGeneratedForVuln(File[] patchFiles, VulnerabilityEntry vulnEntry) {
-        // patch_1_EI_EXPOSE_REP2_10_20_30_40.diff
-
         for (File patchFile : patchFiles) {
             String[] patch = patchFile.getName().replaceAll(",", "").split("\\.")[0].split("_");
 
@@ -214,24 +209,34 @@ public class Statistics {
     }
 
     private String statisticsCSVHeader() {
-        return "ID,Type,Status,Message\n";
+        return "ID,Type,Status,Message,Generated,Filtered,Verified\n";
     }
 
     private String statisticsCSVFormat(int id, VulnerabilityEntry vulnEntry, String status) {
         String message = "ok";
 
-        if ("✖".equals(status) && vulnEntry.getStartCol() == -1 && vulnEntry.getEndCol() == -1)
-            message = "Column info were not retrieved.";
-
         if ("✖".equals(status))
-            message = "Probably build failed.";
+            message = "Build failure";
+
+        if (vulnEntry.getGeneratedPatches() == 0)
+            message = "No patches";
+
+        if ("✖".equals(status) && vulnEntry.getStartCol() == -1 && vulnEntry.getEndCol() == -1)
+            message = "Column info missing";
+
 
         // Header: ID,Type,Status,Message
-        return String.format("%s,%s,%s,%s\n", id, vulnEntry.getType(), status, escapeComma(message));
+        return String.format("%s,%s,%s,%s,%d,%d,%d\n", id, vulnEntry.getType(), status, escapeComma(message),
+                vulnEntry.getGeneratedPatches(), vulnEntry.getFilteredPatches(), vulnEntry.getVerifiedPatches());
     }
 
-    private String escapeComma(String str) {
-        return str.replaceAll(",", " ");
+    /**
+     * Replace all commas with spaces for CSV writing
+     * @param text the text that may contain commas
+     * @return a text without commas
+     */
+    private String escapeComma(String text) {
+        return text.replaceAll(",", " ");
     }
 
 }

@@ -1,14 +1,32 @@
 package eu.assuremoss.utils.factories;
 
+import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.utils.ColumnInfoParser;
 import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.Utils;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.zip.DataFormatException;
+
+import static eu.assuremoss.utils.Utils.*;
 
 public class VulnEntryFactory {
-    public static VulnerabilityEntry getVulnEntry(NodeList warnAttributes, String problemType, String variable, String vulnType) {
+    public static final Map<String, String> supportedProblemTypes = Utils.getMappingConfig();
+
+    public static VulnerabilityEntry getVulnEntry(Node node, Optional<CodeModel> findBugsXML) {
+        NodeList warnAttributes = node.getChildNodes();
+
         VulnerabilityEntry vulnEntry = new VulnerabilityEntry();
 
+        // Get vulnerability information from Graph.xml
         for (int j = 0; j < warnAttributes.getLength(); j++) {
             if (warnAttributes.item(j).getAttributes() != null) {
                 String attrType = warnAttributes.item(j).getAttributes().getNamedItem("name").getNodeValue();
@@ -33,15 +51,102 @@ public class VulnEntryFactory {
             }
         }
 
-        vulnEntry.setType(problemType);
-        vulnEntry.setVulnType(vulnType);
-        vulnEntry.setVariable(variable);
+        vulnEntry.setType(supportedProblemTypes.get(nodeName(node)));
+        vulnEntry.setVulnType(getNodeAttribute(node, "name"));
 
+        // Extract variable name from SpotBugs.xml
+        vulnEntry.setVariable(getVariable(node, vulnEntry.getPath(), findBugsXML));
+
+        // Extract column info from SpotBugs.xml
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
         vulnEntry.setStartCol(columnInfo.getA());
         vulnEntry.setEndCol(columnInfo.getB());
 
         return vulnEntry;
+    }
+
+
+    private static String getVariable(Node node, String path, Optional<CodeModel> findBugsXML) {
+        try {
+            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), path, findBugsXML);
+        } catch (ParserConfigurationException | SAXException | IOException | DataFormatException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    private static String findVariableInFindBugsXML(String vulnType, String lineNum, String path, Optional<CodeModel>  findBugsCM) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
+        if (findBugsCM.get().getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
+
+        var bugInstances = attributes(getNodeList(findBugsCM, "BugInstance"));
+
+        for (Node bugInstance : bugInstances) {
+            String bugType = getNodeAttribute(bugInstance, "type");
+            if (!supportedProblemTypes.containsKey(vulnType)) continue;
+            if (!supportedProblemTypes.get(vulnType).equals(bugType)) continue;
+
+            String foundLineNum = null;
+            Node localVariable = null;
+            String foundPath = "";
+
+            // Get vulnerability information from FindBugs.xml
+            List<Node> children = nodeListToArrayList(bugInstance.getChildNodes());
+            for (Node child : children) {
+                switch (child.getNodeName()) {
+                    case "SourceLine":
+                        // if (isNodeRoleSourceLineEqualsKnownNull(child)) break;
+
+                        foundLineNum = getNodeAttribute(child, "start");
+                        foundPath = getNodeAttribute(child, "sourcepath");
+                        break;
+
+                    case "LocalVariable":
+                    case "Field":
+                        localVariable = child;
+                        break;
+                }
+            }
+
+            // Compare Graph.xml data with newly found data in FindBugs.xml
+            if (foundLineNum != null && localVariable == null) return null;
+
+            if (foundLineNum == null) continue;
+
+            if (foundLineNum.equals(lineNum) && path.contains(foundPath)) {
+                return getNodeAttribute(localVariable, "name");
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * NP_NNOSP has 2 SourceLines: SOURCE_LINE_DEREF and SOURCE_LINE_KNOWN_NULL <br>
+     * OSA fixes this vuln by changing the SOURCE_LINE_DEREF occurrence <br>
+     * Should ignore SourceLine node with role=SOURCE_LINE_KNOWN_NULL
+     * @param node SourceLine node
+     * @return true if the role is SOURCE_LINE_KNOWN_NULL, else false
+     */
+    private static boolean isNodeRoleSourceLineEqualsKnownNull(Node node) {
+        if (!Utils.hasNodeAttribute(node, "role")) {
+            return false;
+        }
+
+        return getNodeAttribute(node, "role").equals("SOURCE_LINE_KNOWN_NULL");
+    }
+
+
+    private static String lineNumStr(Node node) {
+        return getNodeAttribute(node.getChildNodes().item(3), "value");
+    }
+
+    private static List<Node> attributes(NodeList nodeList) {
+        return nodeListToArrayList(nodeList);
+    }
+
+    private static String nodeName(Node node) {
+        return getNodeAttribute(node, "name");
     }
 }

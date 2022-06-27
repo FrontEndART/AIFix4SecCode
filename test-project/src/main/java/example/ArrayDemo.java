@@ -37,7 +37,7 @@ public class ArrayDemo {
 
 
     public ArrayDemo withActions(String[] actions) {
-        this.actions = actions.clone();
+        this.actions = actions;
         return this;
     }
 

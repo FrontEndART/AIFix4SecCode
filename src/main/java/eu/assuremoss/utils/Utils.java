@@ -1,6 +1,7 @@
 package eu.assuremoss.utils;
 
 import eu.assuremoss.VulnRepairDriver;
+import eu.assuremoss.framework.model.CodeModel;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -21,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -123,7 +125,7 @@ public class Utils {
 
     public static String getConfigFile(String[] args) {
         if (args.length > 0) {
-            return args[1];
+            return args[0];
         }
 
         return DEFAULT_CONFIG_FILE_NAME;
@@ -131,7 +133,7 @@ public class Utils {
 
     public static String getMappingFile(String[] args) {
         if (args.length > 1) {
-            return args[2];
+            return args[1];
         }
 
         return DEFAULT_MAPPING_FILE_NAME;
@@ -169,12 +171,12 @@ public class Utils {
         return String.join("\n", fileContent);
     }
 
-    public static boolean hasNodeAttribute(Node node, String key) {
-        return node.getAttributes().getNamedItem(key) != null;
-    }
-
     public static String getNodeAttribute(Node node, String key) {
         return node.getAttributes().getNamedItem(key).getNodeValue();
+    }
+
+    public static boolean hasNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key) != null;
     }
 
     public static List<Node> nodeListToArrayList(NodeList nodeList) {
@@ -223,11 +225,28 @@ public class Utils {
     public static void saveElapsedTime(Date startTime) {
         Date endTime = new Date();
         long diff = endTime.getTime() - startTime.getTime();
+
         long hours = TimeUnit.MILLISECONDS.toHours(diff);
+        diff -= TimeUnit.HOURS.toMillis(hours);
+
         long minutes = TimeUnit.MILLISECONDS.toMinutes(diff);
+        diff -= TimeUnit.MINUTES.toMillis(minutes);
+
         long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
-        String millis = String.valueOf(TimeUnit.MILLISECONDS.toMillis(diff)).substring(0, 3);
+        diff -= TimeUnit.SECONDS.toMillis(seconds);
+
+        long millis = TimeUnit.MILLISECONDS.toMillis(diff);
 
         MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
+    }
+
+    public static NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {
+        try {
+            Document xml = Utils.getXML(codeModel.get().getModelPath().getAbsolutePath());
+            return xml.getElementsByTagName(tagName);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            LOG.error(e);
+            throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
+        }
     }
 }

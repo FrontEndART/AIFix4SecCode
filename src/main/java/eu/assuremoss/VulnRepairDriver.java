@@ -87,7 +87,12 @@ public class VulnRepairDriver {
         // 3. Produces :- vulnerability locations
         List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
         MLOG.info(String.format("Detected %d vulnerabilities", vulnerabilityLocations.size()));
-        statistics.saveVulnerabilityStatistics(props, vulnerabilityLocations);
+        statistics.saveVulnerabilityStatistics(vulnerabilityLocations);
+
+        if (vulnerabilityLocations.size() == 0) {
+            MLOG.ninfo("Framework repair finished!");
+            return;
+        }
 
         // == Transform code / repair ==
         Map<String, List<JSONObject>> problemFixMap = new HashMap<>();
@@ -106,14 +111,17 @@ public class VulnRepairDriver {
             // - Generate repair patches -
             MLOG.ninfo(String.format("Generating patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> patches = vulnRepairer.generateRepairPatches(scc.getSourceCodeLocation(), vulnEntry, codeModels);
+            vulnEntry.setGeneratedPatches(patches.size());
 
             //  - Applying & Compiling patches -
             MLOG.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
+            vulnEntry.setFilteredPatches(filteredPatches.size());
 
             //  - Testing Patches -
             MLOG.info(String.format("Verifying patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, patchCompiler, filteredPatches);
+            vulnEntry.setVerifiedPatches(candidatePatches.size());
 
             // - Save patches -
             Utils.createDirectory(patchSavePath(props));
