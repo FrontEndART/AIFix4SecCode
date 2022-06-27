@@ -80,5 +80,5 @@ function saveConfigParameters(){
   properties.set('config.subject_project_path', constants.PROJECT_FOLDER);
   properties.set('config.use_diff_mode', constants.ANALYZER_USE_DIFF_MODE);
   
-  properties.save(upath.join(path.resolve(__dirname, '..'), 'config.properties'));
+  properties.save(upath.join(constants.ANALYZER_EXE_PATH, 'config.properties'));
 }
