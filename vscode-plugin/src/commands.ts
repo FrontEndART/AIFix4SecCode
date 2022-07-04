@@ -331,6 +331,7 @@ export function init(
   async function openUpFile(patchPath: string) {
     logging.LogInfo("===== Executing openUpFile command. =====");
 
+
     let project_folder = PROJECT_FOLDER;
     let patch_folder = PATCH_FOLDER;
     if (!PROJECT_FOLDER) {
