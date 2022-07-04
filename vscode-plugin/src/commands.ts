@@ -330,7 +330,7 @@ export function init(
 
   async function openUpFile(patchPath: string) {
     logging.LogInfo("===== Executing openUpFile command. =====");
-    
+
     let project_folder = PROJECT_FOLDER;
     let patch_folder = PATCH_FOLDER;
     if (!PROJECT_FOLDER) {
@@ -366,7 +366,7 @@ export function init(
 
     logging.LogInfo("Running diagnosis in opened file...");
     vscode.workspace.openTextDocument(openFilePath).then((document) => {
-      vscode.window.showTextDocument(document).then(async() => {
+      vscode.window.showTextDocument(document).then(async () => {
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
@@ -377,8 +377,8 @@ export function init(
               vscode.window.activeTextEditor!.document,
               analysisDiagnostics
             );
-          // set selection of warning:
-          await setIssueSelectionInEditor(patchPath);
+            // set selection of warning:
+            await setIssueSelectionInEditor(patchPath);
           }
         );
       });
@@ -386,22 +386,27 @@ export function init(
     logging.LogInfo("===== Finished openUpFile command. =====");
   }
 
-  async function setIssueSelectionInEditor(patchPath: string){
+  async function setIssueSelectionInEditor(patchPath: string) {
     await initIssues();
-    let targetTextRange : any = {};
-    
+    let targetTextRange: any = {};
+
     Object.values(issues).forEach((issueArrays: any) => {
       issueArrays.forEach((issueArray: any) => {
-        if(issueArray['patches'].some((x: any) => x['path'] === patchPath)){
-          targetTextRange = issueArray['textRange'];
+        if (issueArray["patches"].some((x: any) => x["path"] === patchPath)) {
+          targetTextRange = issueArray["textRange"];
         }
-      })
-    })
+      });
+    });
 
     const editor = vscode.window.activeTextEditor;
     const position = editor?.selection.active;
 
-    var newSelection = new vscode.Selection(targetTextRange['startLine'] - 1, targetTextRange['startColumn'], targetTextRange['endLine'] - 1, targetTextRange['endColumn']);
+    var newSelection = new vscode.Selection(
+      targetTextRange["startLine"] - 1,
+      targetTextRange["startColumn"],
+      targetTextRange["endLine"] - 1,
+      targetTextRange["endColumn"]
+    );
     editor!.selection = newSelection;
   }
 
@@ -598,7 +603,10 @@ export function init(
 
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
-                if ("leftPath" in webview.params && "patchPath" in webview.params) {
+                if (
+                  "leftPath" in webview.params &&
+                  "patchPath" in webview.params
+                ) {
                   filterOutIssues(webview.params.patchPath!).then(() => {
                     vscode.window.withProgress(
                       {
@@ -635,7 +643,6 @@ export function init(
       if ("patchPath" in webview.params && webview.params.patchPath) {
         patchPath = webview.params.patchPath;
       }
-      testView.treeDataProvider?.refresh(patchPath);
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
       // 1. Get the content of the original file
       // 2. Apply the patch to it's content.
@@ -732,20 +739,18 @@ export function init(
 
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
-                filterOutIssues(patchPath).then(() => {
-                  vscode.window.withProgress(
-                    {
-                      location: vscode.ProgressLocation.Notification,
-                      title: "Loading Diagnostics...",
-                    },
-                    async () => {
-                      await refreshDiagnostics(
-                        vscode.window.activeTextEditor!.document,
-                        analysisDiagnostics
-                      );
-                    }
-                  );
-                });
+                vscode.window.withProgress(
+                  {
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Loading Diagnostics...",
+                  },
+                  async () => {
+                    await refreshDiagnostics(
+                      vscode.window.activeTextEditor!.document,
+                      analysisDiagnostics
+                    );
+                  }
+                );
               });
             });
           }
@@ -783,26 +788,25 @@ export function init(
 
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
 
-      filterOutIssues(patchFilepath).then(() => {
-        testView.treeDataProvider?.refresh(patchFilepath);
-        vscode.workspace.openTextDocument(sourceFile).then((document) => {
-          vscode.window.showTextDocument(document).then(() => {
-            vscode.window.withProgress(
-              {
-                location: vscode.ProgressLocation.Notification,
-                title: "Loading Diagnostics...",
-              },
-              async () => {
-                // 4.
-                await refreshDiagnostics(
-                  vscode.window.activeTextEditor!.document,
-                  analysisDiagnostics
-                );
+      testView.treeDataProvider?.refresh(patchFilepath);
 
-                updateUserDecisions("declined", patchFilepath, sourceFile);
-              }
-            );
-          });
+      vscode.workspace.openTextDocument(sourceFile).then((document) => {
+        vscode.window.showTextDocument(document).then(() => {
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Loading Diagnostics...",
+            },
+            async () => {
+              // 4.
+              await refreshDiagnostics(
+                vscode.window.activeTextEditor!.document,
+                analysisDiagnostics
+              );
+
+              updateUserDecisions("declined", patchFilepath, sourceFile);
+            }
+          );
         });
       });
     }
@@ -887,7 +891,7 @@ export function init(
       if ("leftPath" in activeWebview.params) {
         origPath = activeWebview.params.leftPath!;
       }
-      if ("patchPath" in activeWebview.params){
+      if ("patchPath" in activeWebview.params) {
         patchPath = activeWebview.params.patchPath!;
       }
 
