@@ -92,6 +92,8 @@ public class MLogger {
     }
 
     public void saveUnitTestInformation(String line) {
+        if (!Configuration.isTestingEnabled()) return;
+
         String regex = "Tests run: [\\d]+, Failures: [\\d]+, Errors: [\\d]+, Skipped: [\\d]+";
 
         if (Pattern.matches(regex, line)) {
@@ -114,7 +116,6 @@ public class MLogger {
         }
     }
 
-
     /**
      * Returns the current date in the following format: yyyy/MM/dd HH:mm:ss <br />
      * e.g: 2022/01/01 12:00:00
@@ -125,6 +126,7 @@ public class MLogger {
         Date date = new Date();
         return formatter.format(date);
     }
+
 
     // Getters
 

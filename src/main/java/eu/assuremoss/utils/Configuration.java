@@ -1,5 +1,6 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.VulnRepairDriver;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -23,6 +24,7 @@ public class Configuration {
     public static final String PROJECT_PATH_KEY = "config.project_path";
     public static final String PROJECT_SOURCE_PATH_KEY = "config.project_source_path";
     public static final String PROJECT_BUILD_TOOL_KEY = "config.project_build_tool";
+    public static final String PROJECT_RUN_TESTS = "config.project_run_tests";
     public static final String OSA_PATH_KEY = "config.osa_path";
     public static final String OSA_EDITION_KEY = "config.osa_edition";
     public static final String RESULTS_PATH_KEY = "config.results_path";
@@ -92,5 +94,9 @@ public class Configuration {
 
     public static String patchSavePath(Properties props) {
         return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "patches"));
+    }
+
+    public static boolean isTestingEnabled() {
+        return Boolean.parseBoolean(VulnRepairDriver.properties.getProperty(PROJECT_RUN_TESTS));
     }
 }

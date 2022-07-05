@@ -8,6 +8,7 @@ import eu.assuremoss.framework.api.PatchValidator;
 import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.utils.Configuration;
 import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.utils.Pair;
 import eu.assuremoss.utils.ProcessRunner;
@@ -45,7 +46,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     @Override
     public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation) {
         PatchCompiler patchCompiler = PatchCompilerFactory.getPatchCompiler(VulnRepairDriver.properties.getProperty(PROJECT_BUILD_TOOL_KEY));
-        patchCompiler.compile(srcLocation, true, true);
+        patchCompiler.compile(srcLocation, Configuration.isTestingEnabled(), true);
 
         String workingDir = isValidation ? validation_results_path : resultsPath;
 

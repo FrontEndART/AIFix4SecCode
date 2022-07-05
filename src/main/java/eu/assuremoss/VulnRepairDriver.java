@@ -58,7 +58,7 @@ public class VulnRepairDriver {
         VulnRepairDriver.properties = properties;
 
         initResourceFiles(properties, path);
-        MLOG = new MLogger(properties, "log.txt", path);
+        MLOG = new MLogger(properties, "log.txt", path);  // TODO get 'log.txt' from pathHandler
     }
 
     public void bootstrap(Properties props) {
@@ -117,7 +117,7 @@ public class VulnRepairDriver {
 
             //  - Applying & Compiling patches -
             MLOG.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
-            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, true);
+            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, Configuration.isTestingEnabled());
             vulnEntry.setFilteredPatches(filteredPatches.size());
 
             //  - Testing Patches -
