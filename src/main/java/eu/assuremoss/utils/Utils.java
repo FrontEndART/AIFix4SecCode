@@ -249,4 +249,11 @@ public class Utils {
             throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
         }
     }
+
+    public static String getOsName() {
+        String OS_NAME = System.getProperty("os.name");
+        if (OS_NAME.contains("Windows")) return "Windows";
+        if (OS_NAME.contains("Linux")) return "Linux";
+        return OS_NAME;
+    }
 }
