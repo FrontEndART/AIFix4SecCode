@@ -15,7 +15,7 @@ import static eu.assuremoss.VulnRepairDriver.MLOG;
  * Class for creating statistics on the results
  */
 public class Statistics {
-    private final PathHandler path;
+    public PathHandler path;
 
     public Statistics(PathHandler path) {
         this.path = path;

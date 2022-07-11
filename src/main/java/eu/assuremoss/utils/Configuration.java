@@ -61,7 +61,7 @@ public class Configuration {
      * @param fileName The configuration file path
      * @throws IOException Thrown when the file doesn't exist
      */
-    private Properties loadPropertiesFromFile(String fileName) throws IOException {
+    public Properties loadPropertiesFromFile(String fileName) throws IOException {
         Properties prop = new Properties();
         try (InputStream stream = new FileInputStream(fileName)) {
             prop.load(stream);
