@@ -3,15 +3,14 @@ package eu.assuremoss.utils;
 import eu.assuremoss.framework.api.VulnerabilityDetector;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import helpers.VulnEntryHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,30 +171,9 @@ class ColumnInfoParserTest {
     @Disabled
     @Test
     void Should_Attach_Column_Info_For_Vulnerability_Entries() {
-        var expectedEntries = getExpectedEntries();
+        var expectedEntries = VulnEntryHelper.getVulnEntries();
         var result = vulnDetector.getVulnerabilityLocations(new File(""), mockedCodeModels());
 
         Assertions.assertEquals(expectedEntries, result);
-    }
-
-    private List<VulnerabilityEntry> getExpectedEntries() {
-        var result = new ArrayList<VulnerabilityEntry>();
-
-        String vulnEntriesPath = String.valueOf(Paths.get(mockedResultsPath, "vulnEntries.ser").toAbsolutePath());
-
-        try {
-            FileInputStream fileIn = new FileInputStream(vulnEntriesPath);
-            ObjectInputStream in = new ObjectInputStream(fileIn);
-            result = (ArrayList<VulnerabilityEntry>) in.readObject();
-            in.close();
-            fileIn.close();
-        } catch (IOException i) {
-            i.printStackTrace();
-        } catch (ClassNotFoundException c) {
-            System.out.println("VulnerabilityEntry class not found");
-            c.printStackTrace();
-        }
-
-        return result;
     }
 }

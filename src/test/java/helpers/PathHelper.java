@@ -27,4 +27,8 @@ public class PathHelper {
     public static String getExpectedResultsDir() {
         return PathHandler.joinPath(PathHelper.testResultsPath, "expected");
     }
+
+    public static String getPatchesPath() {
+        return PathHandler.joinPath(PathHelper.testResultsPath, "patches");
+    }
 }

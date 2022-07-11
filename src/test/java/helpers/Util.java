@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Util {
@@ -42,4 +43,20 @@ public class Util {
     public static void cleanUpGeneratedTestFiles() throws IOException {
         FileUtils.cleanDirectory(new File(PathHelper.getActualResultsDir()));
     }
+
+    public static List<List<String>> readCSVFirstNColumns(String path, int N) {
+        List<List<String>> records = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(",");
+                records.add(Arrays.asList(values).subList(0, values.length - N));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return records;
+    }
+
 }
