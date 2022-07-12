@@ -15,7 +15,7 @@ public class MLogger {
     private Writer fileWriter;
     private Writer unitTestInfoWriter;
     private String logFileName;
-    private String logFilePath;
+    public String logFilePath;
     private final PathHandler path;
 
     public MLogger(Properties props, String logFileName, PathHandler path) throws IOException {
@@ -57,7 +57,7 @@ public class MLogger {
         }
     }
 
-    private String logFilePath(Properties props) {
+    public String logFilePath(Properties props) {
         return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", logFileName));
     }
 
