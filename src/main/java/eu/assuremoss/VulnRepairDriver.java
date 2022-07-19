@@ -118,6 +118,7 @@ public class VulnRepairDriver {
             //  - Applying & Compiling patches -
             MLOG.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, Configuration.isTestingEnabled());
+
             vulnEntry.setFilteredPatches(filteredPatches.size());
 
             //  - Testing Patches -
