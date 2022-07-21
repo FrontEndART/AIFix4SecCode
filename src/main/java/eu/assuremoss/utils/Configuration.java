@@ -45,6 +45,8 @@ public class Configuration {
         properties = new Properties();
         loadConfiguration(generalFileName);
         loadConfiguration(mapFileName);
+
+        convertRelativePathToAbsolutePath();
     }
 
     private void loadConfiguration(String confFileName) throws IOException {
@@ -83,6 +85,12 @@ public class Configuration {
         return prop;
     }
 
+    /**
+     * Prepends the current working directory to all paths specified in the configuration.
+     */
+    private void convertRelativePathToAbsolutePath() {
+        updatePathToAbsolute(PROJECT_PATH_KEY);
+    }
 
     public static boolean archiveEnabled(Properties props) {
         return Boolean.parseBoolean(props.getProperty(ARCHIVE_ENABLED));
@@ -98,5 +106,15 @@ public class Configuration {
 
     public static boolean isTestingEnabled() {
         return Boolean.parseBoolean(VulnRepairDriver.properties.getProperty(PROJECT_RUN_TESTS));
+    }
+
+    private void updatePathToAbsolute(String key) {
+        String path = properties.get(key).toString();
+
+        if (PathHandler.isAbsolute(path)) {
+            return;
+        }
+
+        properties.setProperty(key, PathHandler.toAbsolute(path));
     }
 }
