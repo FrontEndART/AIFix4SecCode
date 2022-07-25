@@ -86,7 +86,7 @@ public class Configuration {
     }
 
     /**
-     * Prepends the current working directory to all paths specified in the configuration.
+     * Converts the problematic relative path to absolute path (PROJECT_PATH)
      */
     private void convertRelativePathToAbsolutePath() {
         updatePathToAbsolute(PROJECT_PATH_KEY);
