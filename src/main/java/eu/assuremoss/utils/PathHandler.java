@@ -59,6 +59,26 @@ public class PathHandler {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnFound);
     }
 
+    // Directories
+
+    public String logsDir() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir);
+    }
+
+    public String buildDir() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, buildLogsDir);
+    }
+
+    public String generatedPatches() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), patchesDir);
+    }
+
+    // Files
+    
+    public String vulnFound() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnFound);
+    }
+
     public String vulnEntries() {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnEntries);
     }

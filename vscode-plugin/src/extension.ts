@@ -7,12 +7,10 @@ import { JsonOutlineProvider } from './providers/jsonOutline';
 import { initActionCommands } from './language/codeActions';
 import * as logging from './services/logging';
 import * as constants from './constants';
+var fs = require('fs');
 
 var upath = require("upath");
 var path = require("path");
-
-var propertiesReader = require('properties-reader');
-var properties = propertiesReader(upath.join(path.resolve(__dirname, '..'), 'config.properties'), {writer: { saveSections: true }});
 
 export let analysisDiagnostics = vscode.languages.createDiagnosticCollection('aifix4seccode');
 
@@ -20,6 +18,7 @@ let analysisStatusBarItem : vscode.StatusBarItem;
 let redoFixStatusBarItem : vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
+
   const jsonOutlineProvider = new JsonOutlineProvider(context);
 	vscode.window.registerTreeDataProvider('jsonOutline', jsonOutlineProvider);
   
@@ -73,12 +72,19 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function saveConfigParameters(){
-  properties.set('config.executing_parameters', constants.ANALYZER_PARAMETERS);
-  properties.set('config.executable_path', constants.ANALYZER_EXE_PATH);
-  properties.set('config.generated_patches_path', constants.PATCH_FOLDER);
-  properties.set('config.issues_path', constants.ISSUES_PATH);
-  properties.set('config.subject_project_path', constants.PROJECT_FOLDER);
-  properties.set('config.use_diff_mode', constants.ANALYZER_USE_DIFF_MODE);
+  var logger = fs.createWriteStream(upath.normalize(upath.join(constants.ANALYZER_EXE_PATH, 'config.properties')), {flags: 'w'})
   
-  properties.save(upath.join(path.resolve(__dirname, '..'), 'config.properties'));
+  logger.write(constants.LOG_HEADING);
+
+  logger.write(constants.ANALYZER_PARAMETERS_LOG);
+  logger.write(constants.ANALYZER_EXE_PATH_LOG);
+  logger.write(constants.PATCH_FOLDER_LOG);
+  logger.write(constants.ISSUES_PATH_LOG);
+
+  if(!constants.PROJECT_FOLDER || constants.PROJECT_FOLDER === ""){
+    constants.SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
+  }
+  
+  logger.write(constants.PROJECT_FOLDER_LOG);
+  logger.write(constants.ANALYZER_USE_DIFF_MODE_LOG);
 }

@@ -117,4 +117,5 @@ public class Configuration {
 
         properties.setProperty(key, PathHandler.toAbsolute(path));
     }
+
 }

@@ -108,9 +108,6 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
             }
             writeFileSync(issuesPath!, issuesStr, utf8Stream);
 
-            // refresh:
-            testView.treeDataProvider?.refresh(patchPath);
-
             // 3.
             workspace.openTextDocument(leftPath).then(document => {
               window.showTextDocument(document).then(() => {
