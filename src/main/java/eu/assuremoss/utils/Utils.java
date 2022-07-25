@@ -257,4 +257,8 @@ public class Utils {
         return OS_NAME;
     }
 
+    public static String getWorkingDir() {
+        return System.getProperty("user.dir");
+    }
+
 }

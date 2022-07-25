@@ -22,12 +22,41 @@ public class PathHandler {
     private final String logFinish = "log_finish.txt";
     private final String patchUnitTestsCSV = "patch_unit_tests.csv";
 
+
+    public PathHandler(Properties props) {
+        this.props = props;
+    }
+
     public static String joinPath(String first, String... args) {
         return String.valueOf(Paths.get(first, args));
     }
 
-    public PathHandler(Properties props) {
-        this.props = props;
+    public static String toAbsolute(String path) {
+        return joinPath(Utils.getWorkingDir(), path);
+    }
+
+    public static boolean isAbsolute(String path) {
+        return path.startsWith(Utils.getWorkingDir());
+    }
+
+    // Directories
+
+    public String logsDir() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir);
+    }
+
+    public String buildDir() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, buildLogsDir);
+    }
+
+    public String generatedPatches() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), patchesDir);
+    }
+
+    // Files
+
+    public String vulnFound() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnFound);
     }
 
     // Directories
