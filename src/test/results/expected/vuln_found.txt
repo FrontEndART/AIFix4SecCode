@@ -1,0 +1,5 @@
+Detected 8 vulnerabilities
+ - 5x EI_EXPOSE_REP2
+ - 1x EI_EXPOSE_REP
+ - 1x NP_NULL_ON_SOME_PATH
+ - 1x MS_SHOULD_BE_FINAL

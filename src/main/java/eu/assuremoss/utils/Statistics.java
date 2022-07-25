@@ -15,7 +15,7 @@ import static eu.assuremoss.VulnRepairDriver.MLOG;
  * Class for creating statistics on the results
  */
 public class Statistics {
-    private final PathHandler path;
+    public PathHandler path;
 
     public Statistics(PathHandler path) {
         this.path = path;
@@ -117,7 +117,7 @@ public class Statistics {
             for (String vulnType : vulnTypes) {
                 int foundVuln = Collections.frequency(allVulnTypes, vulnType);
                 int repairedVuln = countRepairedVuln(directory.listFiles(), vulnType);
-                String status = foundVuln == repairedVuln ? "✔" : "✖";
+                String status = foundVuln == repairedVuln ? "OK" : "X";
                 writer.write(String.format(" - %s %d/%d %s\n", status, repairedVuln, foundVuln, vulnType));
             }
 
@@ -150,7 +150,7 @@ public class Statistics {
             writer.write(statisticsCSVHeader());
             for (int i = 0; i < vulnEntries.size(); i++) {
                 VulnerabilityEntry vulnEntry = vulnEntries.get(i);
-                String status = isPatchGeneratedForVuln(directory.listFiles(), vulnEntry) ? "✔" : "✖";
+                String status = isPatchGeneratedForVuln(directory.listFiles(), vulnEntry) ? "OK" : "X";
                 writer.write(statisticsCSVFormat(i + 1, vulnEntry, status));
             }
 

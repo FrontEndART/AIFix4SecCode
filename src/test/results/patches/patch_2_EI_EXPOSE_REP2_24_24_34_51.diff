@@ -1,0 +1,33 @@
+--- src/main/java/example/ArrayDemo.java
++++ src/main/java/example/ArrayDemo.java
+@@ -1,6 +1,7 @@
+-package example;
+-
+-/**
+- * EI_EXPOSE_REP issue for array usage
++package example;
++import java.util.Arrays;
++
++/**
++ * EI_EXPOSE_REP issue for array usage
+  */
+ 
+@@ -19,11 +20,11 @@
+         this.author = author;
+     }
+-
+-
+-    public ArrayDemo withPermissionsToGive(String[] permissionsToGive) {
+-        this.permissionsToGive = permissionsToGive;
+-        return this;
+-    }
+-
++
++
++    public ArrayDemo withPermissionsToGive(String[] permissionsToGive) {
++        this.permissionsToGive = Arrays.copyOf(permissionsToGive, permissionsToGive.length);
++        return this;
++    }
++
+     public ArrayDemo withPermissionsToNeeded(String[] permissionsToNeeded) {
+         this.permissionsToNeeded = permissionsToNeeded;

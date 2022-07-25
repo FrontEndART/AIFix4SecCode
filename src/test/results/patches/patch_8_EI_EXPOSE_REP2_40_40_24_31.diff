@@ -1,0 +1,33 @@
+--- src/main/java/example/ArrayDemo.java
++++ src/main/java/example/ArrayDemo.java
+@@ -1,6 +1,7 @@
+-package example;
+-
+-/**
+- * EI_EXPOSE_REP issue for array usage
++package example;
++import java.util.Arrays;
++
++/**
++ * EI_EXPOSE_REP issue for array usage
+  */
+ 
+@@ -35,11 +36,11 @@
+         return this;
+     }
+-
+-
+-    public ArrayDemo withActions(String[] actions) {
+-        this.actions = actions;
+-        return this;
+-    }
+-
++
++
++    public ArrayDemo withActions(String[] actions) {
++        this.actions = Arrays.copyOf(actions, actions.length);
++        return this;
++    }
++
+ 
+ }

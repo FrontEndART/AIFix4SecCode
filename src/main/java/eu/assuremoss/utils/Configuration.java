@@ -1,5 +1,6 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.VulnRepairDriver;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -23,6 +24,7 @@ public class Configuration {
     public static final String PROJECT_PATH_KEY = "config.project_path";
     public static final String PROJECT_SOURCE_PATH_KEY = "config.project_source_path";
     public static final String PROJECT_BUILD_TOOL_KEY = "config.project_build_tool";
+    public static final String PROJECT_RUN_TESTS = "config.project_run_tests";
     public static final String OSA_PATH_KEY = "config.osa_path";
     public static final String OSA_EDITION_KEY = "config.osa_edition";
     public static final String RESULTS_PATH_KEY = "config.results_path";
@@ -43,6 +45,8 @@ public class Configuration {
         properties = new Properties();
         loadConfiguration(generalFileName);
         loadConfiguration(mapFileName);
+
+        convertRelativePathToAbsolutePath();
     }
 
     private void loadConfiguration(String confFileName) throws IOException {
@@ -59,7 +63,7 @@ public class Configuration {
      * @param fileName The configuration file path
      * @throws IOException Thrown when the file doesn't exist
      */
-    private Properties loadPropertiesFromFile(String fileName) throws IOException {
+    public Properties loadPropertiesFromFile(String fileName) throws IOException {
         Properties prop = new Properties();
         try (InputStream stream = new FileInputStream(fileName)) {
             prop.load(stream);
@@ -81,6 +85,12 @@ public class Configuration {
         return prop;
     }
 
+    /**
+     * Converts the problematic relative path to absolute path (PROJECT_PATH)
+     */
+    private void convertRelativePathToAbsolutePath() {
+        updatePathToAbsolute(PROJECT_PATH_KEY);
+    }
 
     public static boolean archiveEnabled(Properties props) {
         return Boolean.parseBoolean(props.getProperty(ARCHIVE_ENABLED));
@@ -93,4 +103,19 @@ public class Configuration {
     public static String patchSavePath(Properties props) {
         return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "patches"));
     }
+
+    public static boolean isTestingEnabled() {
+        return Boolean.parseBoolean(VulnRepairDriver.properties.getProperty(PROJECT_RUN_TESTS));
+    }
+
+    private void updatePathToAbsolute(String key) {
+        String path = properties.get(key).toString();
+
+        if (PathHandler.isAbsolute(path)) {
+            return;
+        }
+
+        properties.setProperty(key, PathHandler.toAbsolute(path));
+    }
+
 }
