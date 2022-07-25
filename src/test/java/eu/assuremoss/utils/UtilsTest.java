@@ -1,8 +1,17 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.VulnRepairDriver;
+import helpers.PathHelper;
+import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -12,7 +21,7 @@ public class UtilsTest {
     private static Properties properties = new Properties();
 
     @BeforeAll
-    static void initProperties() {
+    static void initProperties() throws IOException {
         properties.setProperty("mapping.FB_EiER", "EI_EXPOSE_REP2");
         properties.setProperty("mapping.FB_EER", "EI_EXPOSE_REP2");
         properties.setProperty("strategy.EI_EXPOSE_REP2", "EI_EXPOSE_REP2_ARRAY|EI_EXPOSE_REP2_DATEOBJECT|EI_EXPOSE_REP2");
@@ -21,6 +30,28 @@ public class UtilsTest {
         properties.setProperty("desc.EI_EXPOSE_REP2_DATEOBJECT", "Repair with creating new Date");
         properties.setProperty("desc.EI_EXPOSE_REP2", "Repair with clone");
         properties.setProperty("desc.MS_SHOULD_BE_FINAL", "Repair with adding final");
+        properties.setProperty("config.results_path", PathHelper.testResultsPath);
+
+        Files.createDirectories(Path.of(PathHandler.joinPath(PathHelper.testResultsPath, "logs")));
+    }
+
+    @Test
+    public void shouldDeleteIntermediatePatches() throws IOException {
+        // Setup dir with patches
+        Files.createDirectories(Path.of(PathHelper.getIntermediatePatchesDir()));
+        FileUtils.cleanDirectory(new File(PathHelper.getIntermediatePatchesDir()));
+
+        Utils.createEmptyLogFile(properties);
+        VulnRepairDriver.MLOG = new MLogger(properties, "log.txt", new PathHandler(properties));
+
+        for (int i = 1; i <= 5; i++) {
+            String fileName = String.format("repair_patch%d.diff", i);
+            Files.createFile(Path.of(PathHandler.joinPath(PathHelper.getIntermediatePatchesDir(), fileName)));
+        }
+
+        Utils.deleteIntermediatePatches(PathHelper.getIntermediatePatchesDir());
+
+        Assertions.assertEquals(new File(PathHelper.getIntermediatePatchesDir()).list().length, 0);
     }
 
     @Test

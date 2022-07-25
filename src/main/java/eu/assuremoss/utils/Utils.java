@@ -37,7 +37,7 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-                MLOG.fInfo("Deleting" + file.getName());
+                MLOG.fInfo("Deleting " + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);
@@ -249,4 +249,12 @@ public class Utils {
             throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
         }
     }
+
+    public static String getOsName() {
+        String OS_NAME = System.getProperty("os.name");
+        if (OS_NAME.contains("Windows")) return "Windows";
+        if (OS_NAME.contains("Linux")) return "Linux";
+        return OS_NAME;
+    }
+
 }
