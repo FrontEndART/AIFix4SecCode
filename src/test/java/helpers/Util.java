@@ -37,7 +37,7 @@ public class Util {
     }
 
     public static String readFile(String path) throws IOException {
-        return Files.readString(Paths.get(path));
+        return Files.readString(Paths.get(path)).replaceAll("\\n|\\r\\n", System.getProperty("line.separator"));
     }
 
     public static void cleanUpGeneratedTestFiles() throws IOException {
