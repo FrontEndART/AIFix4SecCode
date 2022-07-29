@@ -19,7 +19,7 @@ public class ConfigurationTest {
     @Test
     void shouldReadGeneralSettings() {
         assertEquals("test-project", config.properties.getProperty("config.project_name"));
-        assertEquals("d:\\AIFix4SecCode\\test-project", config.properties.getProperty("config.project_path"));
+        assertEquals(PathHandler.joinPath(Utils.getWorkingDir(), "test-project"), config.properties.getProperty("config.project_path"));
         assertEquals("src\\main\\java", config.properties.getProperty("config.project_source_path"));
         assertEquals("maven", config.properties.getProperty("config.project_build_tool"));
         assertEquals("d:\\OpenStaticAnalyzer-4.1.0-x64-Windows\\Java", config.properties.getProperty("config.osa_path"));
@@ -72,11 +72,11 @@ public class ConfigurationTest {
 
     @Test
     void shouldGetDescriptionPath() {
-        assertEquals("d:\\AIFix4SecCode\\test-project\\results\\osa_xml", Configuration.descriptionPath(config.properties));
+        assertEquals(PathHandler.joinPath("d:\\AIFix4SecCode\\test-project\\results", "osa_xml"), Configuration.descriptionPath(config.properties));
     }
 
     @Test
     void shouldGetPatchSavePath() {
-        assertEquals("d:\\AIFix4SecCode\\test-project\\results\\patches", Configuration.patchSavePath(config.properties));
+        assertEquals(PathHandler.joinPath("d:\\AIFix4SecCode\\test-project\\results", "patches"), Configuration.patchSavePath(config.properties));
     }
 }
