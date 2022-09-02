@@ -4,7 +4,7 @@ package example;
  * EI_EXPOSE_REP issue for array usage
  */
 
-import java.util.Arrays;
+
 import java.util.UUID;
 
 public class ArrayDemo {

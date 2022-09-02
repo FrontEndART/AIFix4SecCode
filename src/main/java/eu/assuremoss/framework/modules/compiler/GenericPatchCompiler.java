@@ -10,9 +10,34 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class GenericPatchCompiler implements PatchCompiler {
+    public String buildDirectoryName;
+
+    protected abstract void initBuildDirectoryName();
+
+    protected GenericPatchCompiler() {
+        initBuildDirectoryName();
+    }
+
+    @Override
+    public List<Pair<File, Pair<Patch<String>, String>>> applyAndCompile(File srcLocation, List<Pair<File, Pair<Patch<String>, String>>> patches, boolean runTests) {
+        List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = new ArrayList<>();
+
+        for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : patches) {
+            Patch<String> rawPatch = patchWithExplanation.getB().getA();
+            Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
+            applyPatch(patch, srcLocation);
+            if (compile(srcLocation, runTests, false)) {
+                filteredPatches.add(patchWithExplanation);
+            }
+            revertPatch(patch, srcLocation);
+        }
+
+        return filteredPatches;
+    }
 
     @Override
     public void revertPatch(Pair<File, Patch<String>> patch, File srcLocation) {
@@ -44,5 +69,9 @@ public abstract class GenericPatchCompiler implements PatchCompiler {
             fw.write(s + System.lineSeparator());
         }
         fw.close();
+    }
+
+    public String getBuildDirectoryName() {
+        return buildDirectoryName;
     }
 }

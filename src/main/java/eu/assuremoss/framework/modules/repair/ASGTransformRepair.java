@@ -4,6 +4,7 @@ import coderepair.communication.base.RepairAlgorithmRunner;
 import coderepair.repair.RepairToolSwitcher;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
@@ -16,15 +17,16 @@ import org.jdom2.Element;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.PROJECT_SOURCE_PATH_KEY;
 
 @AllArgsConstructor
 public class ASGTransformRepair implements VulnerabilityRepairer {
@@ -57,7 +59,9 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         String path = vulnerabilityEntry.getPath();
         Element entry3 = createEntryElement();
         entry3.addContent(createStringElement().addContent("coderepair.base.sourceCodeLocation"));
-        entry3.addContent(createStringElement().addContent((Paths.get(projectPath, "src", "main", "java") + File.separator).replaceAll("\\\\", "/")));
+        entry3.addContent(createStringElement().addContent((
+                Paths.get(projectPath,  VulnRepairDriver.properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator)
+                .replaceAll("\\\\", "/")));
 
         Element entry4 = createEntryElement();
         entry4.addContent(createStringElement().addContent("coderepair.base.schemaLocation"));
@@ -102,7 +106,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
 
         Element problemPosition = new Element("coderepair.communication.base.ProblemPosition");
 
-        String pathToRemove = Paths.get(projectPath, "src", "main", "java") + File.separator;
+        String pathToRemove = Paths.get(projectPath, VulnRepairDriver.properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator;
         problemPosition.addContent(new Element("path").addContent(ve.getPath().substring(pathToRemove.length()).replaceAll("\\\\", "/")));
 
         problemPosition.addContent(new Element("startLine").addContent(ve.getStartLine() + ""));
@@ -117,7 +121,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     }
 
     @Override
-    public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels) {
+    public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels)  {
         List<Pair<File, Pair<Patch<String>, String>>> resList = new ArrayList<>();
         for (String strategy : fixStrategies.get(ve.getType()).keySet()) {
             generateDescription(ve, codeModels, strategy);
@@ -129,16 +133,45 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
                     String.valueOf(Paths.get(resultsPath, "error.txt")),
             };
             RepairAlgorithmRunner rar = new RepairAlgorithmRunner();
+
+            // Redirect standard output into log file
+            PrintStream out = null;
+            try {
+                MLOG.closeFile();
+                out = new PrintStream(new FileOutputStream(MLOG.getLogFilePath(), true), true);
+                System.setOut(out);
+            } catch (FileNotFoundException f) {
+                LOG.error("FileNotFound: log.txt");
+            }
+
             try {
                 rar.run(args, new RepairToolSwitcher());
                 List<String> patchLines = Files.readAllLines(Path.of(patchPath));
                 Patch<String> patch = UnifiedDiffUtils.parseUnifiedDiff(patchLines);
-                resList.add(new Pair<>(
-                        new File(ve.getPath()),
-                        new Pair<>(patch, fixStrategies.get(ve.getType()).get(strategy))
-                ));
+
+                if (!patch.getDeltas().isEmpty()) {
+                    resList.add(new Pair<>(
+                            new File(ve.getPath()),
+                            new Pair<>(patch, fixStrategies.get(ve.getType()).get(strategy))
+                    ));
+                } else {
+                    File emptyPatch = new File(patchPath);
+                    if (emptyPatch.delete()) {
+                        System.out.println((patchPath + " EMPTY PATCH deleted successfully!"));
+                        PATCH_COUNTER--;
+                    } else System.out.println("Error occurred while deleting empty patch: " + patchPath);
+                }
+
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+
+            // Reset standard output stream
+            if (out != null) {
+                out.flush();
+                out.close();
+                System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+                MLOG.openFile(true);
             }
         }
         return resList;

@@ -1,0 +1,21 @@
+--- src/main/java/example/MyDate.java
++++ src/main/java/example/MyDate.java
+@@ -7,11 +7,11 @@
+ public class MyDate {
+     private Date date = null;
+-
+-
+-    public Date getDate() {
+-        return date; //a flaw should occur at this point
+-    }
+-
+-    public void setDate(Date date) {
++
++
++    public Date getDate() {
++        return new Date(date.getTime()); //a flaw should occur at this point
++    }
++
++    public void setDate(Date date) {
+         this.date = date; //a flaw should occur at this point
+     }

@@ -20,9 +20,6 @@ export async function refreshDiagnostics(
   try {
     const diagnostics: vscode.Diagnostic[] = [];
     initIssues().then(() => {
-      logging.LogInfo(
-        "Got issues from analyzer: " + JSON.stringify(issueGroups)
-      );
       // for each issue we create a diagnosctic.
       if (issueGroups) {
         Object.values(issueGroups).forEach((issues) => {
@@ -112,7 +109,7 @@ function createDiagnostic(
   const range = new vscode.Range(
     issueRange.startLine - 1,
     issueRange.startColumn,
-    issueRange.endLine,
+    issueRange.endLine - 1,
     issueRange.endColumn
   );
 

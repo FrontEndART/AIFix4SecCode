@@ -15,4 +15,6 @@ public interface PatchCompiler {
     public void revertPatch(Pair<File, Patch<String>> patch, File srcLocation);
 
     public void applyPatch(Pair<File, Patch<String>> patch, File srcLocation);
+
+    public String getBuildDirectoryName();
 }

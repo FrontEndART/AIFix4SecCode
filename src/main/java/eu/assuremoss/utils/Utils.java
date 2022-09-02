@@ -1,20 +1,33 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.VulnRepairDriver;
+import eu.assuremoss.framework.model.CodeModel;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.*;
 
 public class Utils {
     private static final Logger LOG = LogManager.getLogger(Utils.class);
@@ -24,7 +37,7 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-                LOG.info("Deleting " + file.getName());
+                MLOG.fInfo("Deleting " + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);
@@ -109,4 +122,143 @@ public class Utils {
         zos.closeEntry();
         fis.close();
     }
+
+    public static String getConfigFile(String[] args) {
+        if (args.length > 0) {
+            return args[0];
+        }
+
+        return DEFAULT_CONFIG_FILE_NAME;
+    }
+
+    public static String getMappingFile(String[] args) {
+        if (args.length > 1) {
+            return args[1];
+        }
+
+        return DEFAULT_MAPPING_FILE_NAME;
+    }
+
+    public static void createDirectory(String path) {
+        File directory = new File(path);
+        if (!directory.exists()) {
+            try {
+                Files.createDirectory(Paths.get(path));
+            } catch (IOException e) {
+                LOG.error("Unable to create directory: " + path);
+            }
+        }
+    }
+
+    public static ArrayList<String> readFile(String filePath) {
+        ArrayList<String> fileContent = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            while(reader.ready()) {
+                fileContent.add(reader.readLine());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return fileContent;
+    }
+
+    public static String readFileString(String filePath) {
+        ArrayList<String> fileContent = readFile(filePath);
+        if (fileContent == null) return null;
+
+        return String.join("\n", fileContent);
+    }
+
+    public static String getNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key).getNodeValue();
+    }
+
+    public static boolean hasNodeAttribute(Node node, String key) {
+        return node.getAttributes().getNamedItem(key) != null;
+    }
+
+    public static List<Node> nodeListToArrayList(NodeList nodeList) {
+        return IntStream.range(0, nodeList.getLength())
+                .mapToObj(nodeList::item)
+                .collect(Collectors.toList());
+    }
+
+    public static Document getXML(String path) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        // process XML securely, avoid attacks like XML External Entities (XXE)
+        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        return db.parse(path);
+    }
+
+    public static void createEmptyLogFile(Properties props) {
+        String fileName = "log.txt";
+        String path = String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", fileName));
+
+        try {
+            new FileWriter(path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Map<String, String> getMappingConfig() {
+        Map<String, String> result = new HashMap<>();
+
+        Properties props = VulnRepairDriver.properties;
+        Enumeration<String> en = (Enumeration<String>) props.propertyNames();
+
+        while (en.hasMoreElements()) {
+            String propName = en.nextElement();
+            String propValue = props.getProperty(propName);
+
+            if (propName.startsWith("mapping")) {
+                result.put(propName.split("\\.")[1], propValue);
+            }
+        }
+
+        return result;
+    }
+
+    public static void saveElapsedTime(Date startTime) {
+        Date endTime = new Date();
+        long diff = endTime.getTime() - startTime.getTime();
+
+        long hours = TimeUnit.MILLISECONDS.toHours(diff);
+        diff -= TimeUnit.HOURS.toMillis(hours);
+
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(diff);
+        diff -= TimeUnit.MINUTES.toMillis(minutes);
+
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
+        diff -= TimeUnit.SECONDS.toMillis(seconds);
+
+        long millis = TimeUnit.MILLISECONDS.toMillis(diff);
+
+        MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
+    }
+
+    public static NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {
+        try {
+            Document xml = Utils.getXML(codeModel.get().getModelPath().getAbsolutePath());
+            return xml.getElementsByTagName(tagName);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            LOG.error(e);
+            throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
+        }
+    }
+
+    public static String getOsName() {
+        String OS_NAME = System.getProperty("os.name");
+        if (OS_NAME.contains("Windows")) return "Windows";
+        if (OS_NAME.contains("Linux")) return "Linux";
+        return OS_NAME;
+    }
+
+    public static String getWorkingDir() {
+        return System.getProperty("user.dir");
+    }
+
 }

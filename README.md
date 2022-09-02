@@ -11,7 +11,7 @@ You can install the framework by cloning its GitHub repository and building it w
 ```
 git clone https://github.com/FrontEndART/AIFix4SecCode.git
 cd AIFix4SecCode
-mvn install:install-file -Dfile=src\\main\\resources\\CodeRepair-1.0-SNAPSHOT-jar-with-dependencies.jar -DgroupId=com.fea -DartifactId=coderepair -Dversion=1.0 -Dpackaging=jar -DgeneratePom=true
+mvn install:install-file -Dfile=src\\main\\resources\\CodeRepair-1.0.2-SNAPSHOT-jar-with-dependencies.jar -DgroupId=com.fea -DartifactId=coderepair -Dversion=1.0.1 -Dpackaging=jar -DgeneratePom=true
 mvn package
 cd vscode-plugin
 npm install
@@ -29,6 +29,9 @@ Once the framework and the OpenStaticAnalyzer components are installed, you can 
 
 config.project_name=NAME OF THE PROJECT # e.g. test-project
 config.project_path=ABSOLUTE PATH TO THE PROJECT SRC # e.g. d:\\AIFix4SecCode\\test-project
+config.project_source_path=RELATIVE PATH OF THE SOURCE FILES # e.g. src\\main\\java
+config.project_build_tool=NAME OF THE BUILD TOOL # maven / mavenCLI / gradle / ant
+config.project_run_tests=RUN UNIT TESTS OR NOT # true or false
 config.osa_path=PATH TO THE JAVA OPEN STATIC ANALYZER # e.g. d:\\OpenStaticAnalyzer-4.1.0-x64-Windows\\Java
 config.osa_edition=ANALYZER EDITION # SourceMeter or OpenStaticAnalyzer
 config.results_path=FOLDER TO PUT ANALYSIS RESULTS # e.g. d:\\AIFix4SecCode\\test-project\\results

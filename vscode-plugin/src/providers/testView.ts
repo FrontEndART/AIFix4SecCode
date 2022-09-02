@@ -4,6 +4,9 @@ import * as path from "path";
 import { getIssues } from "../services/fakeAiFixCode";
 import { objectify } from "tslint/lib/utils";
 import { isObjectLiteralExpression } from "typescript";
+import { writeFileSync } from "fs";
+import { utf8Stream } from "../constants";
+var stringify = require("json-stringify");
 
 let tree: any;
 
@@ -247,7 +250,7 @@ function getTreeElement(element: any) {
       //patch = issues[i].map((issue: any) => issue.patches.find((patch: any) => patch.path === element)).filter((x: any) => x !== undefined)[0]
       //i++;
     //}
-    return issues[Object.keys(tree).indexOf(element.split('#')[0])][0].patches[0];
+    return issues[Object.keys(tree).indexOf(element.split('#')[0])][element.split('#')[1] - 1].patches[0];
   }
   return parent;
 }
@@ -261,24 +264,34 @@ function getNode(key: any): { key: string } {
 
 function filterTree(patchPath: string) {
   Object.keys(tree).forEach((key) => {
-    // if (tree[key].patches.some((x: any) => x.path === patchPath || patchPath.includes(x.path))) {
-    // 	delete tree[key];
-    // }
-    //tree[key].patches = tree[key].patches.filter((x) => x.path !== patchPath || !patchPath.includes(x.path));
     tree[key].forEach((issue: any) => {
         issue.patches.forEach((patch: any) => {
             if(patch.path === patchPath || patchPath.includes(patch.path))
             {
-                tree[key].splice(tree[key].indexOf(issue), 1);
-                if(!tree[key].length){
-                    delete tree[key];
-                }
+                issue.patches.splice(issue.patches.indexOf(patch), 1);
+                if(!issue.patches.length){
+                  tree[key].splice(tree[key].indexOf(issue), 1);
+                  if(!tree[key].length){
+                      delete tree[key];
+                  }
+              }
             }
         })
     })
-    // if (!tree[key].patches.length) {
-    //     delete tree[key];
-    // }
+    let issuesStr = stringify(tree);
+    console.log(issuesStr);
+
+    let issuesPath: string | undefined = "";
+    if (
+      vscode.workspace
+        .getConfiguration()
+        .get<string>("aifix4seccode.analyzer.issuesPath")
+    ) {
+      issuesPath = vscode.workspace
+        .getConfiguration()
+        .get<string>("aifix4seccode.analyzer.issuesPath");
+    }
+    writeFileSync(issuesPath!, issuesStr, utf8Stream);
 });
 console.log(tree);
 }
