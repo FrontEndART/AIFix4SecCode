@@ -36,7 +36,7 @@ public class PathHandler {
     }
 
     public static boolean isAbsolute(String path) {
-        return path.startsWith(Utils.getWorkingDir());
+        return Paths.get(path).isAbsolute();
     }
 
     // Directories
