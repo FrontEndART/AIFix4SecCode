@@ -51,7 +51,7 @@ public class UtilsTest {
 
         Utils.deleteIntermediatePatches(PathHelper.getIntermediatePatchesDir());
 
-        Assertions.assertEquals(new File(PathHelper.getIntermediatePatchesDir()).list().length, 0);
+        Assertions.assertEquals(0, new File(PathHelper.getIntermediatePatchesDir()).list().length);
     }
 
     @Test

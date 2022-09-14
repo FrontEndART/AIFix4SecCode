@@ -45,7 +45,7 @@ public class StatisticsTest {
 
         statistics.saveFoundVulnerabilities(vulnEntries);
 
-        Assertions.assertEquals(Util.readFile(actual_vulnFoundPath), Util.readFile(expected_vulnFoundPath));
+        Assertions.assertEquals(Util.readFile(expected_vulnFoundPath), Util.readFile(actual_vulnFoundPath));
     }
 
     @Test
@@ -54,11 +54,11 @@ public class StatisticsTest {
         final String expected_vulnEntriesPath = PathHandler.joinPath(PathHelper.getExpectedResultsDir(), "vuln_entries.csv");
 
         Mockito.when(statistics.path.vulnEntries()).thenReturn(actual_vulnEntriesPath);
-        Assertions.assertEquals(actual_vulnEntriesPath, statistics.path.vulnEntries());
+        Assertions.assertEquals(statistics.path.vulnEntries(), actual_vulnEntriesPath);
 
         statistics.saveVulnerabilityEntries(vulnEntries);
 
-        Assertions.assertEquals(Util.readFile(actual_vulnEntriesPath), Util.readFile(expected_vulnEntriesPath));
+        Assertions.assertEquals(Util.readFile(expected_vulnEntriesPath), Util.readFile(actual_vulnEntriesPath));
     }
 
     @Test
@@ -67,14 +67,14 @@ public class StatisticsTest {
         final String expected_vulnEntriesResultPath = PathHandler.joinPath(PathHelper.getExpectedResultsDir(), "vuln_entries_result.csv");
 
         Mockito.when(statistics.path.vulnEntryStatistics()).thenReturn(actual_vulnEntriesResultPath);
-        Assertions.assertEquals(actual_vulnEntriesResultPath, statistics.path.vulnEntryStatistics());
+        Assertions.assertEquals(statistics.path.vulnEntryStatistics(), actual_vulnEntriesResultPath);
 
         statistics.createVulnStatistic(vulnEntries, PathHelper.getPatchesPath());
 
         List<List<String>> actual = Util.readCSVFirstNColumns((actual_vulnEntriesResultPath), 4);
         List<List<String>> expected = Util.readCSVFirstNColumns((expected_vulnEntriesResultPath), 4);
 
-        Assertions.assertEquals(actual, expected);
+        Assertions.assertEquals(expected, actual);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class StatisticsTest {
 
         statistics.createRepairedVulnSum(vulnEntries, PathHelper.getPatchesPath(), actual_vulnFoundResultPath);
 
-        Assertions.assertEquals(Util.readFile(actual_vulnFoundResultPath), Util.readFile(expected_vulnFoundResultPath));
+        Assertions.assertEquals(Util.readFile(expected_vulnFoundResultPath), Util.readFile(actual_vulnFoundResultPath));
     }
 
 

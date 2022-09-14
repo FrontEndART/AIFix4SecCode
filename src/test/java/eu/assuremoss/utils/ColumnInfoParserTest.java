@@ -38,7 +38,7 @@ class ColumnInfoParserTest {
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(34, 51));
+        Assertions.assertEquals(new Pair<>(34, 51), columnInfo);
     }
 
     @Test
@@ -48,13 +48,13 @@ class ColumnInfoParserTest {
         vulnEntry.setVulnType("FB_EiER");
         vulnEntry.setDescription("example.ArrayDemo.withPermissionsToGive(String[]) may expose internal representation by storing an externally mutable object into ArrayDemo.permissionsToGive");
         vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main",  "java", "example", "ArrayDemo.java")));
-        vulnEntry.setVariable(null);
+        vulnEntry.setVariable("permissionsToNeeded");
         vulnEntry.setStartLine(29);
         vulnEntry.setEndLine(29);
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(36, 55));
+        Assertions.assertEquals(new Pair<>(36, 55), columnInfo);
     }
 
     @Test
@@ -64,13 +64,13 @@ class ColumnInfoParserTest {
         vulnEntry.setVulnType("FB_EiER");
         vulnEntry.setDescription("example.ArrayDemo.withPermissionsToGive(String[]) may expose internal representation by storing an externally mutable object into ArrayDemo.permissionsToGive");
         vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "ArrayDemo.java")));
-        vulnEntry.setVariable(null);
+        vulnEntry.setVariable("permissionsToNotNeeded");
         vulnEntry.setStartLine(34);
         vulnEntry.setEndLine(34);
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(39, 61));
+        Assertions.assertEquals(new Pair<>(39, 61), columnInfo);
     }
 
     @Test
@@ -80,13 +80,13 @@ class ColumnInfoParserTest {
         vulnEntry.setVulnType("FB_EiER");
         vulnEntry.setDescription("example.ArrayDemo.withPermissionsToGive(String[]) may expose internal representation by storing an externally mutable object into ArrayDemo.permissionsToGive");
         vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "ArrayDemo.java")));
-        vulnEntry.setVariable(null);
+        vulnEntry.setVariable("actions");
         vulnEntry.setStartLine(40);
         vulnEntry.setEndLine(40);
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(24, 31));
+        Assertions.assertEquals(new Pair<>(24, 31), columnInfo);
     }
 
     @Test
@@ -96,13 +96,13 @@ class ColumnInfoParserTest {
         vulnEntry.setVulnType("FB_MSBF");
         vulnEntry.setDescription("example.Main.MY_CONSTANT isn't final but should be");
         vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "Main.java")));
-        vulnEntry.setVariable(null);
+        vulnEntry.setVariable("example.main.MY_CONSTANT");
         vulnEntry.setStartLine(3);
         vulnEntry.setEndLine(3);
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(-1, -1));
+        Assertions.assertEquals(new Pair<>(26, 37), columnInfo);
     }
 
     @Test
@@ -113,12 +113,12 @@ class ColumnInfoParserTest {
         vulnEntry.setDescription("example.MyDate.getDate() may expose internal representation by returning MyDate.date");
         vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "MyDate.java")));
         vulnEntry.setVariable(null);
-        vulnEntry.setStartLine(3);
-        vulnEntry.setEndLine(3);
+        vulnEntry.setStartLine(12);
+        vulnEntry.setEndLine(12);
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(-1, -1));
+        Assertions.assertEquals(new Pair<>(16, 20), columnInfo);
     }
 
     @Test
@@ -128,13 +128,13 @@ class ColumnInfoParserTest {
         vulnEntry.setVulnType("FB_EiER");
         vulnEntry.setDescription("example.MyDate.setDate(Date) may expose internal representation by storing an externally mutable object into MyDate.date");
         vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "MyDate.java")));
-        vulnEntry.setVariable(null);
+        vulnEntry.setVariable("date");
         vulnEntry.setStartLine(16);
         vulnEntry.setEndLine(16);
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(21, 25));
+        Assertions.assertEquals(new Pair<>(21, 25), columnInfo);
     }
 
     @Test
@@ -144,13 +144,13 @@ class ColumnInfoParserTest {
         vulnEntry.setVulnType("FB_NNOSP");
         vulnEntry.setDescription("Possible null pointer dereference of null in example.NullPath.foo(String)");
         vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "NullPath.java")));
-        vulnEntry.setVariable(null);
+        vulnEntry.setVariable("str");
         vulnEntry.setStartLine(7);
         vulnEntry.setEndLine(7);
 
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
 
-        Assertions.assertEquals(columnInfo, new Pair<>(20, 23));
+        Assertions.assertEquals(new Pair<>(20, 23), columnInfo);
     }
 
     private static List<CodeModel> mockedCodeModels() {

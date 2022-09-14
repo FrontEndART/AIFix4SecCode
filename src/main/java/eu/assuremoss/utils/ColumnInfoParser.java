@@ -56,7 +56,7 @@ public abstract class ColumnInfoParser {
             Range range = nameNode.getRange().get();
 
             // TODO: clean this up
-            if (vulnType.equals("FB_MSBF") && range.begin.line == lineNum && name.equals(variableName)) {
+            if (variableName !=  null && vulnType.equals("FB_MSBF") && range.begin.line == lineNum && (name.equals(variableName) || variableName.endsWith("."+name))) {
                 resultRange = range;
             }
 
