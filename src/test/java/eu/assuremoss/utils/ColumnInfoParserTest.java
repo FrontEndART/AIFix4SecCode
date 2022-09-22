@@ -153,6 +153,22 @@ class ColumnInfoParserTest {
         Assertions.assertEquals(new Pair<>(20, 23), columnInfo);
     }
 
+    @Test
+    void shouldGetColumnInfoForFSBP() {
+        VulnerabilityEntry vulnEntry = new VulnerabilityEntry();
+        vulnEntry.setType("FI_PUBLIC_SHOULD_BE_PROTECTED");
+        vulnEntry.setVulnType("FB_FSBP");
+        vulnEntry.setDescription("Finalize method should be protected");
+        vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "FinalizeExample.java")));
+        vulnEntry.setVariable("finalize");
+        vulnEntry.setStartLine(16);
+        vulnEntry.setEndLine(17);
+
+        Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
+
+        Assertions.assertEquals(new Pair<>(5, 6), columnInfo);
+    }
+
     private static List<CodeModel> mockedCodeModels() {
         List<CodeModel> resList = new ArrayList<>();
 

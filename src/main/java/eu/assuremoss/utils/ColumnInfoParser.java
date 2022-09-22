@@ -3,10 +3,12 @@ package eu.assuremoss.utils;
 import com.github.javaparser.Range;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import lombok.Builder;
 
@@ -21,6 +23,7 @@ public abstract class ColumnInfoParser {
                 .lineNum(vulnEntry.getStartLine())
                 .variableName(vulnEntry.getVariable())
                 .vulnType(vulnEntry.getVulnType())
+                .vulnEntry(vulnEntry)
                 .build();
 
         cu.accept(traceVisitor, null);
@@ -34,6 +37,7 @@ public abstract class ColumnInfoParser {
         private String variableName;
         private String vulnType;
         private Range resultRange;
+        private VulnerabilityEntry vulnEntry;
 
         @Override
         public void visit(NameExpr node, Void arg) {
@@ -60,9 +64,26 @@ public abstract class ColumnInfoParser {
                 resultRange = range;
             }
 
-            super.visit(node, arg);
+           super.visit(node, arg);
         }
 
+        @Override
+        public void visit(MethodDeclaration node, Void arg) {
+            if (!vulnType.equals("FB_FSBP"))
+                super.visit(node, arg);
+            SimpleName nameNode = node.getName();
+            String name = nameNode.getIdentifier();
+            Range range = nameNode.getRange().get();
+
+            if (vulnType.equals("FB_FSBP")) {
+                variableName = "finalize";
+                vulnEntry.setStartLine(range.begin.line);
+            }
+            if (variableName !=  null && vulnType.equals("FB_FSBP") && range.begin.line >= lineNum-2 && (name.equals(variableName) || variableName.endsWith("."+name))) {
+                resultRange = node.getRange().get();
+            }
+            super.visit(node, arg);
+        }
         public Pair<Integer, Integer> getResultPair() {
             Pair<Integer, Integer> result;
 

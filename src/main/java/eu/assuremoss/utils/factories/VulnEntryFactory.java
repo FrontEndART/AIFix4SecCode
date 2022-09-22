@@ -56,6 +56,8 @@ public class VulnEntryFactory {
 
         // Extract variable name from SpotBugs.xml
         vulnEntry.setVariable(getVariable(node, vulnEntry.getPath(), findBugsXML));
+       if (vulnEntry.getType().equals("FB_MSBF"))
+          vulnEntry.setVariable("finalize");
 
         // Extract column info from SpotBugs.xml
         Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
@@ -116,6 +118,7 @@ public class VulnEntryFactory {
             if (foundLineNum.equals(lineNum) && path.contains(foundPath)) {
                 return getNodeAttribute(localVariable, "name");
             }
+            //return getNodeAttribute(localVariable, "name");
         }
 
         return null;
