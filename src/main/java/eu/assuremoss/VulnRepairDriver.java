@@ -14,6 +14,7 @@ import eu.assuremoss.utils.*;
 import eu.assuremoss.utils.factories.PatchCompilerFactory;
 import eu.assuremoss.framework.modules.src.LocalSourceFolder;
 import eu.assuremoss.utils.factories.ToolFactory;
+import eu.assuremoss.utils.parsers.SpotBugsParser;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
@@ -26,10 +27,12 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.zip.DataFormatException;
 
 import static eu.assuremoss.utils.Configuration.*;
 import static eu.assuremoss.utils.Utils.getConfigFile;
 import static eu.assuremoss.utils.Utils.getMappingFile;
+import static eu.assuremoss.utils.MLogger.MLOG;
 
 
 /**
@@ -37,17 +40,22 @@ import static eu.assuremoss.utils.Utils.getMappingFile;
  */
 public class VulnRepairDriver {
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
-    public static MLogger MLOG;
     public static Properties properties;
     private final PatchCompiler patchCompiler;
     private final PathHandler path;
     private final Statistics statistics;
     private int patchCounter = 1;
+    private static Configuration config;
+
+    private void setConfig(Configuration config) {
+        this.config = config;
+    }
+    public static Configuration getConfig(){return config;}
 
     public static void main(String[] args) throws IOException {
         Configuration config = new Configuration(getConfigFile(args), getMappingFile(args));
         VulnRepairDriver driver = new VulnRepairDriver(config.properties);
-
+        driver.setConfig(config);
         driver.bootstrap(config.properties);
     }
 
@@ -57,7 +65,7 @@ public class VulnRepairDriver {
         this.statistics = new Statistics(path);
         VulnRepairDriver.properties = properties;
 
-        initResourceFiles(properties, path);
+        Utils.initResourceFiles(properties, path);
         MLOG = new MLogger(properties, "log.txt", path);  // TODO get 'log.txt' from pathHandler
     }
 
@@ -85,7 +93,19 @@ public class VulnRepairDriver {
         VulnerabilityDetector vulnDetector = ToolFactory.createOsa(props);
 
         // 3. Produces :- vulnerability locations
-        List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(scc.getSourceCodeLocation(), codeModels);
+        //List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(codeModels);
+        MLOG.info("Spotbugs analysis started");
+        SpotBugsParser sparser = new SpotBugsParser(codeModels, config);
+        List<VulnerabilityEntry> vulnerabilityLocations = null;
+        try {
+            vulnerabilityLocations = sparser.readXML();
+        } catch (DataFormatException e) {
+            e.printStackTrace();
+        }
+        if (vulnerabilityLocations == null) {
+            vulnerabilityLocations = new ArrayList<>();
+        }
+
         MLOG.info(String.format("Detected %d vulnerabilities", vulnerabilityLocations.size()));
         statistics.saveVulnerabilityStatistics(vulnerabilityLocations);
 
@@ -101,7 +121,7 @@ public class VulnRepairDriver {
         for (VulnerabilityEntry vulnEntry : vulnerabilityLocations) {
             // - Init -
             vulnIndex++;
-
+            //if (vulnIndex>2) return;
             MLOG.changeOutPutFile(path.vulnBuildLogFile(vulnIndex));
 
             // - Skip if column info was not retrieved -
@@ -117,7 +137,7 @@ public class VulnRepairDriver {
 
             //  - Applying & Compiling patches -
             MLOG.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
-            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, Configuration.isTestingEnabled());
+            List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, Configuration.isTestingEnabled(properties));
 
             vulnEntry.setFilteredPatches(filteredPatches.size());
 
@@ -247,18 +267,5 @@ public class VulnRepairDriver {
         return issueObject;
     }
 
-    /**
-     * Creates all resource files (directories, log files)
-     *
-     * @param props - a properties object that specifies the creation path of the files
-     * @param path - a pathHandler object that specifies the creation path of the files
-     */
-    private static void initResourceFiles(Properties props, PathHandler path) {
-        Utils.createDirectory(props.getProperty(RESULTS_PATH_KEY));
-        Utils.createDirectory(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
-        Utils.createDirectory(path.logsDir());
-        Utils.createDirectory(path.buildDir());
 
-        Utils.createEmptyLogFile(props);
-    }
 }

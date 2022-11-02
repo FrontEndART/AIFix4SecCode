@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
+import static eu.assuremoss.utils.MLogger.MLOG;
 
 public class UtilsTest {
 
@@ -42,7 +43,7 @@ public class UtilsTest {
         FileUtils.cleanDirectory(new File(PathHelper.getIntermediatePatchesDir()));
 
         Utils.createEmptyLogFile(properties);
-        VulnRepairDriver.MLOG = new MLogger(properties, "log.txt", new PathHandler(properties));
+        MLOG = new MLogger(properties, "log.txt", new PathHandler(properties));
 
         for (int i = 1; i <= 5; i++) {
             String fileName = String.format("repair_patch%d.diff", i);

@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.MLogger.MLOG;
 
 public class ProcessRunner {
 

@@ -16,7 +16,8 @@ public class CodeModel {
         CFG,
         OSA_GRAPH,
         OSA_GRAPH_XML,
-        FINDBUGS_XML
+        FINDBUGS_XML,
+        SPOTBUGS_XML
     }
 
     public CodeModel(MODEL_TYPES modelType, File codeModel) {

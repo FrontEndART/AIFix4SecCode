@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 class ColumnInfoParserTest {
-    private static VulnerabilityDetector vulnDetector;
+    /*private static VulnerabilityDetector vulnDetector;
     private static final String mockedResultsPath = String.valueOf(Paths.get("src","test", "resources", "mocked-results"));
 
     @BeforeAll
@@ -169,6 +169,38 @@ class ColumnInfoParserTest {
         Assertions.assertEquals(new Pair<>(5, 6), columnInfo);
     }
 
+    @Test
+    void shouldGetColumnInfoForMMC() {
+        VulnerabilityEntry vulnEntry = new VulnerabilityEntry();
+        vulnEntry.setType("MS_MUTABLE_COLLECTION");
+        vulnEntry.setVulnType("FB_MMC");
+        vulnEntry.setDescription("Finalize method should be protected");
+        vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "a/MutableInit.java")));
+        vulnEntry.setVariable("mySet2");
+        vulnEntry.setStartLine(8);
+        vulnEntry.setEndLine(8);
+
+        Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
+
+        Assertions.assertEquals(new Pair<>(37, 43), columnInfo);
+    }
+
+    @Test
+    void shouldGetColumnInfoForMP() {
+        VulnerabilityEntry vulnEntry = new VulnerabilityEntry();
+        vulnEntry.setType("MS_PKGPROTECT");
+        vulnEntry.setVulnType("FB_MP");
+        vulnEntry.setDescription("Field should be package protected");
+        vulnEntry.setPath(String.valueOf(Paths.get("test-project", "src", "main", "java", "example", "a/Mutable.java")));
+        vulnEntry.setVariable("mySet2");
+        vulnEntry.setStartLine(8);
+        vulnEntry.setEndLine(8);
+
+        Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
+
+        Assertions.assertEquals(new Pair<>(37, 43), columnInfo);
+    }
+
     private static List<CodeModel> mockedCodeModels() {
         List<CodeModel> resList = new ArrayList<>();
 
@@ -182,14 +214,14 @@ class ColumnInfoParserTest {
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.FINDBUGS_XML, new File(findBugsXML)));
 
         return resList;
-    }
+    }*/
 
-    @Disabled
+    /*@Disabled
     @Test
     void Should_Attach_Column_Info_For_Vulnerability_Entries() {
         var expectedEntries = VulnEntryHelper.getVulnEntries();
-        var result = vulnDetector.getVulnerabilityLocations(new File(""), mockedCodeModels());
+        var result = vulnDetector.getVulnerabilityLocations(mockedCodeModels());
 
         Assertions.assertEquals(expectedEntries, result);
-    }
+    }*/
 }

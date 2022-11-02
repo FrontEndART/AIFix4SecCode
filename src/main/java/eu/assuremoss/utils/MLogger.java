@@ -12,13 +12,16 @@ import java.util.regex.Pattern;
 import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
 
 public class MLogger {
+    public static MLogger MLOG = null;
     private Writer fileWriter;
     private Writer unitTestInfoWriter;
     private String logFileName;
     public String logFilePath;
     private final PathHandler path;
+    private final Properties properties;
 
     public MLogger(Properties props, String logFileName, PathHandler path) throws IOException {
+        this.properties = props;
         this.logFileName = logFileName;
         this.logFilePath = logFilePath(props);
         this.fileWriter = new FileWriter(logFilePath);
@@ -92,7 +95,7 @@ public class MLogger {
     }
 
     public void saveUnitTestInformation(String line) {
-        if (!Configuration.isTestingEnabled()) return;
+        if (!Configuration.isTestingEnabled(properties)) return;
 
         String regex = "Tests run: [\\d]+, Failures: [\\d]+, Errors: [\\d]+, Skipped: [\\d]+";
 

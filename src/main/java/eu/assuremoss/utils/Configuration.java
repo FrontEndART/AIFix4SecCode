@@ -4,6 +4,7 @@ import eu.assuremoss.VulnRepairDriver;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -104,8 +105,8 @@ public class Configuration {
         return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "patches"));
     }
 
-    public static boolean isTestingEnabled() {
-        return Boolean.parseBoolean(VulnRepairDriver.properties.getProperty(PROJECT_RUN_TESTS));
+    public static boolean isTestingEnabled(Properties props) {
+        return Boolean.parseBoolean(props.getProperty(PROJECT_RUN_TESTS));
     }
 
     private void updatePathToAbsolute(String key) {

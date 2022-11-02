@@ -14,7 +14,7 @@ import lombok.Builder;
 
 public abstract class ColumnInfoParser {
 
-    public static Pair<Integer, Integer> getColumnInfo(VulnerabilityEntry vulnEntry) {
+   /* public static Pair<Integer, Integer> getColumnInfo(VulnerabilityEntry vulnEntry) {
         String fileContent = Utils.readFileString(vulnEntry.getPath());
         if (fileContent == null) return null;
 
@@ -60,7 +60,7 @@ public abstract class ColumnInfoParser {
             Range range = nameNode.getRange().get();
 
             // TODO: clean this up
-            if (variableName !=  null && vulnType.equals("FB_MSBF") && range.begin.line == lineNum && (name.equals(variableName) || variableName.endsWith("."+name))) {
+            if (variableName !=  null && (vulnType.equals("FB_MSBF")  || vulnType.equals("FB_MMC") || vulnType.equals("FB_MP") )&& range.begin.line == lineNum && (name.equals(variableName) || variableName.endsWith("."+name))) {
                 resultRange = range;
             }
 
@@ -95,5 +95,5 @@ public abstract class ColumnInfoParser {
 
             return result;
         }
-    }
+    }*/
 }

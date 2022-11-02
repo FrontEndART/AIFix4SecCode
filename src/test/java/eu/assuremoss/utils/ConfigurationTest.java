@@ -1,6 +1,7 @@
 package eu.assuremoss.utils;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import static eu.assuremoss.utils.Configuration.ARCHIVE_ENABLED;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled
 public class ConfigurationTest {
     static Configuration config;
 

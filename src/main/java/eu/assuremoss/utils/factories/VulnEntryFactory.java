@@ -2,7 +2,7 @@ package eu.assuremoss.utils.factories;
 
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
-import eu.assuremoss.utils.ColumnInfoParser;
+import eu.assuremoss.utils.parsers.ASGInfoParser;
 import eu.assuremoss.utils.Pair;
 import eu.assuremoss.utils.Utils;
 import org.w3c.dom.Node;
@@ -19,9 +19,18 @@ import java.util.zip.DataFormatException;
 import static eu.assuremoss.utils.Utils.*;
 
 public class VulnEntryFactory {
-    public static final Map<String, String> supportedProblemTypes = Utils.getMappingConfig();
+    public final Map<String, String> supportedProblemTypes = Utils.getMappingConfig();
+    Optional<CodeModel> findBugsXML;
+    Optional<CodeModel> asg;
+    ASGInfoParser asgParser;
 
-    public static VulnerabilityEntry getVulnEntry(Node node, Optional<CodeModel> findBugsXML) {
+    public VulnEntryFactory(Optional<CodeModel> findBugsXML, Optional<CodeModel> asg) {
+        this.findBugsXML = findBugsXML;
+        this.asg = asg;
+        asgParser = new ASGInfoParser(asg.get().getModelPath());
+    }
+
+    public  VulnerabilityEntry getVulnEntry(Node node) {
         NodeList warnAttributes = node.getChildNodes();
 
         VulnerabilityEntry vulnEntry = new VulnerabilityEntry();
@@ -44,6 +53,7 @@ public class VulnEntryFactory {
                     case "EndLine":
                         vulnEntry.setEndLine(Integer.parseInt(attrVal));
                         break;
+
                     case "WarningText":
                         vulnEntry.setDescription(attrVal);
                         break;
@@ -55,33 +65,34 @@ public class VulnEntryFactory {
         vulnEntry.setVulnType(getNodeAttribute(node, "name"));
 
         // Extract variable name from SpotBugs.xml
-        vulnEntry.setVariable(getVariable(node, vulnEntry.getPath(), findBugsXML));
+
+        vulnEntry.setVariable(getVariable(node, vulnEntry.getPath()));
        if (vulnEntry.getType().equals("FB_MSBF"))
           vulnEntry.setVariable("finalize");
 
         // Extract column info from SpotBugs.xml
-        Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
-
-        vulnEntry.setStartCol(columnInfo.getA());
-        vulnEntry.setEndCol(columnInfo.getB());
+        //Pair<Integer, Integer> columnInfo = ColumnInfoParser.getColumnInfo(vulnEntry);
+        asgParser.vulnarabilityInfoClarification(vulnEntry);
+        /*vulnEntry.setStartCol(columnInfo.getA());
+        vulnEntry.setEndCol(columnInfo.getB());*/
 
         return vulnEntry;
     }
 
 
-    private static String getVariable(Node node, String path, Optional<CodeModel> findBugsXML) {
+    private  String getVariable(Node node, String path) {
         try {
-            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), path, findBugsXML);
+            return findVariableInFindBugsXML(nodeName(node), lineNumStr(node), path);
         } catch (ParserConfigurationException | SAXException | IOException | DataFormatException e) {
             e.printStackTrace();
             return "";
         }
     }
 
-    private static String findVariableInFindBugsXML(String vulnType, String lineNum, String path, Optional<CodeModel>  findBugsCM) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
-        if (findBugsCM.get().getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
+    private  String findVariableInFindBugsXML(String vulnType, String lineNum, String path) throws ParserConfigurationException, SAXException, IOException, DataFormatException {
+        if (findBugsXML.get().getType() != CodeModel.MODEL_TYPES.FINDBUGS_XML) return null;
 
-        var bugInstances = attributes(getNodeList(findBugsCM, "BugInstance"));
+        var bugInstances = attributes(getNodeList(findBugsXML, "BugInstance"));
 
         for (Node bugInstance : bugInstances) {
             String bugType = getNodeAttribute(bugInstance, "type");
@@ -125,31 +136,16 @@ public class VulnEntryFactory {
     }
 
 
-    /**
-     * NP_NNOSP has 2 SourceLines: SOURCE_LINE_DEREF and SOURCE_LINE_KNOWN_NULL <br>
-     * OSA fixes this vuln by changing the SOURCE_LINE_DEREF occurrence <br>
-     * Should ignore SourceLine node with role=SOURCE_LINE_KNOWN_NULL
-     * @param node SourceLine node
-     * @return true if the role is SOURCE_LINE_KNOWN_NULL, else false
-     */
-    private static boolean isNodeRoleSourceLineEqualsKnownNull(Node node) {
-        if (!Utils.hasNodeAttribute(node, "role")) {
-            return false;
-        }
 
-        return getNodeAttribute(node, "role").equals("SOURCE_LINE_KNOWN_NULL");
-    }
-
-
-    private static String lineNumStr(Node node) {
+    private  String lineNumStr(Node node) {
         return getNodeAttribute(node.getChildNodes().item(3), "value");
     }
 
-    private static List<Node> attributes(NodeList nodeList) {
+    private  List<Node> attributes(NodeList nodeList) {
         return nodeListToArrayList(nodeList);
     }
 
-    private static String nodeName(Node node) {
+    private  String nodeName(Node node) {
         return getNodeAttribute(node, "name");
     }
 }

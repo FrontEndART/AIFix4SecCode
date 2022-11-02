@@ -9,7 +9,7 @@ import java.io.Writer;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.MLogger.MLOG;
 
 /**
  * Class for creating statistics on the results

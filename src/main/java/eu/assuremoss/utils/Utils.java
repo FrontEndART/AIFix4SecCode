@@ -26,7 +26,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.MLogger.MLOG;
 import static eu.assuremoss.utils.Configuration.*;
 
 public class Utils {
@@ -222,6 +222,23 @@ public class Utils {
         return result;
     }
 
+    public static Set<String> getSupportedProblemTypes(Properties properties) {
+        Set<String> result = new HashSet<>();
+
+        Enumeration<String> en = (Enumeration<String>) properties.propertyNames();
+
+        while (en.hasMoreElements()) {
+            String propName = en.nextElement();
+            String propValue = properties.getProperty(propName);
+
+            if (propName.startsWith("mapping")) {
+                result.add(propValue);
+            }
+        }
+
+        return result;
+    }
+
     public static void saveElapsedTime(Date startTime) {
         Date endTime = new Date();
         long diff = endTime.getTime() - startTime.getTime();
@@ -261,4 +278,23 @@ public class Utils {
         return System.getProperty("user.dir");
     }
 
+    public static Optional<CodeModel> getCodeModel(List<CodeModel> analysisResults, CodeModel.MODEL_TYPES CodeModelType) throws DataFormatException {
+        Optional<CodeModel> codeModel = analysisResults.stream().filter(cm -> cm.getType() == CodeModelType).findFirst();
+        if (codeModel.isEmpty()) throw new DataFormatException("Could not locate " + CodeModelType + " analysis results, no vulnerabilities were retrieved.");
+        return codeModel;
+    }
+    /**
+     * Creates all resource files (directories, log files)
+     *
+     * @param props - a properties object that specifies the creation path of the files
+     * @param path - a pathHandler object that specifies the creation path of the files
+     */
+    public static void initResourceFiles(Properties props, PathHandler path) {
+        Utils.createDirectory(props.getProperty(RESULTS_PATH_KEY));
+        Utils.createDirectory(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        Utils.createDirectory(path.logsDir());
+        Utils.createDirectory(path.buildDir());
+
+        Utils.createEmptyLogFile(props);
+    }
 }

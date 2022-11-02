@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.MLogger.MLOG;
 
 public class MavenPatchCompiler extends GenericPatchCompiler {
     private static final Logger LOG = LogManager.getLogger(MavenPatchCompiler.class);

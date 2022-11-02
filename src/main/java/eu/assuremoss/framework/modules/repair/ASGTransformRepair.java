@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.MLogger.MLOG;
 import static eu.assuremoss.utils.Configuration.PROJECT_SOURCE_PATH_KEY;
 
 @AllArgsConstructor
