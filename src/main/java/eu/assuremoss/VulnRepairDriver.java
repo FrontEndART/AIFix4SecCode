@@ -87,7 +87,13 @@ public class VulnRepairDriver {
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation(), false);
 
         // 2. Produces :- ASG
-        VulnerabilityRepairer vulnRepairer = ToolFactory.createASGTransformRepair(props);
+        String ljsiName="";
+        try {
+            ljsiName = String.valueOf(Utils.getCodeModel(codeModels, CodeModel.MODEL_TYPES.ASG).get().getModelPath());
+        }  catch (DataFormatException e) {
+            e.printStackTrace();
+        }
+        VulnerabilityRepairer vulnRepairer = ToolFactory.createASGTransformRepair(props, ljsiName);
 
         // 3. Detect vulnerabilities
         VulnerabilityDetector vulnDetector = ToolFactory.createOsa(props);
@@ -95,7 +101,7 @@ public class VulnRepairDriver {
         // 3. Produces :- vulnerability locations
         //List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(codeModels);
         MLOG.info("Spotbugs analysis started");
-        SpotBugsParser sparser = new SpotBugsParser(codeModels, config);
+        SpotBugsParser sparser = new SpotBugsParser(codeModels, config, false);
         List<VulnerabilityEntry> vulnerabilityLocations = null;
         try {
             vulnerabilityLocations = sparser.readXML();

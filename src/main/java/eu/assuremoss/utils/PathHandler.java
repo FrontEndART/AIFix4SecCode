@@ -12,6 +12,7 @@ public class PathHandler {
     private final String patchesDir = "patches";
     private final String logsDir = "logs";
     private final String buildLogsDir = "build_logs";
+    private final String asgDir = "asg";
 
     // Files
     private final String vulnFound = "vuln_found.txt";
@@ -20,7 +21,9 @@ public class PathHandler {
     private final String vulnEntriesResult = "vuln_entries_result.csv";
     private final String vulnBuildFile = "vuln_?.txt";
     private final String logFinish = "log_finish.txt";
+    private final String logFile = "log.txt";
     private final String patchUnitTestsCSV = "patch_unit_tests.csv";
+    private final String spotbugsXML = "spotbugs.xml";
 
 
     public PathHandler(Properties props) {
@@ -53,6 +56,10 @@ public class PathHandler {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), patchesDir);
     }
 
+    public String asgDir() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), asgDir);
+    }
+
     // Files
     
     public String vulnFound() {
@@ -77,6 +84,14 @@ public class PathHandler {
 
     public String logFinishFile() {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, logFinish);
+    }
+
+    public String spotbugsXML() {
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), spotbugsXML);
+    }
+
+    public String logFile() {
+        return logFile;
     }
 
     public String patchUnitTests() {

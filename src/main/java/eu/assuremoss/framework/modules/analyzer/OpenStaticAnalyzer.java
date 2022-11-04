@@ -137,7 +137,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         String spotBugsXml = String.valueOf(Paths.get(VulnRepairDriver.properties.getProperty("config.validation_results_path"), "spotbugs.xml"));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.SPOTBUGS_XML, new File(spotBugsXml)));
 
-        SpotBugsParser sparser = new SpotBugsParser(resList, VulnRepairDriver.getConfig());
+        SpotBugsParser sparser = new SpotBugsParser(resList, VulnRepairDriver.getConfig(), false);
         List<VulnerabilityEntry> vulnerabilities = null;
         try {
             vulnerabilities = sparser.readXML();

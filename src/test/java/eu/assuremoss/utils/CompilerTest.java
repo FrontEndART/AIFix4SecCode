@@ -1,6 +1,8 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.utils.tools.JANAnalyser;
 import eu.assuremoss.utils.tools.SourceCompiler;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +15,7 @@ import static eu.assuremoss.utils.MLogger.MLOG;
 public class CompilerTest {
     String testProjectRelativePath = "test-project";
     String testProjectAbsolutePath = PathHandler.joinPath(Utils.getWorkingDir(), testProjectRelativePath);
+
     static Configuration config;
     private static PathHandler path;
     private static SourceCompiler compiler;
@@ -34,7 +37,19 @@ public class CompilerTest {
     @Test
     void spotBugsAnalysisTest() {
         String sources = PathHandler.joinPath(Utils.getWorkingDir(), "");
-        compiler.setFbFileListPath(String.valueOf(Paths.get(config.properties.getProperty("config.results_path"), "proba.txt")));
+        //compiler.setFbFileListPath(new File(Paths.get(config.properties.getProperty("config.results_path"), "proba.txt")));
         compiler.analyze(config.properties.getProperty("config.spotbugs_bin"), true);
+    }
+
+    @Test
+    void janTest() {
+        String asgDir = String.valueOf(Paths.get(config.properties.getProperty("config.results_path"), "asg"));
+        Utils.createDirectory(asgDir);
+        Assertions.assertTrue(new File(asgDir).exists());
+
+        JANAnalyser jan = new JANAnalyser(config.properties, asgDir);
+
+        String compilationUnit = PathHandler.joinPath(testProjectAbsolutePath, "src\\main\\java\\example\\ArrayDemo.java");
+        jan.analyze(compilationUnit, "example.ArrayDemo");
     }
 }

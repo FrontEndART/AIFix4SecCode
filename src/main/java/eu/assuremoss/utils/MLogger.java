@@ -22,10 +22,11 @@ public class MLogger {
 
     public MLogger(Properties props, String logFileName, PathHandler path) throws IOException {
         this.properties = props;
-        this.logFileName = logFileName;
+        this.logFileName = path.logFile();
         this.logFilePath = logFilePath(props);
         this.fileWriter = new FileWriter(logFilePath);
         this.path = path;
+        MLOG = this;
     }
 
     public void info(String message) {

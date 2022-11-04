@@ -24,12 +24,14 @@ public class ToolFactory {
                 Utils.getWarningMappingFromProp(properties));
     }
 
-    public static ASGTransformRepair createASGTransformRepair(Properties properties) {
+    public static ASGTransformRepair createASGTransformRepair(Properties properties, String asgDir) {
         return new ASGTransformRepair(
                 properties.getProperty(PROJECT_PATH_KEY),
                 properties.getProperty(RESULTS_PATH_KEY),
                 String.valueOf(Paths.get(properties.getProperty(RESULTS_PATH_KEY), "osa_xml")),
                 String.valueOf(Paths.get(properties.getProperty(RESULTS_PATH_KEY), "patches")),
-                Utils.getFixStrategies(properties));
+                Utils.getFixStrategies(properties),
+                properties,
+                asgDir);
     }
 }

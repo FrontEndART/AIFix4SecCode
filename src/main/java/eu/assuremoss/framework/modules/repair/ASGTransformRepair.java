@@ -4,7 +4,6 @@ import coderepair.communication.base.RepairAlgorithmRunner;
 import coderepair.repair.RepairToolSwitcher;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
-import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
@@ -24,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static eu.assuremoss.utils.MLogger.MLOG;
 import static eu.assuremoss.utils.Configuration.PROJECT_SOURCE_PATH_KEY;
@@ -39,6 +39,8 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     private final String descriptionPath;
     private final String patchSavePath;
     private final Map<String, Map<String, String>> fixStrategies;
+    private final Properties properties;
+    private final String jsiName;
 
     private File generateDescription(VulnerabilityEntry vulnerabilityEntry, List<CodeModel> codeModels, String strategy) {
         File descriptionLocation = new File(descriptionPath);
@@ -60,12 +62,13 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
         Element entry3 = createEntryElement();
         entry3.addContent(createStringElement().addContent("coderepair.base.sourceCodeLocation"));
         entry3.addContent(createStringElement().addContent((
-                Paths.get(projectPath,  VulnRepairDriver.properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator)
+                Paths.get(projectPath,  properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator)
                 .replaceAll("\\\\", "/")));
 
         Element entry4 = createEntryElement();
         entry4.addContent(createStringElement().addContent("coderepair.base.schemaLocation"));
-        entry4.addContent(createStringElement().addContent(codeModels.get(0).getModelPath().getAbsolutePath().replaceAll("\\\\", "/")));
+
+        entry4.addContent(createStringElement().addContent(jsiName.replaceAll("\\\\", "/")));
 
         root.addContent(entry1);
         root.addContent(entry2);
@@ -106,7 +109,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
 
         Element problemPosition = new Element("coderepair.communication.base.ProblemPosition");
 
-        String pathToRemove = Paths.get(projectPath, VulnRepairDriver.properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator;
+        String pathToRemove = Paths.get(projectPath, properties.getProperty(PROJECT_SOURCE_PATH_KEY)) + File.separator;
         problemPosition.addContent(new Element("path").addContent(ve.getPath().substring(pathToRemove.length()).replaceAll("\\\\", "/")));
 
         problemPosition.addContent(new Element("startLine").addContent(ve.getStartLine() + ""));

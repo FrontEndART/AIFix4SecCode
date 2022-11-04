@@ -4,7 +4,9 @@ import eu.assuremoss.VulnRepairDriver;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.utils.Configuration;
+import eu.assuremoss.utils.PathHandler;
 import eu.assuremoss.utils.Utils;
+import eu.assuremoss.utils.tools.JANAnalyser;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -25,17 +27,31 @@ public class SpotBugsParser {
     List<CodeModel> models;
     ASGInfoParser asgParser;
     String projectPath;
+    boolean needAnalysis;
+    Configuration config;
+    HashMap<String, ASGInfoParser> cuParsers;
+    String asgDir;
 
-    public SpotBugsParser(List<CodeModel> models, Configuration config){
+    public SpotBugsParser(List<CodeModel> models, Configuration config, boolean needAnalysis){
+        this.config = config;
         projectPath =Paths.get(config.properties.getProperty(PROJECT_PATH_KEY), config.properties.getProperty(PROJECT_SOURCE_PATH_KEY)).toString();
         //System.out.println("Project path: " + projectPath);
+        this.needAnalysis = needAnalysis;
         this.models = models;
         supportedProblemTypes = Utils.getSupportedProblemTypes(config.properties);
         try {
-            asgParser = new ASGInfoParser(Utils.getCodeModel(models, CodeModel.MODEL_TYPES.ASG).get().getModelPath());
+            if (!needAnalysis)
+                asgParser = new ASGInfoParser(Utils.getCodeModel(models, CodeModel.MODEL_TYPES.ASG).get().getModelPath());
+            else cuParsers = new HashMap<>();
+
         } catch (DataFormatException e) {
             e.printStackTrace();
         }
+    }
+
+    public SpotBugsParser(List<CodeModel> models, Configuration config, String asgDir, boolean needAnalysis){
+        this(models, config, needAnalysis);
+        this.asgDir = asgDir;
     }
 
     private void setEntry(String compilationUnit, VulnerabilityEntry entry) {
@@ -109,6 +125,18 @@ public class SpotBugsParser {
             if (!supportedProblemTypes.contains(bugType)) continue;
             VulnerabilityEntry entry = new VulnerabilityEntry();
             readBugInstanceInfo (entry, bugInstance);
+            if (needAnalysis) {
+                String className = entry.getClassName();
+                if (!cuParsers.containsKey(className)) {
+                    JANAnalyser jan = new JANAnalyser(config.properties, asgDir);
+                    String asg = jan.analyze(entry.getPath(), entry.getClassName());
+                    asgParser = new ASGInfoParser(new File(asg));
+
+                    cuParsers.put(className, asgParser);
+                } else {
+                    asgParser = cuParsers.get(className);
+                }
+            }
             readColumnInfo(entry);
 
             vulnerabilities.add(entry);

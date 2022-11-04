@@ -26,6 +26,9 @@ public class Configuration {
     public static final String PROJECT_SOURCE_PATH_KEY = "config.project_source_path";
     public static final String PROJECT_BUILD_TOOL_KEY = "config.project_build_tool";
     public static final String PROJECT_RUN_TESTS = "config.project_run_tests";
+    public static final String JAN_PATH_KEY = "config.jan_path";
+    public static final String JAN_EDITION_KEY = "config.jan_edition";
+    public static final String JAN_COMPILER_KEY = "config.jan_compiler";
     public static final String OSA_PATH_KEY = "config.osa_path";
     public static final String OSA_EDITION_KEY = "config.osa_edition";
     public static final String RESULTS_PATH_KEY = "config.results_path";

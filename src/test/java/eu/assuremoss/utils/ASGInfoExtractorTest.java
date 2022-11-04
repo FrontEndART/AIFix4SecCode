@@ -45,7 +45,7 @@ public class ASGInfoExtractorTest {
         mocked_models = mockedCodeModels();
         //asgParser = new ASGInfoParser(Utils.getCodeModel(mocked_models, CodeModel.MODEL_TYPES.ASG).get().getModelPath());
         config = new Configuration("config-example.properties", "mapping-example.properties");
-        parser = new SpotBugsParser(mocked_models, config);
+        parser = new SpotBugsParser(mocked_models, config, false);
     }
 
     @Test

@@ -16,7 +16,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 
 public class SourceCompiler {
     private static final Logger LOG = LogManager.getLogger(SourceCompiler.class);
