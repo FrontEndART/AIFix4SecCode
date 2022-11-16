@@ -42,7 +42,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     private final Properties properties;
     private final String jsiName;
 
-    private File generateDescription(VulnerabilityEntry vulnerabilityEntry, List<CodeModel> codeModels, String strategy) {
+    private File generateDescription(VulnerabilityEntry vulnerabilityEntry, String strategy) {
         File descriptionLocation = new File(descriptionPath);
         File descriptionFile = new File(descriptionLocation.getAbsolutePath(), "description.xml");
 
@@ -127,7 +127,7 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
     public List<Pair<File, Pair<Patch<String>, String>>> generateRepairPatches(File srcLocation, VulnerabilityEntry ve, List<CodeModel> codeModels)  {
         List<Pair<File, Pair<Patch<String>, String>>> resList = new ArrayList<>();
         for (String strategy : fixStrategies.get(ve.getType()).keySet()) {
-            generateDescription(ve, codeModels, strategy);
+            generateDescription(ve, strategy);
 
             String patchPath = Paths.get(patchSavePath, "repair_patch" + PATCH_COUNTER++ + ".diff").toString();
             String[] args = {

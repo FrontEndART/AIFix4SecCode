@@ -116,15 +116,15 @@ public class ASGInfoParser {
         public void visit(MethodDeclaration node, boolean callVirtualBase) {
             if ("FI_PUBLIC_SHOULD_BE_PROTECTED".equals(vulnerabilityEntry.getType())) {
                 Range range = node.getPosition();
-                //if (vulnerabilityEntry.getPath().equals(range.getPath())) {
-                    if (range.getEndLine() >= vulnerabilityEntry.getStartLine() && range.getEndLine()<=vulnerabilityEntry.getEndLine()) {
-                        Range namePosition = node.getNamePosition();
-                        vulnerabilityEntry.setStartLine(namePosition.getLine());
-                        vulnerabilityEntry.setEndLine(namePosition.getEndLine());
-                        vulnerabilityEntry.setStartCol(namePosition.getCol());
-                        vulnerabilityEntry.setEndCol(namePosition.getEndCol());
-                    }
-                //}
+
+                if (range.getEndLine() >= vulnerabilityEntry.getStartLine() && range.getEndLine()<=vulnerabilityEntry.getEndLine()) {
+                    Range namePosition = node.getNamePosition();
+                    vulnerabilityEntry.setStartLine(namePosition.getLine());
+                    vulnerabilityEntry.setEndLine(namePosition.getEndLine());
+                    vulnerabilityEntry.setStartCol(namePosition.getCol());
+                    vulnerabilityEntry.setEndCol(namePosition.getEndCol());
+                }
+
             }
         }
     }
@@ -182,12 +182,12 @@ public class ASGInfoParser {
     }
 
     public void vulnarabilityInfoClarification (VulnerabilityEntry vulnEntry) {
-       // System.out.println("Entry: " + vulnEntry);
+        //System.out.println("Entry: " + vulnEntry);
         Integer id = analyzedClasses.get(vulnEntry.getClassName());
         //System.out.println("Clarification: " + vulnEntry.getClassName() + " " + id);
         ASGSourceVisitor visitor = new ASGSourceVisitor(vulnEntry);
         AlgorithmPreorder ap = new AlgorithmPreorder();
-        if (factory != null)
+        if (factory != null &&id != null)
             ap.run(factory, visitor, id);
     }
 }

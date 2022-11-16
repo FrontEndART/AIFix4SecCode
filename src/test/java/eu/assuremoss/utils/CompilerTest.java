@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.zip.DataFormatException;
+
+import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
 import static eu.assuremoss.utils.MLogger.MLOG;
 
 public class CompilerTest {
@@ -26,19 +28,19 @@ public class CompilerTest {
         path = new PathHandler(config.properties);
         Utils.initResourceFiles(config.properties, path);
         MLOG = new MLogger(config.properties, "log.txt", path);
-        compiler = new SourceCompiler(config.properties.getProperty("config.results_path"));
+        compiler = new SourceCompiler(config.properties, false);
     }
 
     @Test
     void compileTest() {
-        compiler.compile (new File(testProjectAbsolutePath), "mavenCLI", true,false);
+        compiler.compile (new File(testProjectAbsolutePath), true,false);
     }
 
     @Test
     void spotBugsAnalysisTest() {
         String sources = PathHandler.joinPath(Utils.getWorkingDir(), "");
         //compiler.setFbFileListPath(new File(Paths.get(config.properties.getProperty("config.results_path"), "proba.txt")));
-        compiler.analyze(config.properties.getProperty("config.spotbugs_bin"), true);
+        compiler.analyze(true);
     }
 
     @Test

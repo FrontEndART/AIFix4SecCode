@@ -1,9 +1,15 @@
 package eu.assuremoss.utils;
 
+import eu.assuremoss.framework.model.CodeModel;
+
+import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
+import static eu.assuremoss.utils.Configuration.VALIDATION_RESULTS_PATH_KEY;
 
 public class PathHandler {
     private Properties props;
@@ -86,8 +92,10 @@ public class PathHandler {
         return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, logFinish);
     }
 
-    public String spotbugsXML() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), spotbugsXML);
+    public String spotbugsXML(boolean isValidation) {
+        if (!isValidation)
+            return joinPath(props.getProperty(RESULTS_PATH_KEY), spotbugsXML);
+        return joinPath(props.getProperty(VALIDATION_RESULTS_PATH_KEY), spotbugsXML);
     }
 
     public String logFile() {
@@ -96,5 +104,12 @@ public class PathHandler {
 
     public String patchUnitTests() {
         return joinPath(logsDir(), patchUnitTestsCSV);
+    }
+
+    public List<CodeModel> getModelFiles(boolean isValidaton) {
+        List<CodeModel> resList = new ArrayList<>();
+        //resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
+        resList.add(new CodeModel(CodeModel.MODEL_TYPES.SPOTBUGS_XML, new File(spotbugsXML(isValidaton))));
+        return resList;
     }
 }

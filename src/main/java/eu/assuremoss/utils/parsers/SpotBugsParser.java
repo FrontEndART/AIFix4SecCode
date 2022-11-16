@@ -28,30 +28,28 @@ public class SpotBugsParser {
     ASGInfoParser asgParser;
     String projectPath;
     boolean needAnalysis;
-    Configuration config;
+    Properties properties;
     HashMap<String, ASGInfoParser> cuParsers;
     String asgDir;
+    PathHandler path;
 
-    public SpotBugsParser(List<CodeModel> models, Configuration config, boolean needAnalysis){
-        this.config = config;
-        projectPath =Paths.get(config.properties.getProperty(PROJECT_PATH_KEY), config.properties.getProperty(PROJECT_SOURCE_PATH_KEY)).toString();
-        //System.out.println("Project path: " + projectPath);
-        this.needAnalysis = needAnalysis;
-        this.models = models;
-        supportedProblemTypes = Utils.getSupportedProblemTypes(config.properties);
-        try {
-            if (!needAnalysis)
-                asgParser = new ASGInfoParser(Utils.getCodeModel(models, CodeModel.MODEL_TYPES.ASG).get().getModelPath());
-            else cuParsers = new HashMap<>();
+    public SpotBugsParser(PathHandler path, Properties properties, File projectASG){
+        models = path.getModelFiles(false);
+        this.path = path;
+        this.properties = properties;
+        projectPath =Paths.get(properties.getProperty(PROJECT_PATH_KEY), properties.getProperty(PROJECT_SOURCE_PATH_KEY)).toString();
+        this.needAnalysis = projectASG==null?true:false;
 
-        } catch (DataFormatException e) {
-            e.printStackTrace();
-        }
+        supportedProblemTypes = Utils.getSupportedProblemTypes(properties);
+
+        if (projectASG != null)
+            asgParser = new ASGInfoParser(projectASG);
+        else cuParsers = new HashMap<>();
     }
 
-    public SpotBugsParser(List<CodeModel> models, Configuration config, String asgDir, boolean needAnalysis){
-        this(models, config, needAnalysis);
-        this.asgDir = asgDir;
+    public SpotBugsParser(PathHandler path, Properties properties){
+        this(path, properties, null);
+        this.asgDir = path.asgDir();
     }
 
     private void setEntry(String compilationUnit, VulnerabilityEntry entry) {
@@ -62,6 +60,23 @@ public class SpotBugsParser {
             mySet.add(entry);
             existingSpotBugIssues.put(compilationUnit, mySet);
         }
+    }
+
+    /***
+     * @return it returns true, if the quality of the new entry set is better than the original one in the point of view of the current vulnerability entry
+     */
+
+    public boolean checkQualityImprovements(String compilationUnit, VulnerabilityEntry currentEntry, List<VulnerabilityEntry> newEntries) {
+        if (newEntries == null || newEntries.isEmpty())
+            return true;
+        Set<VulnerabilityEntry> oldEntries = existingSpotBugIssues.get(compilationUnit);
+        if ((oldEntries == null || oldEntries.isEmpty()) && newEntries != null) {
+            return false;
+        }
+        if (!newEntries.contains(currentEntry)) {
+            return true;
+        }
+        return false;
     }
 
     private void removeEntriesOfCompilationUnit(String compilationUnit) {
@@ -80,7 +95,6 @@ public class SpotBugsParser {
     private void readColumnInfo(VulnerabilityEntry entry)  {
         if (asgParser == null) return;
         asgParser.vulnarabilityInfoClarification(entry);
-
     }
 
     private void readBugInstanceInfo(VulnerabilityEntry entry, Node bugInstance) {
@@ -114,21 +128,18 @@ public class SpotBugsParser {
         addKnownVariableName (entry);
     }
 
-    public List<VulnerabilityEntry> readXML() throws DataFormatException {
-        Optional<CodeModel> spotBugs = Utils.getCodeModel(models, CodeModel.MODEL_TYPES.SPOTBUGS_XML);
+    public List<VulnerabilityEntry> readXML(boolean isValidation, boolean needColumnInfo) throws DataFormatException {
         List<VulnerabilityEntry> vulnerabilities = new ArrayList<>();
-        if (spotBugs.get().getType() != CodeModel.MODEL_TYPES.SPOTBUGS_XML) return vulnerabilities;
-
-        var bugInstances = attributes(getNodeList(spotBugs, "BugInstance"));
+        var bugInstances = attributes(getNodeList(path.spotbugsXML(isValidation), "BugInstance"));
         for (Node bugInstance : bugInstances) {
             String bugType = getNodeAttribute(bugInstance, "type");
             if (!supportedProblemTypes.contains(bugType)) continue;
             VulnerabilityEntry entry = new VulnerabilityEntry();
             readBugInstanceInfo (entry, bugInstance);
-            if (needAnalysis) {
+            if (needAnalysis && needColumnInfo) {
                 String className = entry.getClassName();
                 if (!cuParsers.containsKey(className)) {
-                    JANAnalyser jan = new JANAnalyser(config.properties, asgDir);
+                    JANAnalyser jan = new JANAnalyser(properties, asgDir);
                     String asg = jan.analyze(entry.getPath(), entry.getClassName());
                     asgParser = new ASGInfoParser(new File(asg));
 
@@ -137,8 +148,9 @@ public class SpotBugsParser {
                     asgParser = cuParsers.get(className);
                 }
             }
-            readColumnInfo(entry);
-
+            if (needColumnInfo)
+                readColumnInfo(entry);
+            setEntry(entry.getClassName(), entry);
             vulnerabilities.add(entry);
         }
 

@@ -26,6 +26,7 @@ public class Configuration {
     public static final String PROJECT_SOURCE_PATH_KEY = "config.project_source_path";
     public static final String PROJECT_BUILD_TOOL_KEY = "config.project_build_tool";
     public static final String PROJECT_RUN_TESTS = "config.project_run_tests";
+    public static final String SPOTBUGS_BIN = "config.spotbugs_bin";
     public static final String JAN_PATH_KEY = "config.jan_path";
     public static final String JAN_EDITION_KEY = "config.jan_edition";
     public static final String JAN_COMPILER_KEY = "config.jan_compiler";
@@ -35,6 +36,8 @@ public class Configuration {
     public static final String VALIDATION_RESULTS_PATH_KEY = "config.validation_results_path";
     public static final String ARCHIVE_PATH = "config.archive_path";
     public static final String ARCHIVE_ENABLED = "config.archive_enabled";
+
+    public static final String SPOTBUGS_LISTFILE = "fb_file_list.txt";
 
     public Properties properties;
     private final ClassLoader loader;

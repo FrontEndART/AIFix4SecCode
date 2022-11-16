@@ -267,6 +267,16 @@ public class Utils {
         }
     }
 
+    public static NodeList getNodeList(String xmlAbsolutPath, String tagName) throws DataFormatException {
+        try {
+            Document xml = Utils.getXML(xmlAbsolutPath);
+            return xml.getElementsByTagName(tagName);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            LOG.error(e);
+            throw new DataFormatException("Error occurred while getting nodeList for: " + xmlAbsolutPath + "\ntagName: "+ tagName);
+        }
+    }
+
     public static String getOsName() {
         String OS_NAME = System.getProperty("os.name");
         if (OS_NAME.contains("Windows")) return "Windows";

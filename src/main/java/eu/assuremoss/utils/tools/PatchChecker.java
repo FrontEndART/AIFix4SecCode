@@ -6,10 +6,14 @@ import com.google.common.base.Joiner;
 import eu.assuremoss.framework.api.PatchCompiler;
 import eu.assuremoss.framework.api.PatchValidator;
 import eu.assuremoss.framework.api.SourceCodeCollector;
+import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.framework.modules.analyzer.OpenStaticAnalyzer;
+import eu.assuremoss.utils.Configuration;
 import eu.assuremoss.utils.Pair;
+import eu.assuremoss.utils.PathHandler;
 import eu.assuremoss.utils.factories.ToolFactory;
+import eu.assuremoss.utils.parsers.SpotBugsParser;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
@@ -27,30 +31,31 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import static eu.assuremoss.utils.Configuration.PROJECT_PATH_KEY;
-import static eu.assuremoss.utils.Configuration.patchSavePath;
+import static eu.assuremoss.utils.Configuration.*;
 
 public class PatchChecker {
     private static final Logger LOG = LogManager.getLogger(PatchChecker.class);
     public static int patchCounter = 1;
+    private PathHandler path;
+
+    public PatchChecker(PathHandler path) {
+        this.path = path;
+    }
     public List<Pair<File, Pair<Patch<String>, String>>>
     getCandidatePatches(Properties props,
                         SourceCodeCollector scc,
                         VulnerabilityEntry vulnEntry,
-                        PatchCompiler comp,
+                        SpotBugsParser sparser,
                         List<Pair<File, Pair<Patch<String>, String>>> filteredPatches) {
         List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = new ArrayList<>();
-        //PatchValidator patchValidator = ToolFactory.createOsa(props);
 
         for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : filteredPatches) {
             Patch<String> rawPatch = patchWithExplanation.getB().getA();
             Pair<File, Patch<String>> patch = new Pair<>(patchWithExplanation.getA(), rawPatch);
 
-            comp.applyPatch(patch, scc.getSourceCodeLocation());
-            //if (patchValidator.validatePatch(scc.getSourceCodeLocation(), vulnEntry, patch)) {
+            SourceCompiler compiler = new SourceCompiler(props, true);
+            if (compiler.checkPatch(path, props, sparser, scc.getSourceCodeLocation(), vulnEntry, patch, Configuration.isTestingEnabled(props)))
                 candidatePatches.add(patchWithExplanation);
-            //}
-            comp.revertPatch(patch, scc.getSourceCodeLocation());
         }
 
         return candidatePatches;

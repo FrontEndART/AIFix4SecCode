@@ -2,8 +2,11 @@ package eu.assuremoss.utils;
 
 import eu.assuremoss.VulnerabilityRepairDriver;
 import eu.assuremoss.framework.model.CodeModel;
+import eu.assuremoss.framework.model.VulnerabilityEntry;
 import eu.assuremoss.utils.parsers.ASGInfoParser;
 import eu.assuremoss.utils.parsers.SpotBugsParser;
+import helpers.PathHelper;
+import helpers.Util;
 import org.eclipse.core.runtime.Path;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,7 +48,7 @@ public class ASGInfoExtractorTest {
         mocked_models = mockedCodeModels();
         //asgParser = new ASGInfoParser(Utils.getCodeModel(mocked_models, CodeModel.MODEL_TYPES.ASG).get().getModelPath());
         config = new Configuration("config-example.properties", "mapping-example.properties");
-        parser = new SpotBugsParser(mocked_models, config, false);
+        //parser = new SpotBugsParser(mocked_models, config.properties, false);
     }
 
     @Test
@@ -56,7 +59,8 @@ public class ASGInfoExtractorTest {
     }
 
     @Test
-    void checkSpotBugsParser() throws DataFormatException {
-        parser.readXML();
+    void checkSpotBugsParser() throws DataFormatException, IOException {
+       // List<VulnerabilityEntry> listOfVulnerabilities = parser.readXML(true);
+       // Util.writeVulnerabilitiesToSER(listOfVulnerabilities, PathHelper.getVulnEntriesPath());
     }
 }

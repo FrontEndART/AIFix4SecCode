@@ -83,7 +83,7 @@ public class VulnRepairDriver {
 
         // 2. Analyze source code
         MLOG.info("Code analysis started");
-        CodeAnalyzer osa = ToolFactory.createOsa(props);
+        CodeAnalyzer osa = ToolFactory.createOsa(props, path);
         List<CodeModel> codeModels = osa.analyzeSourceCode(scc.getSourceCodeLocation(), false);
 
         // 2. Produces :- ASG
@@ -96,15 +96,16 @@ public class VulnRepairDriver {
         VulnerabilityRepairer vulnRepairer = ToolFactory.createASGTransformRepair(props, ljsiName);
 
         // 3. Detect vulnerabilities
-        VulnerabilityDetector vulnDetector = ToolFactory.createOsa(props);
+        VulnerabilityDetector vulnDetector = ToolFactory.createOsa(props, path);
 
         // 3. Produces :- vulnerability locations
         //List<VulnerabilityEntry> vulnerabilityLocations = vulnDetector.getVulnerabilityLocations(codeModels);
         MLOG.info("Spotbugs analysis started");
-        SpotBugsParser sparser = new SpotBugsParser(codeModels, config, false);
+
         List<VulnerabilityEntry> vulnerabilityLocations = null;
         try {
-            vulnerabilityLocations = sparser.readXML();
+            SpotBugsParser sparser = new SpotBugsParser(path, config.properties,  Utils.getCodeModel(codeModels, CodeModel.MODEL_TYPES.ASG).get().getModelPath());
+            vulnerabilityLocations = sparser.readXML(false, true);
         } catch (DataFormatException e) {
             e.printStackTrace();
         }
@@ -202,7 +203,7 @@ public class VulnRepairDriver {
 
     private List<Pair<File, Pair<Patch<String>, String>>> getCandidatePatches(Properties props, SourceCodeCollector scc, VulnerabilityEntry vulnEntry, PatchCompiler comp, List<Pair<File, Pair<Patch<String>, String>>> filteredPatches) {
         List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = new ArrayList<>();
-        PatchValidator patchValidator = ToolFactory.createOsa(props);
+        PatchValidator patchValidator = ToolFactory.createOsa(props, path);
 
         for (Pair<File, Pair<Patch<String>, String>> patchWithExplanation : filteredPatches) {
             Patch<String> rawPatch = patchWithExplanation.getB().getA();
