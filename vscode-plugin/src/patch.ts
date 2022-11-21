@@ -4,10 +4,11 @@ import { getIssues } from './services/fakeAiFixCode';
 import { getSafeFsPath } from './path';
 import { utf8Stream, PROJECT_FOLDER, ANALYZER_USE_DIFF_MODE } from './constants';
 import { env } from 'process';
-import { workspace, Uri, window, ProgressLocation } from 'vscode';
+import { workspace, Uri, window, ProgressLocation, commands } from 'vscode';
 import { testView } from './commands';
 import { analysisDiagnostics } from './extension';
 import { updateUserDecisions } from './commands';
+import { getVSCodeDownloadUrl } from 'vscode-test/out/util';
 
 
 var stringify = require('json-stringify');
@@ -115,6 +116,8 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
                   // 4.
                   await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
                   
+                  commands.executeCommand("aifix4seccode-vscode.getOutputFromAnalyzer");
+
                   // User decisions are updated here in patch mode (and at extendedWebview in diff mode):
                   if(ANALYZER_USE_DIFF_MODE == "view Patch files"){
                     updateUserDecisions('applied', patchPath, leftPath);
