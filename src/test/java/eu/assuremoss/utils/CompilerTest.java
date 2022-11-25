@@ -2,22 +2,22 @@ package eu.assuremoss.utils;
 
 import eu.assuremoss.utils.tools.JANAnalyser;
 import eu.assuremoss.utils.tools.SourceCompiler;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.zip.DataFormatException;
 
-import static eu.assuremoss.utils.Configuration.PROJECT_BUILD_TOOL_KEY;
-import static eu.assuremoss.utils.MLogger.MLOG;
+import static eu.assuremoss.utils.Configuration.SPOTBUGS_RESULTFILE;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class CompilerTest {
     String testProjectRelativePath = "test-project";
     String testProjectAbsolutePath = PathHandler.joinPath(Utils.getWorkingDir(), testProjectRelativePath);
-
+    private static MLogger MLOG;
     static Configuration config;
     private static PathHandler path;
     private static SourceCompiler compiler;
@@ -32,26 +32,23 @@ public class CompilerTest {
     }
 
     @Test
-    void compileTest() {
-        compiler.compile (new File(testProjectAbsolutePath), true,false);
-    }
-
-    @Test
-    void spotBugsAnalysisTest() {
-        String sources = PathHandler.joinPath(Utils.getWorkingDir(), "");
-        //compiler.setFbFileListPath(new File(Paths.get(config.properties.getProperty("config.results_path"), "proba.txt")));
-        compiler.analyze(true);
+    void compileAndAnalyseTest() {
+        assertTrue(compiler.compile (new File(testProjectAbsolutePath), true,false));
+        compiler.analyze();
+        String spotbugsresult = String.valueOf(Paths.get(config.properties.getProperty("config.results_path"), SPOTBUGS_RESULTFILE));
+        assertTrue(new File(spotbugsresult).exists());
     }
 
     @Test
     void janTest() {
         String asgDir = String.valueOf(Paths.get(config.properties.getProperty("config.results_path"), "asg"));
         Utils.createDirectory(asgDir);
-        Assertions.assertTrue(new File(asgDir).exists());
+        assertTrue(new File(asgDir).exists());
 
         JANAnalyser jan = new JANAnalyser(config.properties, asgDir);
 
         String compilationUnit = PathHandler.joinPath(testProjectAbsolutePath, "src\\main\\java\\example\\ArrayDemo.java");
         jan.analyze(compilationUnit, "example.ArrayDemo");
+        assertTrue(new File(String.valueOf(Paths.get(asgDir, "example", "ArrayDemo.jsi"))).exists());
     }
 }

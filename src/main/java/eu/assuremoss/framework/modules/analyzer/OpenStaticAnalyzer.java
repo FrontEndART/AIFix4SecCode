@@ -63,7 +63,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         String spotBugsXml = (isValidation?
                 String.valueOf(Paths.get(VulnRepairDriver.properties.getProperty("config.validation_results_path"), "spotbugs.xml")):
                 String.valueOf(Paths.get(VulnRepairDriver.properties.getProperty("config.results_path"), "spotbugs.xml")));
-        compiler.analyze(true);
+        compiler.analyze();
 
         List<CodeModel> resList = new ArrayList<>();
 

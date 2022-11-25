@@ -4,11 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import static eu.assuremoss.utils.MLogger.MLOG;
-
 public class ProcessRunner {
 
     public static void run(ProcessBuilder processBuilder) {
+        MLogger MLOG = MLogger.getActiveLogger();
         processBuilder.redirectErrorStream(true);
         try {
             Process process = processBuilder.start();
@@ -25,6 +24,7 @@ public class ProcessRunner {
     }
 
     public static String runAndReturnMessage(ProcessBuilder processBuilder) {
+        MLogger MLOG = MLogger.getActiveLogger();
         StringBuilder message = new StringBuilder();
 
         processBuilder.redirectErrorStream(true);

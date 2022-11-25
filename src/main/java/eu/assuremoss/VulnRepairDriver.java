@@ -32,13 +32,13 @@ import java.util.zip.DataFormatException;
 import static eu.assuremoss.utils.Configuration.*;
 import static eu.assuremoss.utils.Utils.getConfigFile;
 import static eu.assuremoss.utils.Utils.getMappingFile;
-import static eu.assuremoss.utils.MLogger.MLOG;
 
 
 /**
  * The main driver class that runs the vulnerability repair workflow
  */
 public class VulnRepairDriver {
+    private MLogger MLOG;
     private static final Logger LOG = LogManager.getLogger(VulnRepairDriver.class);
     public static Properties properties;
     private final PatchCompiler patchCompiler;
@@ -129,45 +129,48 @@ public class VulnRepairDriver {
             // - Init -
             vulnIndex++;
             //if (vulnIndex>2) return;
-            MLOG.changeOutPutFile(path.vulnBuildLogFile(vulnIndex));
+            //MLOG.changeOutPutFile(path.vulnBuildLogFile(vulnIndex));
+            MLogger buildLogger = new MLogger(path.vulnBuildLogFile(vulnIndex));
+            MLogger.setActiveLogger(buildLogger);
 
             // - Skip if column info was not retrieved -
             if (vulnEntry.getStartCol() == -1 && vulnEntry.getEndCol() == -1) {
-                MLOG.ninfo(String.format("No column info were retrieved, skipping vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+                buildLogger.ninfo(String.format("No column info were retrieved, skipping vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
                 continue;
             }
 
             // - Generate repair patches -
-            MLOG.ninfo(String.format("Generating patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+            buildLogger.ninfo(String.format("Generating patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> patches = vulnRepairer.generateRepairPatches(scc.getSourceCodeLocation(), vulnEntry, codeModels);
             vulnEntry.setGeneratedPatches(patches.size());
 
             //  - Applying & Compiling patches -
-            MLOG.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+            buildLogger.info(String.format("Compiling patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> filteredPatches = patchCompiler.applyAndCompile(scc.getSourceCodeLocation(), patches, Configuration.isTestingEnabled(properties));
 
             vulnEntry.setFilteredPatches(filteredPatches.size());
 
             //  - Testing Patches -
-            MLOG.info(String.format("Verifying patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+            buildLogger.info(String.format("Verifying patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             List<Pair<File, Pair<Patch<String>, String>>> candidatePatches = getCandidatePatches(props, scc, vulnEntry, patchCompiler, filteredPatches);
             vulnEntry.setVerifiedPatches(candidatePatches.size());
 
             // - Save patches -
             Utils.createDirectory(patchSavePath(props));
             if (candidatePatches.isEmpty()) {
-                MLOG.info("No patch candidates were found, skipping!");
+                buildLogger.info("No patch candidates were found, skipping!");
                 continue;
             }
 
-            MLOG.info(String.format("Writing out candidate patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
+            buildLogger.info(String.format("Writing out candidate patches for vulnerability %d/%d", vulnIndex, vulnerabilityLocations.size()));
             if (!problemFixMap.containsKey(vulnEntry.getType())) {
                 problemFixMap.put(vulnEntry.getType(), new ArrayList());
             }
             problemFixMap.get(vulnEntry.getType()).add(generateFixEntity(props, vulnEntry, candidatePatches));
+            buildLogger.closeFile();
         }
 
-        MLOG.changeOutPutFile(path.logFinishFile());
+        MLogger.setActiveLogger(MLOG);
 
         JSONObject vsCodeConfig = getVSCodeConfig(problemFixMap);
 
@@ -188,6 +191,7 @@ public class VulnRepairDriver {
         statistics.createResultStatistics(vulnerabilityLocations);
 
         MLOG.info("Framework repair finished!");
+        MLOG.closeFile();
     }
 
     private JSONObject getVSCodeConfig(Map<String, List<JSONObject>> problemFixMap) {

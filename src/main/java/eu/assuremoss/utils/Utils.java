@@ -26,7 +26,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static eu.assuremoss.utils.MLogger.MLOG;
 import static eu.assuremoss.utils.Configuration.*;
 
 public class Utils {
@@ -37,7 +36,7 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-                MLOG.fInfo("Deleting " + file.getName());
+                MLogger.getActiveLogger().fInfo("Deleting " + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);
@@ -254,7 +253,7 @@ public class Utils {
 
         long millis = TimeUnit.MILLISECONDS.toMillis(diff);
 
-        MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
+        MLogger.getActiveLogger().ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
     }
 
     public static NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {

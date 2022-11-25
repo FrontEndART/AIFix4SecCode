@@ -1,6 +1,9 @@
 package eu.assuremoss.utils;
 
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -9,12 +12,11 @@ import java.io.Writer;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static eu.assuremoss.utils.MLogger.MLOG;
-
 /**
  * Class for creating statistics on the results
  */
 public class Statistics {
+    private static final Logger LOG = LogManager.getLogger(MavenPatchCompiler.class);
     public PathHandler path;
 
     public Statistics(PathHandler path) {
@@ -106,7 +108,7 @@ public class Statistics {
 
         try (Writer writer = new FileWriter(resultPath)) {
             if (!directory.exists()) {
-                MLOG.error("Generated patches were not found: " + patchesPath);
+                LOG.error("Generated patches were not found: " + patchesPath);
                 return;
             }
 
@@ -122,7 +124,7 @@ public class Statistics {
             }
 
         } catch (IOException e) {
-            MLOG.error("Statistics could not be created!");
+            LOG.error("Statistics could not be created!");
             e.printStackTrace();
         }
     }
@@ -138,12 +140,12 @@ public class Statistics {
 
         try (Writer writer = new FileWriter(path.vulnEntryStatistics())) {
             if (!directory.exists()) {
-                MLOG.error("Generated patches were not found: " + patchesPath);
+                LOG.error("Generated patches were not found: " + patchesPath);
                 return;
             }
 
             if (directory.listFiles() == null) {
-                MLOG.fInfo("Patch files were not generated!");
+                LOG.error("Patch files were not generated!");
                 return;
             }
 
@@ -155,7 +157,7 @@ public class Statistics {
             }
 
         } catch (IOException e) {
-            MLOG.error("Statistics could not be appended!");
+            LOG.error("Statistics could not be appended!");
             e.printStackTrace();
         }
     }

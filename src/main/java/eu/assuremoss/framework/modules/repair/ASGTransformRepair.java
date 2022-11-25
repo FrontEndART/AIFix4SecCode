@@ -7,6 +7,7 @@ import com.github.difflib.patch.Patch;
 import eu.assuremoss.framework.api.VulnerabilityRepairer;
 import eu.assuremoss.framework.model.CodeModel;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.utils.MLogger;
 import eu.assuremoss.utils.Pair;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
@@ -25,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static eu.assuremoss.utils.MLogger.MLOG;
 import static eu.assuremoss.utils.Configuration.PROJECT_SOURCE_PATH_KEY;
 
 @AllArgsConstructor
@@ -137,16 +137,9 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
             };
             RepairAlgorithmRunner rar = new RepairAlgorithmRunner();
 
-            // Redirect standard output into log file
-            PrintStream out = null;
-            try {
-                MLOG.closeFile();
-                out = new PrintStream(new FileOutputStream(MLOG.getLogFilePath(), true), true);
-                System.setOut(out);
-            } catch (FileNotFoundException f) {
-                LOG.error("FileNotFound: log.txt");
-            }
-
+            MLogger logger = MLogger.getActiveLogger();
+            PrintStream console = System.out;
+            System.setOut(logger.getFileWriter());
             try {
                 rar.run(args, new RepairToolSwitcher());
                 List<String> patchLines = Files.readAllLines(Path.of(patchPath));
@@ -160,22 +153,15 @@ public class ASGTransformRepair implements VulnerabilityRepairer {
                 } else {
                     File emptyPatch = new File(patchPath);
                     if (emptyPatch.delete()) {
-                        System.out.println((patchPath + " EMPTY PATCH deleted successfully!"));
+                        logger.fInfo((patchPath + " EMPTY PATCH deleted successfully!"));
                         PATCH_COUNTER--;
-                    } else System.out.println("Error occurred while deleting empty patch: " + patchPath);
+                    } else logger.info("Error occurred while deleting empty patch: " + patchPath);
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            // Reset standard output stream
-            if (out != null) {
-                out.flush();
-                out.close();
-                System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
-                MLOG.openFile(true);
-            }
+            System.setOut(console);
         }
         return resList;
     }

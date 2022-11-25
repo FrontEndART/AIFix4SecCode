@@ -1,5 +1,6 @@
 package eu.assuremoss.framework.modules.compiler;
 
+import eu.assuremoss.utils.MLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -12,7 +13,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static eu.assuremoss.utils.MLogger.MLOG;
 
 public class MavenPatchCompiler extends GenericPatchCompiler {
     private static final Logger LOG = LogManager.getLogger(MavenPatchCompiler.class);
@@ -53,20 +53,18 @@ public class MavenPatchCompiler extends GenericPatchCompiler {
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final String utf8 = StandardCharsets.UTF_8.name();
+
+        int compilationResult = 1;
         try (PrintStream buffer = new PrintStream(baos, true, utf8)) {
-            cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer);
-            String mvnOutput = baos.toString();
-            MLOG.fInfo(mvnOutput);
-            if (mvnOutput.contains("BUILD SUCCESS")) {
-                return true;
-            }
-            baos.close();
+            compilationResult = cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer);
+            if (compilationResult != 0)
+                MLogger.getActiveLogger().info("ERROR - BUILD FAILED! - " + srcLocation.getName() );
         } catch (UnsupportedEncodingException e) {
             LOG.error(e.getMessage());
         } catch (IOException e) {
             LOG.error(e.getMessage());
         }
-        MLOG.info("ERROR - BUILD FAILED!");
-        return false;
+
+        return compilationResult == 0;
     }
 }

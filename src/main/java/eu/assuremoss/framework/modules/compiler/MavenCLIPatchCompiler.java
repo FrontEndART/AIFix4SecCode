@@ -1,16 +1,21 @@
 package eu.assuremoss.framework.modules.compiler;
 
+import eu.assuremoss.utils.MLogger;
 import eu.assuremoss.utils.ProcessRunner;
 import eu.assuremoss.utils.Utils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.maven.cli.CliRequest;
+import org.apache.maven.cli.MavenCli;
 
-import java.io.File;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MavenCLIPatchCompiler extends GenericPatchCompiler {
-
+    private static final Logger LOG = LogManager.getLogger(MavenCLIPatchCompiler.class);
     @Override
     protected void initBuildDirectoryName() {
         buildDirectoryName = String.valueOf(Paths.get("target", "classes"));
@@ -20,29 +25,41 @@ public class MavenCLIPatchCompiler extends GenericPatchCompiler {
     public boolean compile(File srcLocation, boolean runTests, boolean copyDependencies) {
         System.setProperty("maven.multiModuleProjectDirectory", srcLocation.getAbsolutePath());
 
-        List<String> args = getMavenArgs(srcLocation, runTests, copyDependencies);
+        List<String> argsList = getMavenArgs(srcLocation, runTests, copyDependencies);
+        MavenCli cli = new MavenCli();
 
-        ProcessBuilder processBuilder = new ProcessBuilder(args);
-        String message = ProcessRunner.runAndReturnMessage(processBuilder);
+        String[] args = new String[argsList.size()];
+        argsList.toArray(args);
 
-        return message.contains("BUILD SUCCESS");
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baos_err = new ByteArrayOutputStream();
+        final String utf8 = StandardCharsets.UTF_8.name();
+
+        int compilationResult = 1;
+        try (PrintStream buffer = new PrintStream(baos, true, utf8);PrintStream buffer_err = new PrintStream(baos_err, true, utf8)) {
+            compilationResult = cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer_err);
+
+            if (compilationResult != 0) {
+                MLogger.getActiveLogger().info("ERROR - BUILD FAILED! - " + srcLocation.getName());
+                MLogger.getActiveLogger().fInfo(baos_err.toString());
+            }
+
+        } catch (UnsupportedEncodingException e) {
+            LOG.error(e.getMessage());
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+        }
+
+        return compilationResult == 0;
     }
 
     private List<String> getMavenArgs(File srcLocation, boolean runTests, boolean copyDependencies) {
-        switch (Utils.getOsName()) {
-            case "Windows":
-                return windowsArgs(srcLocation, runTests, copyDependencies);
-            case "Linux":
-                return linuxArgs(srcLocation, runTests, copyDependencies);
-            default:
-                throw new InvalidParameterException("Unsupported OS type: " + Utils.getOsName());
-        }
+        return mavenDefaultArgs(srcLocation, runTests, copyDependencies);
     }
 
     public List<String> mavenDefaultArgs(File srcLocation, boolean runTests, boolean copyDependencies) {
         List<String> args = new ArrayList<>();
 
-        args.add("mvn");
         args.add("-f");
         args.add(srcLocation.getAbsolutePath());
 
@@ -54,18 +71,4 @@ public class MavenCLIPatchCompiler extends GenericPatchCompiler {
 
         return args;
     }
-
-    private List<String> linuxArgs(File srcLocation, boolean runTests, boolean copyDependencies) {
-        return mavenDefaultArgs(srcLocation, runTests, copyDependencies);
-    }
-
-    public List<String> windowsArgs(File srcLocation, boolean runTests, boolean copyDependencies) {
-        List<String> argList = mavenDefaultArgs(srcLocation, runTests, copyDependencies);
-
-        argList.add(0, "cmd");
-        argList.add(1, "/c");
-
-        return argList;
-    }
-
 }

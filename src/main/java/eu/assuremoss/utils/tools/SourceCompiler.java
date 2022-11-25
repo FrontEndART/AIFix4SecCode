@@ -62,10 +62,9 @@ public class SourceCompiler {
 
     }
 
-    public void analyze(boolean isValidation) {
+    public void analyze() {
         if (analyzedClasses == null) return;
-        //System.out.println("Working dir: " + workingDir + " " + spotbugs);
-        String xmlName = String.valueOf(Paths.get(workingDir, "spotbugs.xml"));
+        String xmlName = String.valueOf(Paths.get(workingDir, SPOTBUGS_RESULTFILE));
         String[] command = new String[] {
                 new File(spotbugs).getAbsolutePath(),
                 "-textui",
@@ -75,7 +74,6 @@ public class SourceCompiler {
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         ProcessRunner.run(processBuilder);
-
     }
 
     public String getLastCompiled() {
@@ -89,7 +87,7 @@ public class SourceCompiler {
         if (isCandidate) {
             vulnEntry.setFilteredPatches(vulnEntry.getFilteredPatches()+1);
             setContentOfAnalyzedClasses(sourceLocation, vulnEntry.getClassName());
-            analyze(true);
+            analyze();
             SpotBugsParser patchParser = new SpotBugsParser(path, properties, null );
             List<VulnerabilityEntry> newVulnerabilities = null;
             try {

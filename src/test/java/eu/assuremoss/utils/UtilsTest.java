@@ -1,12 +1,11 @@
 package eu.assuremoss.utils;
 
-import eu.assuremoss.VulnRepairDriver;
 import helpers.PathHelper;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +14,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
-import static eu.assuremoss.utils.MLogger.MLOG;
+
 
 public class UtilsTest {
 
@@ -43,7 +42,7 @@ public class UtilsTest {
         FileUtils.cleanDirectory(new File(PathHelper.getIntermediatePatchesDir()));
 
         Utils.createEmptyLogFile(properties);
-        MLOG = new MLogger(properties, "log.txt", new PathHandler(properties));
+        MLogger MLOG = new MLogger(properties, "log.txt", new PathHandler(properties));
 
         for (int i = 1; i <= 5; i++) {
             String fileName = String.format("repair_patch%d.diff", i);

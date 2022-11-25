@@ -1,7 +1,5 @@
 package eu.assuremoss.utils.tools;
 
-import eu.assuremoss.VulnRepairDriver;
-import eu.assuremoss.utils.PathHandler;
 import eu.assuremoss.utils.ProcessRunner;
 import eu.assuremoss.utils.Utils;
 

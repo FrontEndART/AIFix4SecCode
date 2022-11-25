@@ -29,7 +29,6 @@ public class PathHandler {
     private final String logFinish = "log_finish.txt";
     private final String logFile = "log.txt";
     private final String patchUnitTestsCSV = "patch_unit_tests.csv";
-    private final String spotbugsXML = "spotbugs.xml";
 
 
     public PathHandler(Properties props) {
@@ -94,8 +93,8 @@ public class PathHandler {
 
     public String spotbugsXML(boolean isValidation) {
         if (!isValidation)
-            return joinPath(props.getProperty(RESULTS_PATH_KEY), spotbugsXML);
-        return joinPath(props.getProperty(VALIDATION_RESULTS_PATH_KEY), spotbugsXML);
+            return joinPath(props.getProperty(RESULTS_PATH_KEY), Configuration.SPOTBUGS_RESULTFILE);
+        return joinPath(props.getProperty(VALIDATION_RESULTS_PATH_KEY), Configuration.SPOTBUGS_RESULTFILE);
     }
 
     public String logFile() {
