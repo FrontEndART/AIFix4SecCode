@@ -4,12 +4,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
-import static eu.assuremoss.utils.Configuration.ARCHIVE_ENABLED;
+import static eu.assuremoss.utils.Configuration.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
+
 public class ConfigurationTest {
     static Configuration config;
 
@@ -24,12 +26,20 @@ public class ConfigurationTest {
         assertEquals(PathHandler.joinPath(Utils.getWorkingDir(), "test-project"), config.properties.getProperty("config.project_path"));
         assertEquals("src\\main\\java", config.properties.getProperty("config.project_source_path"));
         assertEquals("maven", config.properties.getProperty("config.project_build_tool"));
-        assertEquals("d:\\OpenStaticAnalyzer-4.1.0-x64-Windows\\Java", config.properties.getProperty("config.osa_path"));
         assertEquals("OpenStaticAnalyzer", config.properties.getProperty("config.osa_edition"));
-        assertEquals("d:\\AIFix4SecCode\\test-project\\results", config.properties.getProperty("config.results_path"));
-        assertEquals("d:\\AIFix4SecCode\\test-project\\validation", config.properties.getProperty("config.validation_results_path"));
         assertEquals("true", config.properties.getProperty("config.archive_enabled"));
-        assertEquals("d:\\AIFix4SecCode\\test-project\\archive", config.properties.getProperty("config.archive_path"));
+    }
+
+    @Test
+    void shouldReadValidBinaries() {
+        File osa = new File(String.valueOf(Paths.get(config.properties.getProperty(OSA_PATH_KEY), "Java")));
+        assertTrue(osa.exists());
+        File spotbugs = new File(String.valueOf(Paths.get(config.properties.getProperty(SPOTBUGS_BIN))));
+        assertTrue(spotbugs.exists());
+        File jan = new File(String.valueOf(Paths.get(config.properties.getProperty(JAN_PATH_KEY), config.properties.getProperty(JAN_EDITION_KEY))));
+        assertTrue(jan.exists());
+        File janCompiler = new File(String.valueOf(Paths.get(config.properties.getProperty(JAN_PATH_KEY), config.properties.getProperty(JAN_COMPILER_KEY))));
+        assertTrue(janCompiler.exists());
     }
 
     @Test
@@ -72,13 +82,4 @@ public class ConfigurationTest {
         assertFalse(Configuration.archiveEnabled(config.properties));
     }
 
-    @Test
-    void shouldGetDescriptionPath() {
-        assertEquals(PathHandler.joinPath("d:\\AIFix4SecCode\\test-project\\results", "osa_xml"), Configuration.descriptionPath(config.properties));
-    }
-
-    @Test
-    void shouldGetPatchSavePath() {
-        assertEquals(PathHandler.joinPath("d:\\AIFix4SecCode\\test-project\\results", "patches"), Configuration.patchSavePath(config.properties));
-    }
 }

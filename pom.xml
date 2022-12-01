@@ -111,7 +111,7 @@
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.assuremoss.VulnRepairDriver</Main-Class>
+                                        <Main-Class>eu.assuremoss.VulnerabilityRepairDriver</Main-Class>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>

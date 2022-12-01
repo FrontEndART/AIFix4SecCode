@@ -34,12 +34,12 @@ public class ASGInfoExtractorTest {
 
     @BeforeAll
     static void beforeAll() throws IOException, DataFormatException {
-        asgParser = new ASGInfoParser(new File(asg));
         config = new Configuration("config-example.properties", "mapping-example.properties");
         path = new PathHandler(config.properties);
+        MLOG = new MLogger(config.properties, "log.txt", path);
+        asgParser = new ASGInfoParser(new File(asg));
         parser = new SpotBugsParser(path, config.properties);
         Utils.initResourceFiles(config.properties, path);
-        MLOG = new MLogger(config.properties, "log.txt", path);
     }
 
     @Test

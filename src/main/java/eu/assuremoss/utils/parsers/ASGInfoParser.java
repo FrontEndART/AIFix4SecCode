@@ -16,6 +16,7 @@ import columbus.java.asg.struc.Variable;
 import columbus.java.asg.struc.VariableDeclaration;
 import columbus.java.asg.visitors.VisitorAbstractNodes;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.utils.MLogger;
 import eu.assuremoss.utils.Pair;
 
 import java.io.File;
@@ -150,7 +151,7 @@ public class ASGInfoParser {
         URI asgURI = null;
         try {
             // load ASG
-            System.out.println("Analyzed asg: " + asgFile.getAbsolutePath());
+            MLogger.getActiveLogger().fInfo("Analyzed asg: " + asgFile.getAbsolutePath());
             if (!asgFile.exists() || !asgFile.canRead() || asgFile.isDirectory()) {
                 final URL resource = Thread.currentThread().getContextClassLoader().getResource(asgFile.getAbsolutePath());
                 if (resource == null) {

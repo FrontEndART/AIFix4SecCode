@@ -34,7 +34,8 @@ public class SpotBugsParser {
     PathHandler path;
 
     public SpotBugsParser(PathHandler path, Properties properties, File projectASG){
-        models = path.getModelFiles(false);
+        models = new ArrayList<>();
+        models.add(new CodeModel(CodeModel.MODEL_TYPES.SPOTBUGS_XML, new File(path.spotbugsXML(false))));
         this.path = path;
         this.properties = properties;
         projectPath =Paths.get(properties.getProperty(PROJECT_PATH_KEY), properties.getProperty(PROJECT_SOURCE_PATH_KEY)).toString();

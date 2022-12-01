@@ -40,6 +40,21 @@ public class Configuration {
     public static final String SPOTBUGS_LISTFILE = "fb_file_list.txt";
     public static final String SPOTBUGS_RESULTFILE = "spotbugs.xml";
 
+    // Directories
+    public static final String PATCHES_DIR = "patches";
+    public static final String LOGS_DIR = "logs";
+    public static final String BUILD_LOGS_DIR = "build_logs";
+    public static final String ASG_DIR = "asg";
+
+    // Files
+    public static final String VULN_FOUND_TXT = "vuln_found.txt";
+    public static final String VULN_FOUND_RESULT_TXT = "vuln_found_result.txt";
+    public static final String VULN_ENTRIES_CSV = "vuln_entries.csv";
+    public static final String VULN_ENTRIES_RESULT_CSV = "vuln_entries_result.csv";
+    public static final String VULN_TXT = "vuln_?.txt";
+    public static final String LOG_TXT = "log.txt";
+    public static final String PATCH_UNIT_TESTS_CSV = "patch_unit_tests.csv";
+
     public Properties properties;
     private final ClassLoader loader;
 

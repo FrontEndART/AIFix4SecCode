@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
+import static eu.assuremoss.utils.Configuration.*;
+
 @Disabled
 public class StatisticsTest {
     private Statistics statistics;
@@ -37,9 +40,10 @@ public class StatisticsTest {
 
     @Test
     public void shouldSaveFoundVulnerabilities() throws IOException {
-        final String actual_vulnFoundPath = PathHandler.joinPath(PathHelper.getActualResultsDir(), "vuln_found.txt");
-        final String expected_vulnFoundPath = PathHandler.joinPath(PathHelper.getExpectedResultsDir(), "vuln_found.txt");
+        final String actual_vulnFoundPath = PathHandler.joinPath(PathHelper.getActualResultsDir(), VULN_FOUND_TXT);
+        final String expected_vulnFoundPath = PathHandler.joinPath(PathHelper.getExpectedResultsDir(), VULN_FOUND_TXT);
 
+        //joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR, VULN_FOUND_TXT);
         Mockito.when(statistics.path.vulnFound()).thenReturn(actual_vulnFoundPath);
         Assertions.assertEquals(actual_vulnFoundPath, statistics.path.vulnFound());
 

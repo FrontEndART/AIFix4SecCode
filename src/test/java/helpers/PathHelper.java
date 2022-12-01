@@ -32,9 +32,7 @@ public class PathHelper {
         return PathHandler.joinPath(PathHelper.testResultsPath, "patches");
     }
 
-    public static String getIntermediatePatchesDir() {
-        return PathHandler.joinPath(PathHelper.testResultsPath, "intermediatePatches");
-    }
+
 
     public static String getLogFilePath() {
         return PathHandler.joinPath(PathHelper.testResultsPath, "logs", "log.txt");

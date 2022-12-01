@@ -12,6 +12,8 @@ import java.io.Writer;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static eu.assuremoss.utils.Configuration.*;
+
 /**
  * Class for creating statistics on the results
  */
@@ -89,8 +91,8 @@ public class Statistics {
      *
      * @param vulnEntries the vulnerability entries used in the statistics
      */
-    public void createResultStatistics(List<VulnerabilityEntry> vulnEntries) {
-        createRepairedVulnSum(vulnEntries, path.generatedPatches(), path.vulnFoundResult());
+    public void createResultStatistics(Properties props, List<VulnerabilityEntry> vulnEntries) {
+        createRepairedVulnSum(vulnEntries, path.generatedPatches(), path.joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR , VULN_FOUND_RESULT_TXT));
         createVulnStatistic(vulnEntries, path.generatedPatches());
     }
 

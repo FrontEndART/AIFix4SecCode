@@ -1,35 +1,12 @@
 package eu.assuremoss.utils;
 
-import eu.assuremoss.framework.model.CodeModel;
-
-import java.io.File;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
-import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
-import static eu.assuremoss.utils.Configuration.VALIDATION_RESULTS_PATH_KEY;
+import static eu.assuremoss.utils.Configuration.*;
 
 public class PathHandler {
     private Properties props;
-
-    // Directories
-    private final String patchesDir = "patches";
-    private final String logsDir = "logs";
-    private final String buildLogsDir = "build_logs";
-    private final String asgDir = "asg";
-
-    // Files
-    private final String vulnFound = "vuln_found.txt";
-    private final String vulnFoundResult = "vuln_found_result.txt";
-    private final String vulnEntries = "vuln_entries.csv";
-    private final String vulnEntriesResult = "vuln_entries_result.csv";
-    private final String vulnBuildFile = "vuln_?.txt";
-    private final String logFinish = "log_finish.txt";
-    private final String logFile = "log.txt";
-    private final String patchUnitTestsCSV = "patch_unit_tests.csv";
-
 
     public PathHandler(Properties props) {
         this.props = props;
@@ -50,45 +27,41 @@ public class PathHandler {
     // Directories
 
     public String logsDir() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR);
     }
 
     public String buildDir() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, buildLogsDir);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR, BUILD_LOGS_DIR);
     }
 
     public String generatedPatches() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), patchesDir);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), PATCHES_DIR);
     }
 
     public String asgDir() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), asgDir);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), ASG_DIR);
     }
 
     // Files
     
     public String vulnFound() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnFound);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR, VULN_FOUND_TXT);
     }
 
     public String vulnEntries() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnEntries);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR, VULN_ENTRIES_CSV);
     }
 
     public String vulnFoundResult() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnFoundResult);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR, VULN_FOUND_RESULT_TXT);
     }
 
     public String vulnEntryStatistics() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, vulnEntriesResult);
+        return joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR, VULN_ENTRIES_RESULT_CSV);
     }
 
     public String vulnBuildLogFile(int vulnIndex) {
-        return joinPath(buildDir(), vulnBuildFile.replace("?", String.valueOf(vulnIndex)));
-    }
-
-    public String logFinishFile() {
-        return joinPath(props.getProperty(RESULTS_PATH_KEY), logsDir, logFinish);
+        return joinPath(buildDir(), VULN_TXT.replace("?", String.valueOf(vulnIndex)));
     }
 
     public String spotbugsXML(boolean isValidation) {
@@ -98,17 +71,10 @@ public class PathHandler {
     }
 
     public String logFile() {
-        return logFile;
+        return LOG_TXT;
     }
 
     public String patchUnitTests() {
-        return joinPath(logsDir(), patchUnitTestsCSV);
-    }
-
-    public List<CodeModel> getModelFiles(boolean isValidaton) {
-        List<CodeModel> resList = new ArrayList<>();
-        //resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
-        resList.add(new CodeModel(CodeModel.MODEL_TYPES.SPOTBUGS_XML, new File(spotbugsXML(isValidaton))));
-        return resList;
+        return joinPath(logsDir(), PATCH_UNIT_TESTS_CSV);
     }
 }

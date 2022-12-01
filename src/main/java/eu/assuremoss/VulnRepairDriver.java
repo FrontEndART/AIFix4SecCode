@@ -188,7 +188,7 @@ public class VulnRepairDriver {
 
         Utils.deleteIntermediatePatches(patchSavePath(props));
         Utils.saveElapsedTime(startTime);
-        statistics.createResultStatistics(vulnerabilityLocations);
+        statistics.createResultStatistics(props, vulnerabilityLocations);
 
         MLOG.info("Framework repair finished!");
         MLOG.closeFile();

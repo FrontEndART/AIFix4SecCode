@@ -4,6 +4,7 @@ import helpers.PathHelper;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
@@ -15,10 +16,14 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
-
+@Disabled
 public class UtilsTest {
 
     private static Properties properties = new Properties();
+
+    public static String getIntermediatePatchesDir() {
+        return PathHandler.joinPath(PathHelper.testResultsPath, "intermediatePatches");
+    }
 
     @BeforeAll
     static void initProperties() throws IOException {
@@ -38,20 +43,20 @@ public class UtilsTest {
     @Test
     public void shouldDeleteIntermediatePatches() throws IOException {
         // Setup dir with patches
-        Files.createDirectories(Path.of(PathHelper.getIntermediatePatchesDir()));
-        FileUtils.cleanDirectory(new File(PathHelper.getIntermediatePatchesDir()));
+        Files.createDirectories(Path.of(getIntermediatePatchesDir()));
+        FileUtils.cleanDirectory(new File(getIntermediatePatchesDir()));
 
         Utils.createEmptyLogFile(properties);
         MLogger MLOG = new MLogger(properties, "log.txt", new PathHandler(properties));
 
         for (int i = 1; i <= 5; i++) {
             String fileName = String.format("repair_patch%d.diff", i);
-            Files.createFile(Path.of(PathHandler.joinPath(PathHelper.getIntermediatePatchesDir(), fileName)));
+            Files.createFile(Path.of(PathHandler.joinPath(getIntermediatePatchesDir(), fileName)));
         }
 
-        Utils.deleteIntermediatePatches(PathHelper.getIntermediatePatchesDir());
+        Utils.deleteIntermediatePatches(getIntermediatePatchesDir());
 
-        Assertions.assertEquals(0, new File(PathHelper.getIntermediatePatchesDir()).list().length);
+        Assertions.assertEquals(0, new File(getIntermediatePatchesDir()).list().length);
     }
 
     @Test

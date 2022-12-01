@@ -68,9 +68,9 @@ public class SourceCompiler {
         String[] command = new String[] {
                 new File(spotbugs).getAbsolutePath(),
                 "-textui",
-                "-analyzeFromFile=" + analyzedClasses,
+                "-analyzeFromFile", analyzedClasses,
                 "-xml:withMessages",
-                "-output=" + xmlName
+                "-output", xmlName
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         ProcessRunner.run(processBuilder);

@@ -82,8 +82,11 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
                 "-runDCF=false",
                 "-runMetricHunter=false",
                 "-runLIM2Patterns=false",
+                /*"-runChangeTracker=true",
+                "-changePathToRelative",*/
                 "-FBOptions=-auxclasspath " + Paths.get(srcLocation.getAbsolutePath(), compiler.getLastCompiled(), "dependency")
         };
+        //System.out.println(Arrays.toString(command));
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         ProcessRunner.run(processBuilder);
 
@@ -98,7 +101,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.ASG, new File(asgPath)));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.OSA_GRAPH_XML, new File(graphXMLPath)));
 
-        String findBugsXMLPath = String.valueOf(Paths.get(workingDir, projectName, "java", "0", "openstaticanalyzer", "temp", projectName + "-FindBugs.xml"));
+        String findBugsXMLPath = String.valueOf(Paths.get(workingDir, projectName, "java", "0", osaEdition.toLowerCase(Locale.ROOT), "temp", projectName + "-FindBugs.xml"));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.FINDBUGS_XML, new File(findBugsXMLPath)));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.SPOTBUGS_XML, new File(spotBugsXml)));
 

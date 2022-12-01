@@ -36,14 +36,12 @@ public class MavenCLIPatchCompiler extends GenericPatchCompiler {
         final String utf8 = StandardCharsets.UTF_8.name();
 
         int compilationResult = 1;
-        try (PrintStream buffer = new PrintStream(baos, true, utf8);PrintStream buffer_err = new PrintStream(baos_err, true, utf8)) {
-            compilationResult = cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer_err);
-
+        try (PrintStream buffer = new PrintStream(baos, true, utf8)) {
+            compilationResult = cli.doMain(args, srcLocation.getAbsolutePath(), buffer, buffer);
             if (compilationResult != 0) {
                 MLogger.getActiveLogger().info("ERROR - BUILD FAILED! - " + srcLocation.getName());
-                MLogger.getActiveLogger().fInfo(baos_err.toString());
+                //MLogger.getActiveLogger().fInfo(buffer_err.toString());
             }
-
         } catch (UnsupportedEncodingException e) {
             LOG.error(e.getMessage());
         } catch (IOException e) {
