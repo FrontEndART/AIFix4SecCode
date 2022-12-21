@@ -5,7 +5,7 @@ var path = require("path");
 var upath = require("upath");
 var os = require('os');
 
-export var PROJECT_FOLDER = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.subjectProjectPath');
+export var PROJECT_FOLDER = upath.normalize(workspace.workspaceFolders![0].uri.path);
 
 export function SetProjectFolder(path: string){
   PROJECT_FOLDER = upath.normalize(path);
@@ -13,11 +13,11 @@ export function SetProjectFolder(path: string){
 }
 
 // EXTENSION SETTINGS:
-export const PATCH_FOLDER = upath.normalize(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.generatedPatchesPath'));
+export const PATCH_FOLDER = upath.normalize(upath.join(PROJECT_FOLDER, 'results', 'patches'));
 export const ANALYZER_EXE_PATH = upath.normalize(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.executablePath'));
-export const ANALYZER_PARAMETERS = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.executableParameters')
-export const ANALYZER_USE_DIFF_MODE = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.useDiffMode')
-export const ISSUES_PATH = upath.normalize(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath'));
+export const ANALYZER_PARAMETERS = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.executableParameters');
+export const ANALYZER_USE_DIFF_MODE = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.useDiffMode');
+export const ISSUES_PATH = upath.normalize(upath.join(PROJECT_FOLDER, 'results', 'patches', 'vscode-config-grouped.json'));
 export const ANALYZER_MENTION = 'analyzer_mention';
 export const ISSUE = 'issue';
 
