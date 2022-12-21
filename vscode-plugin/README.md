@@ -39,4 +39,15 @@ code --install-extension aifix4seccode-vscode-x.y.z
 ```
 
 ## Example of usage on a demo project:
-Try the Patch_Validation.zip as a demo project to analyze, patch issues, etc.
+At first use, head over to the extension settings and enter appropriate data:
+* ``Executable Parameters``: Specifies the analyzer tool's executable parameters. (f.e.: java -jar Main.jar)
+* ``Executable Path``: Specifies the analyzer tool's folder where the executable (.jar, .exe, ...) is located.
+* ``Use Diff Mode``: Change the mode of showing patches in the editor.
+## Diff mode options:
+Mode | Description
+------------ | -------------
+view Diffs ``default`` | Choosing a fix will show a <b>side-to-side diff view</b> of the original content and the content that the fix would give.
+view Patch files | Choosing a fix will show the <b>patch file's content</b> of the fix.
+
+## Examples:
+>Try the Patch_Validation.zip as a demo project to analyze, patch issues, etc.
