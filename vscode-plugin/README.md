@@ -50,4 +50,4 @@ view Diffs ``default`` | Choosing a fix will show a <b>side-to-side diff view</b
 view Patch files | Choosing a fix will show the <b>patch file's content</b> of the fix.
 
 ## Examples:
->Try the Patch_Validation.zip as a demo project to analyze, patch issues, etc.
+>Try the ``test-project.zip`` as a demo project to analyze, patch issues, etc.
