@@ -284,10 +284,20 @@ export function init(
       } else {
         // run analyzer with terminal (read params and analyzer path from config):
         logging.LogInfo("Analyzer executable started.");
-        logging.LogInfo("Running " + ANALYZER_PARAMETERS);
+        
+        var currentFolderPath = '';
+        var editor = vscode.window.activeTextEditor;
 
+        if(!editor) {
+          currentFolderPath = vscode.workspace.workspaceFolders![0].uri.path;
+        } else {
+          currentFolderPath = upath.dirname(upath.normalize(vscode.window.activeTextEditor!.document.uri.path));
+        }
+
+        let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
+        logging.LogInfo("Running " + combined_parameters);
         var child = cp.exec(
-          ANALYZER_PARAMETERS,
+          combined_parameters,
           { cwd: ANALYZER_EXE_PATH },
           (error) => {
             if (error) {
@@ -615,6 +625,7 @@ export function init(
                         title: "Loading Diagnostics...",
                       },
                       async () => {
+                        await getOutputFromAnalyzer();
                         await refreshDiagnostics(
                           vscode.window.activeTextEditor!.document,
                           analysisDiagnostics
@@ -697,7 +708,21 @@ export function init(
 
       // 3.
       applyPatchToFile(path.normalize(sourceFile), patched, patchFilepath);
-      filterOutIssues(patchFilepath);
+      filterOutIssues(patchFilepath).then(() => {
+        vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: "Loading Diagnostics...",
+          },
+          async () => {
+            await getOutputFromAnalyzer();
+            await refreshDiagnostics(
+              vscode.window.activeTextEditor!.document,
+              analysisDiagnostics
+            );
+          }
+        );
+      });
 
       // 4.
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
