@@ -12,6 +12,12 @@ export function SetProjectFolder(path: string){
   PROJECT_FOLDER_LOG = 'plugin.subject_project_path' + '=' + PROJECT_FOLDER + os.EOL;
 }
 
+if(process.platform === 'win32'){
+  if(PROJECT_FOLDER[0] === '/' || PROJECT_FOLDER[0] === '\\'){
+    SetProjectFolder(PROJECT_FOLDER.substring(1));
+  }
+}
+
 // EXTENSION SETTINGS:
 export const PATCH_FOLDER = upath.normalize(upath.join(PROJECT_FOLDER, 'results', 'patches'));
 export const ANALYZER_EXE_PATH = upath.normalize(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.executablePath'));

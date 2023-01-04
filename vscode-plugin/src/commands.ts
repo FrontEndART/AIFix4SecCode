@@ -294,6 +294,12 @@ export function init(
           currentFolderPath = upath.dirname(upath.normalize(vscode.window.activeTextEditor!.document.uri.path));
         }
 
+        if(process.platform === 'win32'){
+          if(currentFolderPath[0] === '/' || currentFolderPath[0] === '\\'){
+            currentFolderPath = currentFolderPath.substring(1);
+          }
+        }
+
         let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
         logging.LogInfo("Running " + combined_parameters);
         var child = cp.exec(
@@ -348,10 +354,16 @@ export function init(
       SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
     }
 
+    if(process.platform === 'win32'){
+      if(patch_folder[0] === '/' || patch_folder[0] === '\\'){
+        patch_folder = patch_folder.substring(1);
+      }
+    }
+
     var patch = "";
     try {
-      logging.LogInfo("Reading patch from " + PATCH_FOLDER + "/" + patchPath);
-      patch = readFileSync(upath.join(PATCH_FOLDER, patchPath), "utf8");
+      logging.LogInfo("Reading patch from " + patch_folder + "/" + patchPath);
+      patch = readFileSync(upath.join(patch_folder, patchPath), "utf8");
     } catch (err) {
       logging.LogErrorAndShowErrorMessage(
         String(err),

@@ -76,9 +76,16 @@ export class Analyzer implements vscode.CodeActionProvider {
                     const fixText = fix.explanation;
                     const patchPath = fix.path;
                     var patch = '';
+                    var patch_folder = PATCH_FOLDER;
+
+                    if(process.platform === 'win32'){
+                        if(patch_folder[0] === '/' || patch_folder[0] === '\\'){
+                        patch_folder = patch_folder.substring(1);
+                        }
+                    }
 
                     try {
-                        patch = readFileSync(PATCH_FOLDER + '/' + patchPath, "utf8");
+                        patch = readFileSync(upath.join(patch_folder, patchPath), "utf8");
                     } catch (err) {
                         console.log(err);
                     }
@@ -103,8 +110,14 @@ export class Analyzer implements vscode.CodeActionProvider {
                           sourceFilePath = '/' + sourceFilePath
                         if(openedFilePath![0] !== '/')
                           openedFilePath = '/' + openedFilePath
-                      }
+                    }
                     
+                    if(process.platform === 'win32'){
+                        if(sourceFilePath[0] === '/' || sourceFilePath[0] === '\\'){
+                          sourceFilePath = sourceFilePath.substring(1);
+                        }
+                    }
+
                     let editor = vscode.window.activeTextEditor;
                     let cursorPosition = editor?.selection.start;
                     if(cursorPosition){
