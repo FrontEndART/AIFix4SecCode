@@ -637,7 +637,7 @@ export function init(
                         title: "Loading Diagnostics...",
                       },
                       async () => {
-                        await getOutputFromAnalyzer();
+                        // await getOutputFromAnalyzer();
                         await refreshDiagnostics(
                           vscode.window.activeTextEditor!.document,
                           analysisDiagnostics
@@ -727,7 +727,7 @@ export function init(
             title: "Loading Diagnostics...",
           },
           async () => {
-            await getOutputFromAnalyzer();
+            // await getOutputFromAnalyzer();
             await refreshDiagnostics(
               vscode.window.activeTextEditor!.document,
               analysisDiagnostics
@@ -774,21 +774,24 @@ export function init(
             }
 
             testView.treeDataProvider?.refresh(patchPath);
-
+            
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
-                vscode.window.withProgress(
-                  {
-                    location: vscode.ProgressLocation.Notification,
-                    title: "Loading Diagnostics...",
-                  },
-                  async () => {
-                    await refreshDiagnostics(
-                      vscode.window.activeTextEditor!.document,
-                      analysisDiagnostics
-                    );
-                  }
-                );
+                filterOutIssues(patchPath).then(() => {
+                  vscode.window.withProgress(
+                    {
+                      location: vscode.ProgressLocation.Notification,
+                      title: "Loading Diagnostics...",
+                    },
+                    async () => {
+                      await getOutputFromAnalyzer();
+                      await refreshDiagnostics(
+                        vscode.window.activeTextEditor!.document,
+                        analysisDiagnostics
+                      );
+                    }
+                  );
+                  });
               });
             });
           }
@@ -836,6 +839,7 @@ export function init(
               title: "Loading Diagnostics...",
             },
             async () => {
+              await getOutputFromAnalyzer();
               // 4.
               await refreshDiagnostics(
                 vscode.window.activeTextEditor!.document,
@@ -869,9 +873,6 @@ export function init(
           });
         });
       });
-      // if (!tree[key].patches.length) {
-      //     delete tree[key];
-      // }
     }
     let issuesStr = stringify(issues);
     console.log(issuesStr);
