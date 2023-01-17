@@ -300,7 +300,8 @@ export function init(
           }
         }
 
-        let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
+        //let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
+        let combined_parameters = ANALYZER_PARAMETERS;
         logging.LogInfo("Running " + combined_parameters);
         var child = cp.exec(
           combined_parameters,

@@ -37,17 +37,29 @@ export async function getIssues() {
     return await readFile(issuesPath!, utf8Stream);
   }
 
-  let result = await loadIssues();
-  try {
-    issuesJson = parseJson(result);
-  } catch (err) {
-    console.log(err);
-  }
-  if (issuesJson) {
-    if (issuesJson.fixes) {
-      issuesJson.fixes = issuesJson.fixes.sort((i) => i.score);
-    }
-  }
+  var jsonListContent = await loadIssues();
+  var patchJsonPaths = jsonListContent.split('\n');
+  if (patchJsonPaths.length){
+    patchJsonPaths.forEach((path:any) => {
+      if(path.length){
+        var patchJson = fs.readFileSync(path!, utf8Stream);
+        issuesJson = {...issuesJson, ...parseJson(patchJson)}
+      }
+    });
+    
+  // let result = await loadIssues();
+  // try {
+  //   issuesJson = parseJson(result);
+  // } catch (err) {
+  //   console.log(err);
+  // }
+  // if (issuesJson) {
+  //   if (issuesJson.fixes) {
+  //     issuesJson.fixes = issuesJson.fixes.sort((i) => i.score);
+  //   }
+  // }
+  // return issuesJson;
+}
   return issuesJson;
 }
 
@@ -63,17 +75,29 @@ export function getIssuesSync() {
       .get<string>("aifix4seccode.analyzer.issuesPath");
   }
 
-  let result = fs.readFileSync(issuesPath!, utf8Stream);
-  try {
-    issuesJson = parseJson(result);
-  } catch (err) {
-    console.log(err);
+  // read content of list file - get all the json paths that are in that file and merge them into one json object.
+  var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
+  var patchJsonPaths = jsonListContent.split('\n');
+  if (patchJsonPaths.length){
+    patchJsonPaths.forEach((path:any) => {
+      if(path.length){
+        var patchJson = fs.readFileSync(path!, utf8Stream);
+        issuesJson = {...issuesJson, ...parseJson(patchJson)}
+      }
+    });
   }
-  if (issuesJson) {
-    if (issuesJson.fixes) {
-      issuesJson.fixes = issuesJson.fixes.sort((i) => i.score);
-    }
-  }
+  //let result = fs.readFileSync(issuesPath!, utf8Stream);
+  // try {
+  //   issuesJson = parseJson(result);
+  // } catch (err) {
+  //   console.log(err);
+  // }
+  // if (issuesJson) {
+  //   if (issuesJson.fixes) {
+  //     issuesJson.fixes = issuesJson.fixes.sort((i) => i.score);
+  //   }
+  // }
+  // return issuesJson;
   return issuesJson;
 }
 
