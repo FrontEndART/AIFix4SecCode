@@ -126,6 +126,10 @@
         "command": "aifix4seccode-vscode.getOutputFromAnalyzer"
       },
       {
+        "title": "[AIFix4SecCode] Get Output From Analyzer per file",
+        "command": "aifix4seccode-vscode.getOutputFromAnalyzerPerFile"
+      },
+      {
         "title": "[AIFix4SecCode] Redo Last Fix",
         "command": "aifix4seccode-vscode.redoLastFix"
       },
@@ -238,6 +242,11 @@
           "type": "string",
           "default": "",
           "description": "The path of the patch files that will be generated as analysis output."
+        },
+        "aifix4seccode.analyzer.extraCommandParameters": {
+          "type": "string",
+          "default": "",
+          "description": "Add extra parameters to the executable parameters here."
         }
       }
     }

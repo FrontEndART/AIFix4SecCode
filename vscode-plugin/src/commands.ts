@@ -151,6 +151,10 @@ export function init(
       getOutputFromAnalyzer
     ),
     vscode.commands.registerCommand(
+      "aifix4seccode-vscode.getOutputFromAnalyzerPerFile",
+      getOutputFromAnalyzerOfAFile
+    ),
+    vscode.commands.registerCommand(
       "aifix4seccode-vscode.redoLastFix",
       redoLastFix
     ),
@@ -208,6 +212,20 @@ export function init(
       },
       async () => {
         return startAnalyzingProjectSync();
+      }
+    );
+  }
+
+  async function getOutputFromAnalyzerOfAFile() {
+    logging.LogInfo("===== Analysis of a file started from command. =====");
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: "Analyzing file!",
+        cancellable: false,
+      },
+      async () => {
+        return startAnalyzingFileSync();
       }
     );
   }
@@ -299,10 +317,7 @@ export function init(
             currentFolderPath = currentFolderPath.substring(1);
           }
         }
-
-        //let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
-        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '') -> "/src/main/java/example/Main.java"
-        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '').split(upath.sep).join('.') -> ".src.main.java.example.Main.java"
+        
         let combined_parameters = ANALYZER_PARAMETERS;
         logging.LogInfo("Running " + combined_parameters);
         var child = cp.exec(
@@ -339,6 +354,91 @@ export function init(
           logging.LogInfoAndShowInformationMessage(
             "===== Finished analysis. =====",
             "Finished analysis of project!"
+          );
+
+          process.exit();
+        });
+      }
+    });
+  }
+
+  function startAnalyzingFileSync(){
+    return new Promise<void>((resolve) => {
+      if (!ANALYZER_EXE_PATH) {
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to run analyzer! Analyzer executable path is missing.",
+          "Unable to run analyzer! Analyzer executable path is missing."
+        );
+        resolve();
+      } else if (!ANALYZER_PARAMETERS) {
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to run analyzer! Analyzer parameters are missing.",
+          "Unable to run analyzer! Analyzer parameters are missing."
+        );
+        resolve();
+      } else {
+        // run analyzer with terminal (read params and analyzer path from config):
+        logging.LogInfo("Analyzer executable started.");
+        
+        var currentFilePath = '';
+        var editor = vscode.window.activeTextEditor;
+
+        if(!editor) {
+          logging.LogErrorAndShowErrorMessage(
+            "Unable to run analyzer! Make sure that the desired file is currently open in the editor!",
+            "Unable to run analyzer! Make sure that the desired file is currently open in the editor!"
+          );
+          resolve();
+          return;
+        } else {
+          currentFilePath = upath.normalize(vscode.window.activeTextEditor!.document.uri.path);
+        }
+
+        if(process.platform === 'win32'){
+          if(currentFilePath[0] === '/' || currentFilePath[0] === '\\'){
+            currentFilePath = currentFilePath.substring(1);
+          }
+        }
+
+        //let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
+        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '') -> "/src/main/java/example/Main.java"
+        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '').split(upath.sep).join('.') -> ".src.main.java.example.Main.java"
+        let combined_parameters = ANALYZER_PARAMETERS + ' -cu=' + currentFilePath;
+        logging.LogInfo("Running " + combined_parameters);
+        var child = cp.exec(
+          combined_parameters,
+          { cwd: ANALYZER_EXE_PATH },
+          (error) => {
+            if (error) {
+              logging.LogErrorAndShowErrorMessage(
+                error.toString(),
+                "Unable to run analyzer! " + error.toString()
+              );
+            }
+          }
+        );
+        child.stdout.pipe(process.stdout);
+        // waiting for analyzer to finish, only then read the output.
+        child.on("exit", function () {
+          // if executable has finished:
+          logging.LogInfo("Analyzer executable finished.");
+          // Get Output from analyzer:
+          let output = fakeAiFixCode.getIssuesSync();
+          logging.LogInfo(
+            "issues got from analyzer output: " + JSON.stringify(output)
+          );
+
+          // Show issues treeView:
+          // tslint:disable-next-line: no-unused-expression
+          testView = new TestView(context);
+
+          // Initialize action commands of diagnostics made after analysis:
+          initActionCommands(context);
+
+          resolve();
+          logging.LogInfoAndShowInformationMessage(
+            "===== Finished analysis. =====",
+            "Finished analysis of file!"
           );
 
           process.exit();

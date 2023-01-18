@@ -15,6 +15,7 @@ var path = require("path");
 export let analysisDiagnostics = vscode.languages.createDiagnosticCollection('aifix4seccode');
 
 let analysisStatusBarItem : vscode.StatusBarItem;
+let analyzeCurrentFileStatusBarItem : vscode.StatusBarItem;
 let redoFixStatusBarItem : vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -32,8 +33,16 @@ export function activate(context: vscode.ExtensionContext) {
   analysisStatusBarItem.command = 'aifix4seccode-vscode.getOutputFromAnalyzer';
   context.subscriptions.push(analysisStatusBarItem);
   
-  analysisStatusBarItem.text = "$(symbol-misc) Start Analysis";
+  analysisStatusBarItem.text = "$(symbol-misc) Analyze Project";
   analysisStatusBarItem.show();
+
+  // Analyze current file:
+  analyzeCurrentFileStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  analyzeCurrentFileStatusBarItem.command = "aifix4seccode-vscode.getOutputFromAnalyzerPerFile";
+  context.subscriptions.push(analyzeCurrentFileStatusBarItem);
+  
+  analyzeCurrentFileStatusBarItem.text = "$(symbol-keyword) Analyze Current File";
+  analyzeCurrentFileStatusBarItem.show();
 
   // Redo last fix:
   redoFixStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
