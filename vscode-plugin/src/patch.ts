@@ -98,11 +98,8 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
               });
             });
             }
-            console.log(issueGroups);
 
             let issuesStr = stringify(issueGroups);
-            console.log(issuesStr);
-
             let issuesPath : string | undefined = '';
             if(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')){
               issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');

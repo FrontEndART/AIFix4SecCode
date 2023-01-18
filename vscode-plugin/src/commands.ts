@@ -301,6 +301,8 @@ export function init(
         }
 
         //let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
+        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '') -> "/src/main/java/example/Main.java"
+        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '').split(upath.sep).join('.') -> ".src.main.java.example.Main.java"
         let combined_parameters = ANALYZER_PARAMETERS;
         logging.LogInfo("Running " + combined_parameters);
         var child = cp.exec(
@@ -894,15 +896,19 @@ export function init(
   function saveFileAndFixesToState(filePath: string) {
     logging.LogInfo(filePath);
 
+    let issueListPath: string | undefined = "";
     let issuesPath: string | undefined = "";
     if (
       vscode.workspace
         .getConfiguration()
         .get<string>("aifix4seccode.analyzer.issuesPath")
     ) {
-      issuesPath = vscode.workspace
-        .getConfiguration()
-        .get<string>("aifix4seccode.analyzer.issuesPath");
+      issueListPath = vscode.workspace.getConfiguration().get<string>("aifix4seccode.analyzer.issuesPath");
+      var jsonListContent = readFileSync(issueListPath!, utf8Stream);
+      var patchJsonPaths = jsonListContent.split('\n');
+      if (patchJsonPaths.length){
+        issuesPath = patchJsonPaths.find(path => upath.normalize(path!).includes(upath.normalize(filePath.replace(PROJECT_FOLDER!, '')!)))
+      }
     }
 
     var originalFileContent = readFileSync(filePath!, "utf8");
