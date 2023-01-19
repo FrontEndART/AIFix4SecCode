@@ -61,12 +61,12 @@ public class VulnRepairDriver {
 
     public VulnRepairDriver(Properties properties) throws IOException {
         this.patchCompiler = PatchCompilerFactory.getPatchCompiler(properties.getProperty(PROJECT_BUILD_TOOL_KEY));
-        this.path = new PathHandler(properties);
+        this.path = new PathHandler(properties.getProperty(RESULTS_PATH_KEY), properties.getProperty(VALIDATION_RESULTS_PATH_KEY));
         this.statistics = new Statistics(path);
         VulnRepairDriver.properties = properties;
 
         Utils.initResourceFiles(properties, path);
-        MLOG = new MLogger(properties, "log.txt", path);  // TODO get 'log.txt' from pathHandler
+        MLOG = new MLogger("log.txt", path, Configuration.isTestingEnabled(properties));  // TODO get 'log.txt' from pathHandler
     }
 
     public void bootstrap(Properties props) {

@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
+import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
+import static eu.assuremoss.utils.Configuration.VALIDATION_RESULTS_PATH_KEY;
+
 
 public class ASGInfoExtractorTest {
     private static final String mockedResultsPath = String.valueOf(Paths.get("src", "test", "resources", "mocked-results"));
@@ -35,8 +38,8 @@ public class ASGInfoExtractorTest {
     @BeforeAll
     static void beforeAll() throws IOException, DataFormatException {
         config = new Configuration("config-example.properties", "mapping-example.properties");
-        path = new PathHandler(config.properties);
-        MLOG = new MLogger(config.properties, "log.txt", path);
+        path = new PathHandler(config.properties.getProperty(RESULTS_PATH_KEY), config.properties.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        MLOG = new MLogger("log.txt", path, Configuration.isTestingEnabled(config.properties));
         asgParser = new ASGInfoParser(new File(asg));
         parser = new SpotBugsParser(path, config.properties);
         Utils.initResourceFiles(config.properties, path);

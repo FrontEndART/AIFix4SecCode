@@ -14,9 +14,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
+import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
+import static eu.assuremoss.utils.Configuration.VALIDATION_RESULTS_PATH_KEY;
 import static org.junit.Assert.assertEquals;
 
-@Disabled
 public class UtilsTest {
 
     private static Properties properties = new Properties();
@@ -47,7 +48,7 @@ public class UtilsTest {
         FileUtils.cleanDirectory(new File(getIntermediatePatchesDir()));
 
         Utils.createEmptyLogFile(properties);
-        MLogger MLOG = new MLogger(properties, "log.txt", new PathHandler(properties));
+        MLogger MLOG = new MLogger("log.txt", new PathHandler(properties.getProperty(RESULTS_PATH_KEY), properties.getProperty(VALIDATION_RESULTS_PATH_KEY)), Configuration.isTestingEnabled(properties));
 
         for (int i = 1; i <= 5; i++) {
             String fileName = String.format("repair_patch%d.diff", i);

@@ -9,8 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-import static eu.assuremoss.utils.Configuration.SPOTBUGS_RESULTFILE;
-
+import static eu.assuremoss.utils.Configuration.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -25,9 +24,9 @@ public class CompilerTest {
     @BeforeAll
     static void setup() throws IOException {
         config = new Configuration("config-example.properties", "mapping-example.properties");
-        path = new PathHandler(config.properties);
+        path = new PathHandler(config.properties.getProperty(RESULTS_PATH_KEY), config.properties.getProperty(VALIDATION_RESULTS_PATH_KEY));
         Utils.initResourceFiles(config.properties, path);
-        MLOG = new MLogger(config.properties, "log.txt", path);
+        MLOG = new MLogger("log.txt", path, Configuration.isTestingEnabled(config.properties));
         compiler = new SourceCompiler(config.properties, false);
     }
 

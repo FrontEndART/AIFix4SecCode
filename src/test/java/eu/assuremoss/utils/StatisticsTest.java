@@ -9,12 +9,14 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static eu.assuremoss.utils.Configuration.*;
 
 @Disabled
 public class StatisticsTest {
+    private static final String mockedResultsPath = String.valueOf(Paths.get("src", "test", "resources", "mocked-results"));
     private Statistics statistics;
     private List<VulnerabilityEntry> vulnEntries;
 
@@ -40,8 +42,8 @@ public class StatisticsTest {
 
     @Test
     public void shouldSaveFoundVulnerabilities() throws IOException {
-        final String actual_vulnFoundPath = PathHandler.joinPath(PathHelper.getActualResultsDir(), VULN_FOUND_TXT);
-        final String expected_vulnFoundPath = PathHandler.joinPath(PathHelper.getExpectedResultsDir(), VULN_FOUND_TXT);
+        final String actual_vulnFoundPath = PathHandler.joinPath(mockedResultsPath, VULN_FOUND_TXT);
+        final String expected_vulnFoundPath = PathHandler.joinPath(mockedResultsPath, VULN_FOUND_TXT);
 
         //joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR, VULN_FOUND_TXT);
         Mockito.when(statistics.path.vulnFound()).thenReturn(actual_vulnFoundPath);

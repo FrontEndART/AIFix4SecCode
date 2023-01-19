@@ -124,17 +124,34 @@ public class Utils {
 
     public static String getConfigFile(String[] args) {
         if (args.length > 0) {
-            return args[0];
+            for(int i=0;i<args.length;i++) {
+                if (args[i].startsWith("-config=")) {
+                    return (args[i].split("="))[1];
+                }
+            }
         }
-
         return DEFAULT_CONFIG_FILE_NAME;
+    }
+
+    public static String getCUFromArguments(String[] args) {
+        if (args.length > 0) {
+            for(int i=0;i<args.length;i++) {
+                if (args[i].startsWith("-cu=")) {
+                    return (args[i].split("="))[1];
+                }
+            }
+        }
+        return null;
     }
 
     public static String getMappingFile(String[] args) {
         if (args.length > 1) {
-            return args[1];
+            for(int i=0;i<args.length;i++) {
+                if (args[i].startsWith("-mapping=")) {
+                    return (args[i].split("="))[1];
+                }
+            }
         }
-
         return DEFAULT_MAPPING_FILE_NAME;
     }
 

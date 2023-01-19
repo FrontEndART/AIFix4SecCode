@@ -36,6 +36,7 @@ public class Configuration {
     public static final String VALIDATION_RESULTS_PATH_KEY = "config.validation_results_path";
     public static final String ARCHIVE_PATH = "config.archive_path";
     public static final String ARCHIVE_ENABLED = "config.archive_enabled";
+    public static final String JSONS_LISTFILE = "config.jsons_listfile";
 
     public static final String SPOTBUGS_LISTFILE = "fb_file_list.txt";
     public static final String SPOTBUGS_RESULTFILE = "spotbugs.xml";
@@ -45,6 +46,7 @@ public class Configuration {
     public static final String LOGS_DIR = "logs";
     public static final String BUILD_LOGS_DIR = "build_logs";
     public static final String ASG_DIR = "asg";
+    public static final String JSON_DIR = "jsons";
 
     // Files
     public static final String VULN_FOUND_TXT = "vuln_found.txt";
@@ -76,10 +78,12 @@ public class Configuration {
         URL resource = loader.getResource(confFileName);
         if (resource == null) {
             properties.putAll(loadPropertiesFromFile(confFileName));
+            LOG.info("Successfully loaded " + (new File(confFileName).getAbsolutePath()));
         } else {
             properties.putAll(loadPropertiesFromResource(confFileName));
+            LOG.info("Successfully loaded " + confFileName + " from resources");
         }
-        LOG.info("Successfully loaded " + confFileName);
+
     }
 
     /**

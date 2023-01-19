@@ -1,6 +1,7 @@
 package eu.assuremoss.utils;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -13,16 +14,18 @@ public class MLogger {
     public static MLogger activeLogger = null;
     private PrintStream fileWriter;
     private PrintStream unitTestInfoWriter;
+    private String logFileDir;
     private String logFileName;
     public String logFilePath;
     private final String unitTestsPathes;
 
 
-    public MLogger(Properties props, String logFileName, PathHandler path) throws IOException {
-        this.logFileName = path.logFile();
-        this.logFilePath = logFilePath(props);
+    public MLogger(String logFileName, PathHandler path, boolean isTestingEnabled) throws IOException {
+        this.logFileName = logFileName;
+        //this.logFilePath = logFilePath(Paths.get(resultDir/*props.getProperty(RESULTS_PATH_KEY))*/));
+        this.logFilePath = String.valueOf(Paths.get(path.getResultsPath(), "logs", logFileName));
         this.fileWriter = new PrintStream(logFilePath);
-        if (Configuration.isTestingEnabled(props))
+        if (isTestingEnabled/*Configuration.isTestingEnabled(props)*/)
            unitTestsPathes = path.patchUnitTests();
         else unitTestsPathes = null;
         activeLogger = this;
@@ -85,9 +88,9 @@ public class MLogger {
         fileWriter.flush();
     }
 
-    public String logFilePath(Properties props) {
-        return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", logFileName));
-    }
+    /*public String logFilePath(Path resultsDir) {
+        return String.valueOf(resultsDir, "logs", logFileName);
+    }*/
 
     public void closeFile() {
         this.fileWriter.close();

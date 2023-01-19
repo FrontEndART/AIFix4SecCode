@@ -3,6 +3,7 @@ package eu.assuremoss.utils.tools;
 import com.github.difflib.patch.Patch;
 import eu.assuremoss.framework.api.PatchCompiler;
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.utils.Configuration;
 import eu.assuremoss.utils.Pair;
 import eu.assuremoss.utils.PathHandler;
 import eu.assuremoss.utils.ProcessRunner;
@@ -13,11 +14,15 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
 import static eu.assuremoss.utils.Configuration.*;
@@ -42,10 +47,40 @@ public class SourceCompiler {
 
         boolean isCompilable = patchCompiler.compile(srcLocation, isTestingEnabled, true);
 
+        if (!isValidation) {
+            analyzedClasses = String.valueOf(Paths.get(workingDir, SPOTBUGS_LISTFILE));
+            try (FileWriter fw = new FileWriter(analyzedClasses)) {
+                lastCompiled = patchCompiler.getBuildDirectoryName();
+                fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName())));
+            } catch (IOException e) {
+                LOG.error(e);
+            }
+        }
+        return isCompilable;
+    }
+
+    public boolean compile(File srcLocation, Properties props, boolean isValidation, String filename) {
+        boolean isCompilable = patchCompiler.compile(srcLocation, Configuration.isTestingEnabled(props), true);
         analyzedClasses = String.valueOf(Paths.get(workingDir, SPOTBUGS_LISTFILE));
+
+        Path prefix =  Paths.get(srcLocation.getAbsolutePath(), props.getProperty(PROJECT_SOURCE_PATH_KEY));
+        Path filePath = Paths.get(filename);
+        Path relative = prefix.relativize(filePath);
+        String classname = relative.toString().replaceAll("\\.java$","").replaceAll(Matcher.quoteReplacement(File.separator), "\\.");
+        String className=String.valueOf(Paths.get(srcLocation.getAbsolutePath(),patchCompiler.getBuildDirectoryName(), classname.replaceAll("\\.", Matcher.quoteReplacement(File.separator))));
+
         try (FileWriter fw = new FileWriter(analyzedClasses)) {
-            lastCompiled = patchCompiler.getBuildDirectoryName();
-            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName())));
+            String parentName=className.substring(0, className.lastIndexOf(File.separator));
+            File files[] = new File(parentName).listFiles();
+            for(File f : files) {
+                Pattern uName = Pattern.compile(classname.substring(classname.lastIndexOf(".")+1)+".*class");
+                Matcher mUname = uName.matcher(f.getName());
+                boolean bname = mUname.matches();
+                if (bname) {
+                    fw.write(f.toString()+"\n");
+                }
+            }
+            //fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(),patchCompiler.getBuildDirectoryName(), classname.replaceAll("\\.", Matcher.quoteReplacement(File.separator))+".class")));
         } catch (IOException e) {
             LOG.error(e);
         }
@@ -55,7 +90,18 @@ public class SourceCompiler {
     public void setContentOfAnalyzedClasses(File srcLocation, String classname) {
         analyzedClasses = String.valueOf(Paths.get(workingDir, SPOTBUGS_LISTFILE));
         try (FileWriter fw = new FileWriter(analyzedClasses)) {
-            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(),patchCompiler.getBuildDirectoryName(), classname.replaceAll("\\.", Matcher.quoteReplacement(File.separator))+".class")));
+            String className=String.valueOf(Paths.get(srcLocation.getAbsolutePath(),patchCompiler.getBuildDirectoryName(), classname.replaceAll("\\.", Matcher.quoteReplacement(File.separator))));
+            String parentName=className.substring(0, className.lastIndexOf(File.separator));
+            File files[] = new File(parentName).listFiles();
+            for(File f : files) {
+                Pattern uName = Pattern.compile(classname.substring(classname.lastIndexOf(".")+1)+".*class");
+                Matcher mUname = uName.matcher(f.getName());
+                boolean bname = mUname.matches();
+                if (bname) {
+                    fw.write(f.toString()+"\n");
+                }
+            }
+            //fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(),patchCompiler.getBuildDirectoryName(), classname.replaceAll("\\.", Matcher.quoteReplacement(File.separator))+".class")));
         } catch (IOException e) {
             LOG.error(e);
         }
