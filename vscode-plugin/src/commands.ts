@@ -202,21 +202,26 @@ export function init(
     );
   }
 
+  var isAnalysisAlreadyRunning : boolean = false;
+
   async function getOutputFromAnalyzer() {
-    logging.LogInfo("===== Analysis started from command. =====");
-    vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: "Analyzing project!",
-        cancellable: false,
-      },
-      async () => {
-        return startAnalyzingProjectSync();
-      }
-    );
+    if (!isAnalysisAlreadyRunning){
+      logging.LogInfo("===== Analysis started from command. =====");
+      vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "Analyzing project!",
+          cancellable: false,
+        },
+        async () => {
+          return startAnalyzingProjectSync();
+        }
+      );
+    }
   }
 
   async function getOutputFromAnalyzerOfAFile() {
+    if (!isAnalysisAlreadyRunning){
     logging.LogInfo("===== Analysis of a file started from command. =====");
     vscode.window.withProgress(
       {
@@ -228,6 +233,7 @@ export function init(
         return startAnalyzingFileSync();
       }
     );
+    }
   }
 
   async function redoLastFix() {
@@ -320,11 +326,13 @@ export function init(
         
         let combined_parameters = ANALYZER_PARAMETERS;
         logging.LogInfo("Running " + combined_parameters);
+        isAnalysisAlreadyRunning = true;
         var child = cp.exec(
           combined_parameters,
           { cwd: ANALYZER_EXE_PATH },
           (error) => {
             if (error) {
+              isAnalysisAlreadyRunning = false;
               logging.LogErrorAndShowErrorMessage(
                 error.toString(),
                 "Unable to run analyzer! " + error.toString()
@@ -335,6 +343,7 @@ export function init(
         child.stdout.pipe(process.stdout);
         // waiting for analyzer to finish, only then read the output.
         child.on("exit", function () {
+          isAnalysisAlreadyRunning = false;
           // if executable has finished:
           logging.LogInfo("Analyzer executable finished.");
           // Get Output from analyzer:
@@ -405,11 +414,13 @@ export function init(
         // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '').split(upath.sep).join('.') -> ".src.main.java.example.Main.java"
         let combined_parameters = ANALYZER_PARAMETERS + ' -cu=' + currentFilePath;
         logging.LogInfo("Running " + combined_parameters);
+        isAnalysisAlreadyRunning = true;
         var child = cp.exec(
           combined_parameters,
           { cwd: ANALYZER_EXE_PATH },
           (error) => {
             if (error) {
+              isAnalysisAlreadyRunning = false;
               logging.LogErrorAndShowErrorMessage(
                 error.toString(),
                 "Unable to run analyzer! " + error.toString()
@@ -420,6 +431,7 @@ export function init(
         child.stdout.pipe(process.stdout);
         // waiting for analyzer to finish, only then read the output.
         child.on("exit", function () {
+          isAnalysisAlreadyRunning = false;
           // if executable has finished:
           logging.LogInfo("Analyzer executable finished.");
           // Get Output from analyzer:
