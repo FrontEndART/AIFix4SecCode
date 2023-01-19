@@ -341,6 +341,13 @@ export function init(
           }
         );
         child.stdout.pipe(process.stdout);
+        
+        var extensionLog = vscode.window.createOutputChannel("AiFix4SecCode");
+        extensionLog.show();
+        child.stdout.on('data', (chunk) => {
+          extensionLog.appendLine(chunk.toString());
+        });
+
         // waiting for analyzer to finish, only then read the output.
         child.on("exit", function () {
           isAnalysisAlreadyRunning = false;
@@ -429,6 +436,13 @@ export function init(
           }
         );
         child.stdout.pipe(process.stdout);
+
+        var extensionLog = vscode.window.createOutputChannel("AiFix4SecCode");
+        extensionLog.show();
+        child.stdout.on('data', (chunk) => {
+          extensionLog.appendLine(chunk.toString());
+        });
+
         // waiting for analyzer to finish, only then read the output.
         child.on("exit", function () {
           isAnalysisAlreadyRunning = false;
