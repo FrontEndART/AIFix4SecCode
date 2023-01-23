@@ -104,9 +104,10 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
             if(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')){
               issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');
             }
-            writeFileSync(issuesPath!, issuesStr, utf8Stream);
+            //writeFileSync(issuesPath!, issuesStr, utf8Stream);
 
             // 3.
+            testView.treeDataProvider?.refresh(patchPath);
             workspace.openTextDocument(leftPath).then(document => {
               window.showTextDocument(document).then(() => {
                 window.withProgress({ location: ProgressLocation.Notification, title: 'Loading Diagnostics...' }, async () => {
@@ -122,9 +123,7 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
                 });
               });
             });
-
           });
-
           window.showInformationMessage('Content saved to path: ' + leftPath);
           return leftPath;
         }

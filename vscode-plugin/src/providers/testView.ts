@@ -264,20 +264,22 @@ function getNode(key: any): { key: string } {
 
 function filterTree(patchPath: string) {
   Object.keys(tree).forEach((key) => {
-    tree[key].forEach((issue: any) => {
-        issue.patches.forEach((patch: any) => {
-            if(patch.path === patchPath || patchPath.includes(patch.path))
-            {
-                issue.patches.splice(issue.patches.indexOf(patch), 1);
-                if(!issue.patches.length){
-                  tree[key].splice(tree[key].indexOf(issue), 1);
-                  if(!tree[key].length){
-                      delete tree[key];
-                  }
+    if(Array.isArray(tree[key])){
+      tree[key].forEach((issue: any) => {
+          issue.patches.forEach((patch: any) => {
+              if(patch.path === patchPath || patchPath.includes(patch.path))
+              {
+                  issue.patches.splice(issue.patches.indexOf(patch), 1);
+                  if(!issue.patches.length){
+                    tree[key].splice(tree[key].indexOf(issue), 1);
+                    if(!tree[key].length){
+                        delete tree[key];
+                    }
+                }
               }
-            }
-        })
-    })
+          })
+      })
+  }
     let issuesStr = stringify(tree);
     console.log(issuesStr);
 
@@ -291,7 +293,7 @@ function filterTree(patchPath: string) {
         .getConfiguration()
         .get<string>("aifix4seccode.analyzer.issuesPath");
     }
-    writeFileSync(issuesPath!, issuesStr, utf8Stream);
+    //writeFileSync(issuesPath!, issuesStr, utf8Stream);
 });
 console.log(tree);
 }

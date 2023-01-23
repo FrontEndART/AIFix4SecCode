@@ -270,7 +270,7 @@ export function init(
               lastFilePath
             );
           }
-          getOutputFromAnalyzer();
+          getOutputFromAnalyzerOfAFile();
         } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
           var patchFilepath = path.normalize(
             JSON.parse(context.workspaceState.get<string>("openedPatchPath")!)
@@ -283,7 +283,7 @@ export function init(
             lastFilePath
           );
 
-          getOutputFromAnalyzer();
+          getOutputFromAnalyzerOfAFile();
         }
       });
     });
@@ -753,27 +753,29 @@ export function init(
               );
             }
 
+            testView.treeDataProvider?.refresh(patchPath);
+
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
                 if (
                   "leftPath" in webview.params &&
                   "patchPath" in webview.params
                 ) {
-                  filterOutIssues(webview.params.patchPath!).then(() => {
+                  //filterOutIssues(webview.params.patchPath!).then(() => {
                     vscode.window.withProgress(
                       {
                         location: vscode.ProgressLocation.Notification,
                         title: "Loading Diagnostics...",
                       },
                       async () => {
-                        // await getOutputFromAnalyzer();
+                        getOutputFromAnalyzerOfAFile();
                         await refreshDiagnostics(
                           vscode.window.activeTextEditor!.document,
                           analysisDiagnostics
                         );
                       }
                     );
-                  });
+                  //});
                 }
               });
             });
@@ -849,7 +851,7 @@ export function init(
 
       // 3.
       applyPatchToFile(path.normalize(sourceFile), patched, patchFilepath);
-      filterOutIssues(patchFilepath).then(() => {
+      //filterOutIssues(patchFilepath).then(() => {
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
@@ -863,7 +865,7 @@ export function init(
             );
           }
         );
-      });
+      //});
 
       // 4.
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
@@ -906,7 +908,7 @@ export function init(
             
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
-                filterOutIssues(patchPath).then(() => {
+                //filterOutIssues(patchPath).then(() => {
                   vscode.window.withProgress(
                     {
                       location: vscode.ProgressLocation.Notification,
@@ -920,7 +922,7 @@ export function init(
                       );
                     }
                   );
-                  });
+                  //});
               });
             });
           }
@@ -1032,8 +1034,10 @@ export function init(
       issueListPath = vscode.workspace.getConfiguration().get<string>("aifix4seccode.analyzer.issuesPath");
       var jsonListContent = readFileSync(issueListPath!, utf8Stream);
       var patchJsonPaths = jsonListContent.split('\n');
+      filePath = upath.normalize(filePath);
+      patchJsonPaths = patchJsonPaths.filter(path => path.length);
       if (patchJsonPaths.length){
-        issuesPath = patchJsonPaths.find(path => upath.normalize(path!).includes(upath.normalize(filePath.replace(PROJECT_FOLDER!, '')!)))
+        issuesPath = patchJsonPaths.find(path => upath.normalize(path!).toLowerCase().includes(upath.normalize(filePath.replace(PROJECT_FOLDER!, '').toLowerCase()!)))
       }
     }
 
