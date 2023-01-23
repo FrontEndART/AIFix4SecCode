@@ -268,9 +268,10 @@ export function init(
               "Undo was requested by user.",
               path.normalize(webview.params.patchPath!),
               lastFilePath
-            );
+            ).then(() =>{
+                getOutputFromAnalyzerOfAFile();
+            });
           }
-          getOutputFromAnalyzerOfAFile();
         } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
           var patchFilepath = path.normalize(
             JSON.parse(context.workspaceState.get<string>("openedPatchPath")!)
@@ -281,9 +282,9 @@ export function init(
             "Undo was requested by user.",
             patchFilepath,
             lastFilePath
-          );
-
-          getOutputFromAnalyzerOfAFile();
+          ).then(() =>{
+              getOutputFromAnalyzerOfAFile();
+          });
         }
       });
     });

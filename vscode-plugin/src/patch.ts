@@ -111,15 +111,18 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
             workspace.openTextDocument(leftPath).then(document => {
               window.showTextDocument(document).then(() => {
                 window.withProgress({ location: ProgressLocation.Notification, title: 'Loading Diagnostics...' }, async () => {
-                  // 4.
-                  await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
-                  
-                  commands.executeCommand("aifix4seccode-vscode.getOutputFromAnalyzer");
-
                   // User decisions are updated here in patch mode (and at extendedWebview in diff mode):
                   if(ANALYZER_USE_DIFF_MODE == "view Patch files"){
-                    updateUserDecisions('applied', patchPath, leftPath);
+                    updateUserDecisions('applied', patchPath, leftPath).then(() => {
+                      commands.executeCommand("aifix4seccode-vscode.getOutputFromAnalyzerPerFile");
+                      // 4.
+                      async () => {
+                        await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
+                      }
+                    })
                   }
+                  
+
                 });
               });
             });
