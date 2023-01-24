@@ -42,8 +42,15 @@ export async function getIssues() {
   if (patchJsonPaths.length){
     patchJsonPaths.forEach((path:any) => {
       if(path.length){
-        var patchJson = fs.readFileSync(path!, utf8Stream);
-        issuesJson = {...issuesJson, ...parseJson(patchJson)}
+        var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
+        Object.keys(patchJson).forEach((key:any) => {
+          if(issuesJson!.hasOwnProperty(key)){
+            console.log(key);
+            (issuesJson as any)[key].concat(patchJson[key]);
+          } else {
+            issuesJson = {...issuesJson, ...patchJson}
+          }
+        })
       }
     });
     
