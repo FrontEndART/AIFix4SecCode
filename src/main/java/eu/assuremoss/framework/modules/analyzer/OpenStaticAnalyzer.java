@@ -14,6 +14,7 @@ import eu.assuremoss.utils.factories.VulnEntryFactory;
 import eu.assuremoss.utils.parsers.SpotBugsParser;
 import eu.assuremoss.utils.tools.SourceCompiler;
 import lombok.AllArgsConstructor;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Node;
@@ -47,8 +48,8 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     public List<CodeModel> analyzeSourceCode(File srcLocation, boolean isValidation) {
         String workingDir = isValidation ? validation_results_path : resultsPath;
         /*PatchCompiler patchCompiler = PatchCompilerFactory.getPatchCompiler(VulnRepairDriver.properties.getProperty(PROJECT_BUILD_TOOL_KEY));
-        patchCompiler.compile(srcLocation, Configuration.isTestingEnabled(), true);
-
+        patchCompiler.compile(srcLocation, Configuration.isTestingEnabled(), true);*/
+/*
 
 
         String fbFileListPath = String.valueOf(Paths.get(workingDir, "fb_file_list.txt"));
@@ -59,7 +60,12 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
         }*/
         SourceCompiler compiler = new SourceCompiler(VulnRepairDriver.properties, isValidation);
         compiler.compile (srcLocation,  Configuration.isTestingEnabled(VulnRepairDriver.properties), isValidation);
-        String fbFileListPath = String.valueOf(Paths.get(workingDir, "fb_file_list.txt"));
+        String fbFileListPath = (isValidation?String.valueOf(Paths.get(VulnRepairDriver.properties.getProperty("config.validation_results_path"), "fb_file_list.txt")):String.valueOf(Paths.get(workingDir, "fb_file_list.txt")));
+        try (FileWriter fw = new FileWriter(fbFileListPath)) {
+            fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), compiler.getLastCompiled())));
+        } catch (IOException e) {
+            LOG.error(e);
+        }
         String spotBugsXml = (isValidation?
                 String.valueOf(Paths.get(VulnRepairDriver.properties.getProperty("config.validation_results_path"), "spotbugs.xml")):
                 String.valueOf(Paths.get(VulnRepairDriver.properties.getProperty("config.results_path"), "spotbugs.xml")));
@@ -121,6 +127,7 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
     public boolean validatePatch(File srcLocation, VulnerabilityEntry ve, Pair<File, Patch<String>> patch) {
         List<CodeModel> resList = new ArrayList<>();
         String spotBugsXml = String.valueOf(Paths.get(VulnRepairDriver.properties.getProperty("config.validation_results_path"), "spotbugs.xml"));
+        //String findBugsXMLPath = String.valueOf(Paths.get(validation_results_path, projectName, "java", "0", osaEdition.toLowerCase(Locale.ROOT), "temp", projectName + "-FindBugs.xml"));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.SPOTBUGS_XML, new File(spotBugsXml)));
         String graphXMLPath = String.valueOf(Paths.get(validation_results_path, projectName, "java", "0", projectName + ".xml"));
         String asgPath = String.valueOf(Paths.get(validation_results_path,
@@ -138,7 +145,11 @@ public class OpenStaticAnalyzer implements CodeAnalyzer, VulnerabilityDetector, 
 
         String findBugsXMLPath = String.valueOf(Paths.get(validation_results_path, projectName, "java", "0", osaEdition.toLowerCase(Locale.ROOT), "temp", projectName + "-FindBugs.xml"));
         resList.add(new CodeModel(CodeModel.MODEL_TYPES.FINDBUGS_XML, new File(findBugsXMLPath)));
-
+        try {
+            FileUtils.copyFile(new File(findBugsXMLPath), new File(spotBugsXml));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         /*List<VulnerabilityEntry> */vulnerabilities = null;
         try {
             vulnerabilities = sparser.readXML(true, false);

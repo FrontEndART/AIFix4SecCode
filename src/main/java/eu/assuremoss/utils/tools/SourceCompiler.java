@@ -46,11 +46,11 @@ public class SourceCompiler {
     public boolean compile(File srcLocation, boolean isTestingEnabled, boolean isValidation) {
 
         boolean isCompilable = patchCompiler.compile(srcLocation, isTestingEnabled, true);
-
+        lastCompiled = patchCompiler.getBuildDirectoryName();
         if (!isValidation) {
             analyzedClasses = String.valueOf(Paths.get(workingDir, SPOTBUGS_LISTFILE));
             try (FileWriter fw = new FileWriter(analyzedClasses)) {
-                lastCompiled = patchCompiler.getBuildDirectoryName();
+
                 fw.write(String.valueOf(Paths.get(srcLocation.getAbsolutePath(), patchCompiler.getBuildDirectoryName())));
             } catch (IOException e) {
                 LOG.error(e);
