@@ -7,7 +7,7 @@ import * as logging from "../services/logging";
 var path = require("path");
 var upath = require("upath");
 
-let issueGroups: Iissue | undefined;
+let issueGroups = {};
 
 async function initIssues() {
   issueGroups = await getIssues();
@@ -22,7 +22,7 @@ export async function refreshDiagnostics(
     initIssues().then(() => {
       // for each issue we create a diagnosctic.
       if (issueGroups) {
-        Object.values(issueGroups).forEach((issues) => {
+        Object.values(issueGroups).forEach((issues: any) => {
           issues.forEach((issue: any) => {
             const fixRange = issue.textRange;
             issue.patches.forEach((fix: IFix) => {

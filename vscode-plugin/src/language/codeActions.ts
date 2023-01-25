@@ -6,7 +6,7 @@ import { getIssues } from '../services/fakeAiFixCode';
 var path = require('path');
 var upath = require('upath');
 
-let issueGroups: Iissue | undefined;
+let issueGroups = {};
 let disposableAnalyzerProvider : vscode.Disposable;
 let disposableAnalyzerInfoProvider : vscode.Disposable;
 
@@ -68,7 +68,7 @@ export class Analyzer implements vscode.CodeActionProvider {
         let commandActions: vscode.CodeAction[] = [];
         issueGroups = await getIssues();
         if (issueGroups) {
-            Object.values(issueGroups).forEach(issues => {
+            Object.values(issueGroups).forEach((issues: any) => {
                 issues.forEach((issue: any) => {
                 if(issue.textRange.startLine - 1 === range.start.line){
                 const fixRange = issues.textRange;

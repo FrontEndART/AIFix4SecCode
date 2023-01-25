@@ -18,7 +18,7 @@ var path = require("path");
 var upath = require("upath");
 
 //export let issues = '';
-export let issuesJson: Iissue | undefined;
+export let issuesJson = {};
 
 export async function getIssues() {
   const readFile = util.promisify(fs.readFile);
@@ -39,16 +39,20 @@ export async function getIssues() {
 
   var jsonListContent = await loadIssues();
   var patchJsonPaths = jsonListContent.split('\n');
+  issuesJson = {};
   if (patchJsonPaths.length){
     patchJsonPaths.forEach((path:any) => {
       if(path.length){
         var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
         Object.keys(patchJson).forEach((key:any) => {
           if(issuesJson!.hasOwnProperty(key)){
-            console.log(key);
-            (issuesJson as any)[key].concat(patchJson[key]);
+            patchJson[key].forEach((issue: any) => {
+              if((issuesJson as any)[key].indexOf(issue) === -1){
+                (issuesJson as any)[key].push(issue);
+              }
+            })
           } else {
-            issuesJson = {...issuesJson, ...patchJson}
+            (issuesJson as any)[key] = patchJson[key];
           }
         })
       }
@@ -83,13 +87,26 @@ export function getIssuesSync() {
   }
 
   // read content of list file - get all the json paths that are in that file and merge them into one json object.
+  issuesJson = {};
   var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
   var patchJsonPaths = jsonListContent.split('\n');
   if (patchJsonPaths.length){
     patchJsonPaths.forEach((path:any) => {
       if(path.length){
-        var patchJson = fs.readFileSync(path!, utf8Stream);
-        issuesJson = {...issuesJson, ...parseJson(patchJson)}
+        // var patchJson = fs.readFileSync(path!, utf8Stream);
+        // issuesJson = {...issuesJson, ...parseJson(patchJson)}
+        var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
+        Object.keys(patchJson).forEach((key:any) => {
+          if(issuesJson!.hasOwnProperty(key)){
+            patchJson[key].forEach((issue: any) => {
+              if((issuesJson as any)[key].indexOf(issue) === -1){
+                (issuesJson as any)[key].push(issue);
+              }
+            })
+          } else {
+            (issuesJson as any)[key] = patchJson[key];
+          }
+        })
       }
     });
   }
@@ -113,7 +130,7 @@ export async function getFixes(leftPath: string, patchPath: string) {
   let fixes: any[] = [];
 
   if (issueGroups) {
-    Object.values(issueGroups).forEach((issues) => {
+    Object.values(issueGroups).forEach((issues: any) => {
       issues.forEach((issue: any) => {
         if(issue.patches.find((fix: IFix) => fix.path === upath.basename(patchPath))){
           issue.patches.forEach((fix: IFix) => {
@@ -151,4 +168,8 @@ export async function getFixes(leftPath: string, patchPath: string) {
   }
 
   return fixes;
+}
+
+function hasSubArray(master: any, sub: any) {
+  return sub.every((i => (v: any) => i = master.indexOf(v, i) + 1)(0));
 }
