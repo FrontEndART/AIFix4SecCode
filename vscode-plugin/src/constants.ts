@@ -34,13 +34,13 @@ export const ANALYZER_MENTION = 'analyzer_mention';
 export const ISSUE = 'issue';
 
 // lOGS:
-export const LOG_HEADING = '# Vscode-Plugin settings' + os.EOL + os.EOL;
-export const ANALYZER_PARAMETERS_LOG = 'plugin.executing_parameters' + '=' + ANALYZER_PARAMETERS + os.EOL;
-export const ANALYZER_EXE_PATH_LOG = 'plugin.executable_path' + '=' + ANALYZER_EXE_PATH + os.EOL;
-export const PATCH_FOLDER_LOG = 'plugin.generated_patches_path' + '=' + PATCH_FOLDER + os.EOL;
-export const ISSUES_PATH_LOG = 'plugin.issues_path' + '=' + ISSUES_PATH + os.EOL;
-export var PROJECT_FOLDER_LOG = 'plugin.subject_project_path' + '=' + PROJECT_FOLDER + os.EOL;
-export const ANALYZER_USE_DIFF_MODE_LOG = 'plugin.use_diff_mode' + '=' + ANALYZER_USE_DIFF_MODE + os.EOL;
+export const LOG_HEADING = '\r\n' + '# Vscode-Plugin settings' + '\r\n';
+export const ANALYZER_PARAMETERS_LOG = 'plugin.executing_parameters' + '=' + ANALYZER_PARAMETERS + '\r\n';
+export const ANALYZER_EXE_PATH_LOG = 'plugin.executable_path' + '=' + ANALYZER_EXE_PATH + '\r\n';
+export const PATCH_FOLDER_LOG = 'plugin.generated_patches_path' + '=' + PATCH_FOLDER + '\r\n';
+export const ISSUES_PATH_LOG = 'plugin.issues_path' + '=' + ISSUES_PATH + '\r\n';
+export var PROJECT_FOLDER_LOG = 'plugin.subject_project_path' + '=' + PROJECT_FOLDER + '\r\n';
+export const ANALYZER_USE_DIFF_MODE_LOG = 'plugin.use_diff_mode' + '=' + ANALYZER_USE_DIFF_MODE + '\r\n';
 
 
 export const UNSAVED_SYMBOL = ' •';

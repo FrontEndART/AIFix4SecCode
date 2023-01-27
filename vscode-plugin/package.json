@@ -2,7 +2,7 @@
   "name": "aifix4seccode-vscode",
   "displayName": "AIFix4SecCode",
   "description": "Fixes security vulnerabilities with the help of AI in your code.",
-  "version": "1.0.16",
+  "version": "1.0.18",
   "license": "",
   "keywords": [
     "vulnerability",

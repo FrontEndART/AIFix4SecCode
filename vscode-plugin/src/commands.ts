@@ -312,6 +312,14 @@ export function init(
         
         var currentFolderPath = '';
         var editor = vscode.window.activeTextEditor;
+        const config_path = upath.normalize(upath.join(ANALYZER_EXE_PATH, 'config.properties'));
+
+        if(!config_path || !config_path.length){
+          logging.LogErrorAndShowErrorMessage(
+            "Unable to run analyzer! config.properties file is missing from the executable folder.",
+            "Unable to run analyzer! config.properties file is missing from the executable folder."
+          )
+        }
 
         if(!editor) {
           currentFolderPath = vscode.workspace.workspaceFolders![0].uri.path;
@@ -325,7 +333,7 @@ export function init(
           }
         }
         
-        let combined_parameters = ANALYZER_PARAMETERS;
+        let combined_parameters = ANALYZER_PARAMETERS + ' -config=' + config_path;
         logging.LogInfo("Running " + combined_parameters);
         isAnalysisAlreadyRunning = true;
         var child = cp.exec(
@@ -399,6 +407,14 @@ export function init(
         
         var currentFilePath = '';
         var editor = vscode.window.activeTextEditor;
+        const config_path = upath.normalize(upath.join(ANALYZER_EXE_PATH, 'config.properties'));
+
+        if(!config_path || !config_path.length){
+          logging.LogErrorAndShowErrorMessage(
+            "Unable to run analyzer! config.properties file is missing from the executable folder.",
+            "Unable to run analyzer! config.properties file is missing from the executable folder."
+          )
+        }
 
         if(!editor) {
           logging.LogErrorAndShowErrorMessage(
@@ -420,7 +436,8 @@ export function init(
         //let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
         // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '') -> "/src/main/java/example/Main.java"
         // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '').split(upath.sep).join('.') -> ".src.main.java.example.Main.java"
-        let combined_parameters = ANALYZER_PARAMETERS + ' -cu=' + currentFilePath;
+        
+        let combined_parameters = ANALYZER_PARAMETERS + ' -config='+ config_path +' -cu=' + currentFilePath;
         logging.LogInfo("Running " + combined_parameters);
         isAnalysisAlreadyRunning = true;
         var child = cp.exec(
