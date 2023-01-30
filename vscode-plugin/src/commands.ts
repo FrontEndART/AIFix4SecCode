@@ -23,6 +23,7 @@ import {
   ANALYZER_USE_DIFF_MODE,
   SetProjectFolder,
   utf8Stream,
+  CONFIG_PATH,
 } from "./constants";
 import { IChange, IFix, Iissue, IProjectAnalysis } from "./interfaces";
 import {
@@ -312,7 +313,7 @@ export function init(
         
         var currentFolderPath = '';
         var editor = vscode.window.activeTextEditor;
-        const config_path = upath.normalize(upath.join(ANALYZER_EXE_PATH, 'config.properties'));
+        const config_path = CONFIG_PATH;
 
         if(!config_path || !config_path.length){
           logging.LogErrorAndShowErrorMessage(
@@ -387,7 +388,7 @@ export function init(
     });
   }
 
-  function startAnalyzingFileSync(){
+  function startAnalyzingFileSync(){ 
     return new Promise<void>((resolve) => {
       if (!ANALYZER_EXE_PATH) {
         logging.LogErrorAndShowErrorMessage(
@@ -407,7 +408,7 @@ export function init(
         
         var currentFilePath = '';
         var editor = vscode.window.activeTextEditor;
-        const config_path = upath.normalize(upath.join(ANALYZER_EXE_PATH, 'config.properties'));
+        const config_path = CONFIG_PATH;
 
         if(!config_path || !config_path.length){
           logging.LogErrorAndShowErrorMessage(
@@ -473,8 +474,12 @@ export function init(
           );
 
           // Show issues treeView:
-          // tslint:disable-next-line: no-unused-expression
-          testView = new TestView(context);
+          if(!testView){
+            // tslint:disable-next-line: no-unused-expression
+            testView = new TestView(context);
+          } else {
+            testView.treeDataProvider?.refresh('');
+          }
 
           // Initialize action commands of diagnostics made after analysis:
           initActionCommands(context);

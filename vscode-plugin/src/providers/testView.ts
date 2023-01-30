@@ -5,8 +5,12 @@ import { getIssues } from "../services/fakeAiFixCode";
 import { objectify } from "tslint/lib/utils";
 import { isObjectLiteralExpression } from "typescript";
 import { writeFileSync } from "fs";
+import { workspace } from "vscode";
 import { utf8Stream } from "../constants";
 var stringify = require("json-stringify");
+const util = require("util");
+const fs = require("fs");
+const parseJson = require("parse-json");
 
 let tree: any;
 
@@ -111,6 +115,8 @@ class NodeWithIdTreeDataProvider
   refresh(patchPath: string): void {
     if (patchPath && patchPath !== "") {
       filterTree(patchPath);
+    } else {
+      updateTreeWithSubTree();
     }
     this._onDidChangeTreeData.fire();
   }
@@ -295,7 +301,30 @@ function filterTree(patchPath: string) {
     }
     //writeFileSync(issuesPath!, issuesStr, utf8Stream);
 });
-console.log(tree);
+}
+
+function updateTreeWithSubTree(){
+  let issuesPath: string | undefined = "";
+  if (
+    workspace
+      .getConfiguration()
+      .get<string>("aifix4seccode.analyzer.issuesPath")
+  ) {
+    issuesPath = workspace
+      .getConfiguration()
+      .get<string>("aifix4seccode.analyzer.issuesPath");
+  }
+
+  var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
+  var patchJsonPaths = jsonListContent.split('\n');
+  if (patchJsonPaths.length){
+    patchJsonPaths.forEach((path:any) => {
+      if(path.length){
+        var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
+        tree = {...tree, ...patchJson};
+      }
+    });
+  }
 }
 
 class Key {

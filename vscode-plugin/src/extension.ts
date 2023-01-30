@@ -100,9 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function saveConfigParameters() {
-  const config_path = upath.normalize(
-    upath.join(constants.ANALYZER_EXE_PATH, "config.properties")
-  );
+  const config_path = constants.CONFIG_PATH;
   if (fs.existsSync(config_path)) {
     fs.readFile(config_path, "utf8", function (err: any, data: any) {
       if (err) {
@@ -138,9 +136,27 @@ function saveConfigParameters() {
       logger.write(constants.ANALYZER_USE_DIFF_MODE_LOG);
     });
   } else {
-    logging.LogErrorAndShowErrorMessage(
-      "config.properties file is missing from the executable folder.",
-      "config.properties file is missing from the executable folder."
+    var logger = fs.createWriteStream(config_path, { flags: "a" });
+
+    logger.write(constants.LOG_HEADING);
+
+    logger.write(constants.ANALYZER_PARAMETERS_LOG);
+    logger.write(constants.ANALYZER_EXE_PATH_LOG);
+    logger.write(constants.PATCH_FOLDER_LOG);
+    logger.write(constants.ISSUES_PATH_LOG);
+
+    if (!constants.PROJECT_FOLDER || constants.PROJECT_FOLDER === "") {
+      constants.SetProjectFolder(
+        vscode.workspace.workspaceFolders![0].uri.path
+      );
+    }
+
+    logger.write(constants.PROJECT_FOLDER_LOG);
+    logger.write(constants.ANALYZER_USE_DIFF_MODE_LOG);
+
+    logging.LogInfoAndShowInformationMessage(
+      "config.properties file was not found at the given location so the plugin created one by default. Please note that only the plugin's configuration was added to the file and in order to successfully run the analyzer executable, you need to add additional configuration parameters in to the file! You can read more about this at https://github.com/FrontEndART/AIFix4SecCode",
+      "config.properties file was not found at the given location so the plugin created one by default. Please note that only the plugin's configuration was added to the file and in order to successfully run the analyzer executable, you need to add additional configuration parameters in to the file! You can read more about this at https://github.com/FrontEndART/AIFix4SecCode"
     )
   }
 }

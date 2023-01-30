@@ -2,7 +2,7 @@
   "name": "aifix4seccode-vscode",
   "displayName": "AIFix4SecCode",
   "description": "Fixes security vulnerabilities with the help of AI in your code.",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "license": "",
   "keywords": [
     "vulnerability",
@@ -227,6 +227,11 @@
           "type": "string",
           "default": "",
           "description": "Specifies the analyzer tool's executable parameters. (f.e.: java -jar Main.jar)"
+        },
+        "aifix4seccode.analyzer.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "The path of the configuration file that the executable needs to use. The name of this file needs to be config.properties. If no path is given by the user, the plugin will search for it in the executable folder by default."
         },
         "aifix4seccode.analyzer.issuesPath": {
           "type": "string",
