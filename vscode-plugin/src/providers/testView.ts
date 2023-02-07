@@ -14,6 +14,8 @@ const parseJson = require("parse-json");
 
 let tree: any;
 
+let revealChangeHandle : vscode.Disposable | null = null;
+let changeTitleRevealHandle : vscode.Disposable | null = null;
 export class TestView {
   public treeDataProvider: NodeWithIdTreeDataProvider | undefined;
   constructor(context: vscode.ExtensionContext) {
@@ -24,8 +26,29 @@ export class TestView {
         showCollapseAll: true,
       });
       context.subscriptions.push(view);
+      // Check if commands already exist:
+      var existingRevealCommand = false;
+      var existingChangeTitleCommand = false;
 
-      vscode.commands.registerCommand("testView.reveal", async () => {
+      var extension = vscode.extensions.getExtension('searchlab.aifix4seccode-vscode');
+        let commands = extension!.packageJSON.contributes?.commands;
+        if (Array.isArray(commands)) {
+          existingRevealCommand = commands.find((command: any) => command.command == 'testView.reveal') !== undefined
+          existingChangeTitleCommand = commands.find((command: any) => command.command == 'testView.changeTitle') !== undefined
+        }
+      if(existingRevealCommand){
+        if(revealChangeHandle){
+          (revealChangeHandle as any).dispose();
+          revealChangeHandle = null;
+        }
+      }
+      if(existingChangeTitleCommand){
+        if(changeTitleRevealHandle){
+          (changeTitleRevealHandle as any).dispose();
+          changeTitleRevealHandle = null;
+        }
+      }
+      revealChangeHandle = vscode.commands.registerCommand("testView.reveal", async () => {
         const key = await vscode.window.showInputBox({
           placeHolder: "Type the label of the item to reveal",
         });
@@ -36,7 +59,7 @@ export class TestView {
           );
         }
       });
-      vscode.commands.registerCommand("testView.changeTitle", async () => {
+      changeTitleRevealHandle = vscode.commands.registerCommand("testView.changeTitle", async () => {
         const title = await vscode.window.showInputBox({
           prompt: "Type the new title for the Test View",
           placeHolder: view.title,
