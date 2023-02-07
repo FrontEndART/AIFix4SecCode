@@ -8,6 +8,7 @@ import { initActionCommands } from "./language/codeActions";
 import * as logging from "./services/logging";
 import * as constants from "./constants";
 import { stringify } from "querystring";
+import { refreshDiagnostics } from "./language/diagnostics";
 var fs = require("fs");
 
 var upath = require("upath");
@@ -97,6 +98,21 @@ export function activate(context: vscode.ExtensionContext) {
       );
     });
   logging.ShowInfoMessage("AIFix4SecCode installed. Welcome!");
+
+  // Handle file save with running a file analysis:
+  vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
+    if (document.languageId === "java" && document.uri.scheme === "file") {
+        vscode.commands.executeCommand("aifix4seccode-vscode.getOutputFromAnalyzerPerFile");
+        async () => {
+          await refreshDiagnostics(
+          vscode.window.activeTextEditor!.document,
+          analysisDiagnostics
+        );
+        // set selection of warning:
+        //await commands.setIssueSelectionInEditor(patchPath);
+        }
+    }
+});
 }
 
 function saveConfigParameters() {
