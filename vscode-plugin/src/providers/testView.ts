@@ -24,18 +24,31 @@ export class TestView {
         showCollapseAll: true,
       });
       context.subscriptions.push(view);
-
-      vscode.commands.registerCommand("testView.reveal", async () => {
-        const key = await vscode.window.showInputBox({
-          placeHolder: "Type the label of the item to reveal",
-        });
-        if (key) {
-          await view.reveal(
-            { key },
-            { focus: true, select: false, expand: true }
-          );
+      
+      // Check if commands already exist:
+      var existingRevealCommand = false;
+      var existingChangeTitleCommand = false;
+      var extension = vscode.extensions.getExtension('searchlab.aifix4seccode-vscode');
+        let commands = extension!.packageJSON.contributes?.commands;
+        if (Array.isArray(commands)) {
+          existingRevealCommand = commands.find((command: any) => command.command == 'testView.reveal') !== undefined
+          existingChangeTitleCommand = commands.find((command: any) => command.command == 'testView.changeTitle') !== undefined
         }
-      });
+
+      if(!existingRevealCommand){
+        vscode.commands.registerCommand("testView.reveal", async () => {
+          const key = await vscode.window.showInputBox({
+            placeHolder: "Type the label of the item to reveal",
+          });
+          if (key) {
+            await view.reveal(
+              { key },
+              { focus: true, select: false, expand: true }
+            );
+          }
+        });
+    }
+    if(!existingChangeTitleCommand){
       vscode.commands.registerCommand("testView.changeTitle", async () => {
         const title = await vscode.window.showInputBox({
           prompt: "Type the new title for the Test View",
@@ -45,6 +58,7 @@ export class TestView {
           view.title = title;
         }
       });
+    }
     });
   }
 }
