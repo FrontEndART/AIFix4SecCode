@@ -56,6 +56,8 @@ export let testView: TestView;
 
 let issues: any;
 
+var currentFilePath = '';
+
 async function initIssues() {
   issues = await fakeAiFixCode.getIssues();
 }
@@ -406,7 +408,7 @@ export function init(
         // run analyzer with terminal (read params and analyzer path from config):
         logging.LogInfo("Analyzer executable started.");
         
-        var currentFilePath = '';
+        
         var editor = vscode.window.activeTextEditor;
         const config_path = CONFIG_PATH;
 
@@ -421,6 +423,13 @@ export function init(
           logging.LogErrorAndShowErrorMessage(
             "Unable to run analyzer! Make sure that the desired file is currently open in the editor!",
             "Unable to run analyzer! Make sure that the desired file is currently open in the editor!"
+          );
+          resolve();
+          return;
+        } else if(editor.document.languageId !== 'java') {
+          logging.LogErrorAndShowErrorMessage(
+            "Unable to run analyzer! Not supported file extension!",
+            "Unable to run analyzer! Not supported file extension!\n Make sure to set the focus on your source code!"
           );
           resolve();
           return;
