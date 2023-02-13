@@ -6,11 +6,13 @@ import { objectify } from "tslint/lib/utils";
 import { isObjectLiteralExpression } from "typescript";
 import { writeFileSync } from "fs";
 import { workspace } from "vscode";
-import { utf8Stream } from "../constants";
+import { PATCH_FOLDER, PROJECT_FOLDER, utf8Stream } from "../constants";
 var stringify = require("json-stringify");
 const util = require("util");
 const fs = require("fs");
 const parseJson = require("parse-json");
+var upath = require("upath");
+import { readFileSync } from 'fs';
 
 let tree: any;
 
@@ -138,9 +140,12 @@ class NodeWithIdTreeDataProvider
   refresh(patchPath: string): void {
     if (patchPath && patchPath !== "") {
       filterTree(patchPath);
-    } else {
-      updateTreeWithSubTree();
     }
+    this._onDidChangeTreeData.fire();
+  }
+
+  refreshSubTree(openedFile: string): void {
+    updateTreeWithSubTree(openedFile);
     this._onDidChangeTreeData.fire();
   }
 
@@ -326,7 +331,7 @@ function filterTree(patchPath: string) {
 });
 }
 
-function updateTreeWithSubTree(){
+function updateTreeWithSubTree(openedFilePath: string){
   let issuesPath: string | undefined = "";
   if (
     workspace
@@ -337,6 +342,57 @@ function updateTreeWithSubTree(){
       .getConfiguration()
       .get<string>("aifix4seccode.analyzer.issuesPath");
   }
+
+  // delete all previous tree-items that are pointing to the file:
+  Object.values(tree).forEach((issueGroup: any) => {
+    issueGroup.forEach((issue: any) => {
+      issue.patches.forEach((patchObj: any) => {
+        const patchPath = patchObj.path;
+        var patch = '';
+        var patch_folder = PATCH_FOLDER;
+
+        if(process.platform === 'win32'){
+            if(patch_folder[0] === '/' || patch_folder[0] === '\\'){
+            patch_folder = patch_folder.substring(1);
+            }
+        }
+
+        try {
+            patch = readFileSync(upath.join(patch_folder, patchPath), "utf8");
+        } catch (err) {
+            console.log(err);
+        }
+
+        var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
+        var sourceFilePath: string;
+
+        if (sourceFileMatch && sourceFileMatch[1]) {
+            sourceFilePath = sourceFileMatch[1];
+        } else {
+            throw Error("Unable to find source file in '" + patch + "'");
+        }
+
+        sourceFilePath = upath.normalize(upath.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase())
+        openedFilePath = upath.normalize(vscode.Uri.file(openedFilePath!).fsPath.toLowerCase())
+        if(process.platform === 'linux' || process.platform === 'darwin'){
+            if(sourceFilePath![0] !== '/')
+              sourceFilePath = '/' + sourceFilePath
+            if(openedFilePath![0] !== '/')
+              openedFilePath = '/' + openedFilePath
+        }
+        
+        if(process.platform === 'win32'){
+            if(sourceFilePath[0] === '/' || sourceFilePath[0] === '\\'){
+              sourceFilePath = sourceFilePath.substring(1);
+            }
+        }
+
+        if(sourceFilePath === openedFilePath){
+          filterTree(patchPath);
+        }
+      })
+    })
+  })
 
   var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
   var patchJsonPaths = jsonListContent.split('\n');

@@ -339,6 +339,7 @@ export function init(
         let combined_parameters = ANALYZER_PARAMETERS + ' -config=' + config_path;
         logging.LogInfo("Running " + combined_parameters);
         isAnalysisAlreadyRunning = true;
+        try{
         var child = cp.exec(
           combined_parameters,
           { cwd: ANALYZER_EXE_PATH },
@@ -386,6 +387,13 @@ export function init(
 
           process.exit();
         });
+      } catch (e:unknown) {
+        if (typeof e === "string") {
+            logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+        } else if (e instanceof Error) {
+          logging.LogErrorAndShowErrorMessage(e.message, e.message)
+        }
+      }
       }
     });
   }
@@ -446,57 +454,65 @@ export function init(
         let combined_parameters = ANALYZER_PARAMETERS + ' -config='+ config_path +' -cu=' + currentFilePath;
         logging.LogInfo("Running " + combined_parameters);
         isAnalysisAlreadyRunning = true;
-        var child = cp.exec(
-          combined_parameters,
-          { cwd: ANALYZER_EXE_PATH },
-          (error) => {
-            if (error) {
-              isAnalysisAlreadyRunning = false;
-              logging.LogErrorAndShowErrorMessage(
-                error.toString(),
-                "Unable to run analyzer! " + error.toString()
-              );
+        try{
+          var child = cp.exec(
+            combined_parameters,
+            { cwd: ANALYZER_EXE_PATH },
+            (error) => {
+              if (error) {
+                isAnalysisAlreadyRunning = false;
+                logging.LogErrorAndShowErrorMessage(
+                  error.toString(),
+                  "Unable to run analyzer! " + error.toString()
+                );
+              }
             }
-          }
-        );
-        child.stdout.pipe(process.stdout);
-
-        var extensionLog = vscode.window.createOutputChannel("AiFix4SecCode");
-        extensionLog.show();
-        child.stdout.on('data', (chunk) => {
-          extensionLog.appendLine(chunk.toString());
-        });
-
-        // waiting for analyzer to finish, only then read the output.
-        child.on("exit", function () {
-          isAnalysisAlreadyRunning = false;
-          // if executable has finished:
-          logging.LogInfo("Analyzer executable finished.");
-          // Get Output from analyzer:
-          let output = fakeAiFixCode.getIssuesSync();
-          logging.LogInfo(
-            "issues got from analyzer output: " + JSON.stringify(output)
           );
+          child.stdout.pipe(process.stdout);
 
-          // Show issues treeView:
-          if(!testView){
-            // tslint:disable-next-line: no-unused-expression
-            testView = new TestView(context);
-          } else {
-            testView.treeDataProvider?.refresh('');
-          }
+          var extensionLog = vscode.window.createOutputChannel("AiFix4SecCode");
+          extensionLog.show();
+          child.stdout.on('data', (chunk) => {
+            extensionLog.appendLine(chunk.toString());
+          });
 
-          // Initialize action commands of diagnostics made after analysis:
-          initActionCommands(context);
+          // waiting for analyzer to finish, only then read the output.
+          child.on("exit", function () {
+            isAnalysisAlreadyRunning = false;
+            // if executable has finished:
+            logging.LogInfo("Analyzer executable finished.");
+            // Get Output from analyzer:
+            let output = fakeAiFixCode.getIssuesSync();
+            logging.LogInfo(
+              "issues got from analyzer output: " + JSON.stringify(output)
+            );
 
-          resolve();
-          logging.LogInfoAndShowInformationMessage(
-            "===== Finished analysis. =====",
-            "Finished analysis of file!"
-          );
+            // Show issues treeView:
+            if(!testView){
+              // tslint:disable-next-line: no-unused-expression
+              testView = new TestView(context);
+            } else {
+              testView.treeDataProvider?.refreshSubTree(currentFilePath);
+            }
 
-          process.exit();
-        });
+            // Initialize action commands of diagnostics made after analysis:
+            initActionCommands(context);
+
+            resolve();
+            logging.LogInfoAndShowInformationMessage(
+              "===== Finished analysis. =====",
+              "Finished analysis of file!"
+            );
+
+            process.exit();
+          });
+      } catch (e:unknown) {
+        if (typeof e === "string") {
+            logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+        } else if (e instanceof Error) {
+          logging.LogErrorAndShowErrorMessage(e.message, e.message)
+        }
+      }
       }
     });
   }
