@@ -442,10 +442,6 @@ export function init(
             currentFilePath = currentFilePath.substring(1);
           }
         }
-
-        //let combined_parameters = ANALYZER_PARAMETERS + ' -projectBaseDir=' + currentFolderPath;
-        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '') -> "/src/main/java/example/Main.java"
-        // vscode.window.activeTextEditor.document.uri.path.replace(constants_1['PROJECT_FOLDER'] + upath.sep, '').split(upath.sep).join('.') -> ".src.main.java.example.Main.java"
         
         let combined_parameters = ANALYZER_PARAMETERS + ' -config='+ config_path +' -cu=' + currentFilePath;
         logging.LogInfo("Running " + combined_parameters);

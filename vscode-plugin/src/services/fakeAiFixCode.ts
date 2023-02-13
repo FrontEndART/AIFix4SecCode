@@ -39,24 +39,25 @@ export async function getIssues() {
 
   var jsonListContent = await loadIssues();
   var patchJsonPaths = jsonListContent.split('\n');
-  issuesJson = {};
+  var _issuesJson = {};
   if (patchJsonPaths.length){
     patchJsonPaths.forEach((path:any) => {
       if(path.length){
         var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
         Object.keys(patchJson).forEach((key:any) => {
-          if(issuesJson!.hasOwnProperty(key)){
+          if(_issuesJson!.hasOwnProperty(key)){
             patchJson[key].forEach((issue: any) => {
-              if((issuesJson as any)[key].indexOf(issue) === -1){
-                (issuesJson as any)[key].push(issue);
+              if((_issuesJson as any)[key].indexOf(issue) === -1){
+                (_issuesJson as any)[key].push(issue);
               }
             })
           } else {
-            (issuesJson as any)[key] = patchJson[key];
+            (_issuesJson as any)[key] = patchJson[key];
           }
         })
       }
     });
+    issuesJson = {...issuesJson, ..._issuesJson}
     
   // let result = await loadIssues();
   // try {
@@ -87,29 +88,28 @@ export function getIssuesSync() {
   }
 
   // read content of list file - get all the json paths that are in that file and merge them into one json object.
-  issuesJson = {};
+  // issuesJson = {};
   var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
   var patchJsonPaths = jsonListContent.split('\n');
+  var _issuesJson = {};
   if (patchJsonPaths.length){
     patchJsonPaths.forEach((path:any) => {
       if(path.length){
-        // var patchJson = fs.readFileSync(path!, utf8Stream);
-        // issuesJson = {...issuesJson, ...parseJson(patchJson)}
         var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
         Object.keys(patchJson).forEach((key:any) => {
-          if(issuesJson!.hasOwnProperty(key)){
+          if(_issuesJson!.hasOwnProperty(key)){
             patchJson[key].forEach((issue: any) => {
-              if((issuesJson as any)[key].indexOf(issue) === -1){
-                (issuesJson as any)[key].push(issue);
+              if((_issuesJson as any)[key].indexOf(issue) === -1){
+                (_issuesJson as any)[key].push(issue);
               }
             })
           } else {
-            (issuesJson as any)[key] = patchJson[key];
+            (_issuesJson as any)[key] = patchJson[key];
           }
         })
       }
     });
-  }
+    issuesJson = {...issuesJson, ..._issuesJson}
   //let result = fs.readFileSync(issuesPath!, utf8Stream);
   // try {
   //   issuesJson = parseJson(result);
@@ -122,6 +122,7 @@ export function getIssuesSync() {
   //   }
   // }
   // return issuesJson;
+  }
   return issuesJson;
 }
 
