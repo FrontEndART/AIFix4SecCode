@@ -943,7 +943,7 @@ export function init(
                       title: "Loading Diagnostics...",
                     },
                     async () => {
-                      await getOutputFromAnalyzer();
+                      // await getOutputFromAnalyzer();
                       await refreshDiagnostics(
                         vscode.window.activeTextEditor!.document,
                         analysisDiagnostics
@@ -998,7 +998,7 @@ export function init(
               title: "Loading Diagnostics...",
             },
             async () => {
-              await getOutputFromAnalyzer();
+              // await getOutputFromAnalyzer();
               // 4.
               await refreshDiagnostics(
                 vscode.window.activeTextEditor!.document,
