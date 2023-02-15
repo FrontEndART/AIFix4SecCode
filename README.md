@@ -8,7 +8,7 @@ The detected vulnerabilities get automatically patched by an ASG transformation 
 * [NP_NULL_ON_SOME_PATH](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#np-possible-null-pointer-dereference-np-null-on-some-path)
 * [NP_NULL_ON_SOME_PATH_EXCEPTION](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#np-possible-null-pointer-dereference-in-method-on-exception-path-np-null-on-some-path-exception)
 * [MS_PKGPROTECT](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-should-be-package-protected-ms-pkgprotect)
-* [MS_MUTABLE_COLLECTION] (https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-is-a-mutable-collection-ms-mutable-collection)
+* [MS_MUTABLE_COLLECTION](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-is-a-mutable-collection-ms-mutable-collection)
 * [FI_PUBLIC_SHOULD_BE_PROTECTED](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#fi-finalizer-should-be-protected-not-public-fi-public-should-be-protected)
 
 
@@ -77,8 +77,8 @@ desc.FI_PUBLIC_SHOULD_BE_PROTECTED=Finalize method should be protected
 desc.MS_PKGPROTECT=Field should be package protected
 desc.MS_MUTABLE_COLLECTION=Field is a mutable collection
 ```
-If you would still work from a separate config file, use the -config=CONFIG_FILE_PATH command line argument. 
-Instead of analyzing an entire project, it is also possible to analyze a single compilation unit, in this case use the -cu=COMPILATION_UNIT_PATH command line argument.
+If you would still work from a separate config file, use the ``-config=CONFIG_FILE_PATH`` command line argument. 
+Instead of analyzing an entire project, it is also possible to analyze a single compilation unit, in this case use the ``-cu=COMPILATION_UNIT_PATH`` command line argument.
 
 ## How to install the plugin to VSCode
 You can install the plugin to visual studio code from the command line:
