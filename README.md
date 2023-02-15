@@ -3,13 +3,13 @@ An automated code repair framework for fixing vulnerabilities. The framework det
 
 The detected vulnerabilities get automatically patched by an ASG transformation based repair solution implemented in the [CodeRepair](https://github.com/FrontEndART/OpenStaticAnalyzer/tree/CodeRepairTool/java/cl/CodeRepair) code module. Currently, the automatic repair of the following security issues are supported:
 * [EI_EXPOSE_REP2](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ei2-may-expose-internal-representation-by-incorporating-reference-to-mutable-object-ei-expose-rep2)
-* [EI_EXPOSE_REP] (https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ei-may-expose-internal-representation-by-returning-reference-to-mutable-object-ei-expose-rep)
+* [EI_EXPOSE_REP](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ei-may-expose-internal-representation-by-returning-reference-to-mutable-object-ei-expose-rep)
 * [MS_SHOULD_BE_FINAL](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-isn-t-final-but-should-be-ms-should-be-final)
 * [NP_NULL_ON_SOME_PATH](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#np-possible-null-pointer-dereference-np-null-on-some-path)
-* [NP_NULL_ON_SOME_PATH_EXCEPTION] (https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#np-possible-null-pointer-dereference-in-method-on-exception-path-np-null-on-some-path-exception)
-* [MS_PKGPROTECT] (https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-should-be-package-protected-ms-pkgprotect)
+* [NP_NULL_ON_SOME_PATH_EXCEPTION](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#np-possible-null-pointer-dereference-in-method-on-exception-path-np-null-on-some-path-exception)
+* [MS_PKGPROTECT](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-should-be-package-protected-ms-pkgprotect)
 * [MS_MUTABLE_COLLECTION] (https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-is-a-mutable-collection-ms-mutable-collection)
-* [FI_PUBLIC_SHOULD_BE_PROTECTED] (https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#fi-finalizer-should-be-protected-not-public-fi-public-should-be-protected)
+* [FI_PUBLIC_SHOULD_BE_PROTECTED](https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#fi-finalizer-should-be-protected-not-public-fi-public-should-be-protected)
 
 
 
