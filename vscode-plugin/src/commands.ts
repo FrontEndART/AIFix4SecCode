@@ -256,10 +256,18 @@ export function init(
     );
 
     // Set content of issues:
-    writeFileSync(lastIssuesPath, lastIssuesContent);
+    try{
+      writeFileSync(lastIssuesPath, lastIssuesContent);
 
-    // Set content of edited file and focus on it:
-    writeFileSync(lastFilePath, lastFileContent);
+      // Set content of edited file and focus on it:
+      writeFileSync(lastFilePath, lastFileContent);
+    } catch (e){
+      if (typeof e === "string") {
+        logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+      } else if (e instanceof Error) {
+        logging.LogErrorAndShowErrorMessage(e.message, e.message)
+      }
+    }
 
     vscode.workspace.openTextDocument(lastFilePath).then((document) => {
       vscode.window.showTextDocument(document).then(() => {
@@ -387,7 +395,7 @@ export function init(
 
           process.exit();
         });
-      } catch (e:unknown) {
+      } catch (e) {
         if (typeof e === "string") {
             logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
         } else if (e instanceof Error) {
@@ -506,7 +514,7 @@ export function init(
 
             process.exit();
           });
-      } catch (e:unknown) {
+      } catch (e) {
         if (typeof e === "string") {
             logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
         } else if (e instanceof Error) {
@@ -1062,7 +1070,15 @@ export function init(
         .getConfiguration()
         .get<string>("aifix4seccode.analyzer.issuesPath");
     }
-    writeFileSync(issuesPath!, issuesStr, utf8Stream);
+    try{
+      writeFileSync(issuesPath!, issuesStr, utf8Stream);
+    } catch (e){
+      if (typeof e === "string") {
+        logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+      } else if (e instanceof Error) {
+        logging.LogErrorAndShowErrorMessage(e.message, e.message)
+      }
+    }
   }
 
   function saveFileAndFixesToState(filePath: string) {
@@ -1076,17 +1092,26 @@ export function init(
         .get<string>("aifix4seccode.analyzer.issuesPath")
     ) {
       issueListPath = vscode.workspace.getConfiguration().get<string>("aifix4seccode.analyzer.issuesPath");
-      var jsonListContent = readFileSync(issueListPath!, utf8Stream);
-      var patchJsonPaths = jsonListContent.split('\n');
-      filePath = upath.normalize(filePath);
-      patchJsonPaths = patchJsonPaths.filter(path => path.length);
-      if (patchJsonPaths.length){
-        issuesPath = patchJsonPaths.find(path => upath.normalize(path!).toLowerCase().includes(upath.normalize(filePath.replace(PROJECT_FOLDER!, '').toLowerCase()!)))
+      try{
+        var jsonListContent = readFileSync(issueListPath!, utf8Stream);
+        var patchJsonPaths = jsonListContent.split('\n');
+        filePath = upath.normalize(filePath);
+        patchJsonPaths = patchJsonPaths.filter(path => path.length);
+        if (patchJsonPaths.length){
+          issuesPath = patchJsonPaths.find(path => upath.normalize(path!).toLowerCase().includes(upath.normalize(filePath.replace(PROJECT_FOLDER!, '').toLowerCase()!)))
+        }
+      } catch (e){
+          if (typeof e === "string") {
+            logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+          } else if (e instanceof Error) {
+            logging.LogErrorAndShowErrorMessage(e.message, e.message)
+          }
+        }
       }
-    }
-
-    var originalFileContent = readFileSync(filePath!, "utf8");
-    var originalIssuesContent = readFileSync(issuesPath!, "utf8");
+    
+    try{
+      var originalFileContent = readFileSync(filePath!, "utf8");
+      var originalIssuesContent = readFileSync(issuesPath!, "utf8");
     context.workspaceState.update(
       "lastFileContent",
       JSON.stringify(originalFileContent)
@@ -1099,8 +1124,15 @@ export function init(
     );
     context.workspaceState.update("lastIssuesPath", JSON.stringify(issuesPath));
     logging.LogInfo(filePath);
+  
+    } catch (e){
+      if (typeof e === "string") {
+        logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+      } else if (e instanceof Error) {
+        logging.LogErrorAndShowErrorMessage(e.message, e.message)
+      }
+    }
   }
-
   let currentFixId = 0;
 
   async function navigateDiff(step: number) {

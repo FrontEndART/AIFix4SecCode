@@ -8,6 +8,7 @@ import {
   PROJECT_FOLDER,
   utf8Stream,
 } from "../constants";
+import * as logging from "../services/logging";
 import { IFix, Iissue } from "../interfaces";
 import { getSafeFsPath } from "../path";
 
@@ -36,8 +37,15 @@ export async function getIssues() {
   async function loadIssues() {
     return await readFile(issuesPath!, utf8Stream);
   }
-
-  var jsonListContent = await loadIssues();
+  try{
+    var jsonListContent = await loadIssues();
+  } catch (e){
+    if (typeof e === "string") {
+      logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+    } else if (e instanceof Error) {
+      logging.LogErrorAndShowErrorMessage(e.message, e.message)
+    }
+  }
   var patchJsonPaths = jsonListContent.split('\n');
   var _issuesJson = {};
   if (patchJsonPaths.length){
@@ -89,7 +97,15 @@ export function getIssuesSync() {
 
   // read content of list file - get all the json paths that are in that file and merge them into one json object.
   // issuesJson = {};
-  var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
+  try{
+    var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
+  } catch (e){
+    if (typeof e === "string") {
+      logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+    } else if (e instanceof Error) {
+      logging.LogErrorAndShowErrorMessage(e.message, e.message)
+    }
+  }
   var patchJsonPaths = jsonListContent.split('\n');
   var _issuesJson = {};
   if (patchJsonPaths.length){

@@ -6,6 +6,7 @@ import { objectify } from "tslint/lib/utils";
 import { isObjectLiteralExpression } from "typescript";
 import { writeFileSync } from "fs";
 import { workspace } from "vscode";
+import * as logging from "../services/logging";
 import { PATCH_FOLDER, PROJECT_FOLDER, utf8Stream } from "../constants";
 var stringify = require("json-stringify");
 const util = require("util");
@@ -393,16 +394,23 @@ function updateTreeWithSubTree(openedFilePath: string){
       })
     })
   })
-
-  var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
-  var patchJsonPaths = jsonListContent.split('\n');
-  if (patchJsonPaths.length){
-    patchJsonPaths.forEach((path:any) => {
-      if(path.length){
-        var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
-        tree = {...tree, ...patchJson};
-      }
-    });
+  try{
+    var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
+    var patchJsonPaths = jsonListContent.split('\n');
+    if (patchJsonPaths.length){
+      patchJsonPaths.forEach((path:any) => {
+        if(path.length){
+          var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
+          tree = {...tree, ...patchJson};
+        }
+      });
+    }
+  } catch (e){
+    if (typeof e === "string") {
+      logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+    } else if (e instanceof Error) {
+      logging.LogErrorAndShowErrorMessage(e.message, e.message)
+    }
   }
 }
 
