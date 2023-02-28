@@ -17,9 +17,10 @@ const util = require("util");
 const parseJson = require("parse-json");
 var path = require("path");
 var upath = require("upath");
+var isEqual = require('lodash.isequal');
 
 //export let issues = '';
-export let issuesJson = {};
+export let issuesJson: any = {};
 
 export async function getIssues() {
   const readFile = util.promisify(fs.readFile);
@@ -46,8 +47,10 @@ export async function getIssues() {
       logging.LogErrorAndShowErrorMessage(e.message, e.message)
     }
   }
-  var patchJsonPaths = jsonListContent.split('\n');
-  var _issuesJson = {};
+  var patchJsonPaths: string[] = []
+        if (jsonListContent)
+          patchJsonPaths = jsonListContent.split('\n');
+  var _issuesJson : any = {};
   if (patchJsonPaths.length){
     patchJsonPaths.forEach((path:any) => {
       if(path.length){
@@ -65,7 +68,18 @@ export async function getIssues() {
         })
       }
     });
-    issuesJson = {...issuesJson, ..._issuesJson}
+    Object.keys(_issuesJson).forEach((key: any) => {
+      if(issuesJson.hasOwnProperty(key)){
+        _issuesJson[key].forEach((_issue:any) => {
+            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue, _issue))){
+              issuesJson[key].push(_issue);
+            }
+          })
+      } else {
+        issuesJson[key] = _issuesJson[key]
+      }
+    })
+    //issuesJson = {...issuesJson, ..._issuesJson}
     
   // let result = await loadIssues();
   // try {
@@ -104,10 +118,18 @@ export function getIssuesSync() {
       logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
     } else if (e instanceof Error) {
       logging.LogErrorAndShowErrorMessage(e.message, e.message)
+      if('code' in e){
+        if((e as any).code.toString() === 'ENOENT'){
+          var adjustedIssuesPath = upath.join(upath.dirname(ANALYZER_EXE_PATH), 'results', 'jsons.lists')
+          jsonListContent = fs.readFileSync(adjustedIssuesPath!, utf8Stream);
+        }
+      }
     }
   }
-  var patchJsonPaths = jsonListContent.split('\n');
-  var _issuesJson = {};
+  var patchJsonPaths: string[] = []
+        if (jsonListContent)
+          patchJsonPaths = jsonListContent.split('\n');
+  var _issuesJson : any = {};
   if (patchJsonPaths.length){
     patchJsonPaths.forEach((path:any) => {
       if(path.length){
@@ -125,7 +147,18 @@ export function getIssuesSync() {
         })
       }
     });
-    issuesJson = {...issuesJson, ..._issuesJson}
+    Object.keys(_issuesJson).forEach((key: any) => {
+      if(issuesJson.hasOwnProperty(key)){
+        _issuesJson[key].forEach((_issue:any) => {
+            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue, _issue))){
+              issuesJson[key].push(_issue);
+            }
+          })
+      } else {
+        issuesJson[key] = _issuesJson[key]
+      }
+    })
+    //issuesJson = {...issuesJson, ..._issuesJson}
   //let result = fs.readFileSync(issuesPath!, utf8Stream);
   // try {
   //   issuesJson = parseJson(result);

@@ -284,9 +284,7 @@ export function init(
             });
           }
         } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
-          var patchFilepath = path.normalize(
-            JSON.parse(context.workspaceState.get<string>("openedPatchPath")!)
-          );
+          var patchFilepath = path.normalize(context.workspaceState.get<string>("openedPatchPath")!);
 
           // Update user decisions of the revert fix:
           updateUserDecisions(
@@ -354,10 +352,18 @@ export function init(
           (error) => {
             if (error) {
               isAnalysisAlreadyRunning = false;
-              logging.LogErrorAndShowErrorMessage(
-                error.toString(),
-                "Unable to run analyzer! " + error.toString()
-              );
+              if (error.code?.toString() === 'ENOENT'){
+                logging.LogErrorAndShowErrorMessage(
+                  error.toString(),
+                  "Unable to run analyzer! The given analyzer's executable path does not likely have the correct archive. Please check your extension settings. " + error.toString()
+                );
+              } else {
+                logging.LogErrorAndShowErrorMessage(
+                  error.toString(),
+                  "Unable to run analyzer! " + error.toString()
+                );
+              }
+              resolve();
             }
           }
         );
@@ -371,29 +377,39 @@ export function init(
 
         // waiting for analyzer to finish, only then read the output.
         child.on("exit", function () {
-          isAnalysisAlreadyRunning = false;
-          // if executable has finished:
-          logging.LogInfo("Analyzer executable finished.");
-          // Get Output from analyzer:
-          let output = fakeAiFixCode.getIssuesSync();
-          logging.LogInfo(
-            "issues got from analyzer output: " + JSON.stringify(output)
-          );
+          try{
+            isAnalysisAlreadyRunning = false;
+            // if executable has finished:
+            logging.LogInfo("Analyzer executable finished.");
+            // Get Output from analyzer:
+            let output = fakeAiFixCode.getIssuesSync();
+            logging.LogInfo(
+              "issues got from analyzer output: " + JSON.stringify(output)
+            );
 
-          // Show issues treeView:
-          // tslint:disable-next-line: no-unused-expression
-          testView = new TestView(context);
+            // Show issues treeView:
+            // tslint:disable-next-line: no-unused-expression
+            testView = new TestView(context);
 
-          // Initialize action commands of diagnostics made after analysis:
-          initActionCommands(context);
+            // Initialize action commands of diagnostics made after analysis:
+            initActionCommands(context);
 
+            resolve();
+            logging.LogInfoAndShowInformationMessage(
+              "===== Finished analysis. =====",
+              "Finished analysis of project!"
+            );
+
+            process.exit();
+        } catch (e) {
+          if (typeof e === "string") {
+              logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+          } else if (e instanceof Error) {
+            logging.LogErrorAndShowErrorMessage(e.message, e.message)
+          }
           resolve();
-          logging.LogInfoAndShowInformationMessage(
-            "===== Finished analysis. =====",
-            "Finished analysis of project!"
-          );
-
           process.exit();
+        }
         });
       } catch (e) {
         if (typeof e === "string") {
@@ -401,6 +417,7 @@ export function init(
         } else if (e instanceof Error) {
           logging.LogErrorAndShowErrorMessage(e.message, e.message)
         }
+        resolve();
       }
       }
     });
@@ -486,33 +503,44 @@ export function init(
 
           // waiting for analyzer to finish, only then read the output.
           child.on("exit", function () {
-            isAnalysisAlreadyRunning = false;
-            // if executable has finished:
-            logging.LogInfo("Analyzer executable finished.");
-            // Get Output from analyzer:
-            let output = fakeAiFixCode.getIssuesSync();
-            logging.LogInfo(
-              "issues got from analyzer output: " + JSON.stringify(output)
-            );
+            try{
+              isAnalysisAlreadyRunning = false;
+              // if executable has finished:
+              logging.LogInfo("Analyzer executable finished.");
+              // Get Output from analyzer:
+              let output = fakeAiFixCode.getIssuesSync();
+              logging.LogInfo(
+                "issues got from analyzer output: " + JSON.stringify(output)
+              );
 
-            // Show issues treeView:
-            if(!testView){
-              // tslint:disable-next-line: no-unused-expression
-              testView = new TestView(context);
-            } else {
-              testView.treeDataProvider?.refreshSubTree(currentFilePath);
+              // Show issues treeView:
+              if(!testView){
+                // tslint:disable-next-line: no-unused-expression
+                testView = new TestView(context);
+              } else {
+                var openedPatchPath = context.workspaceState.get<string>("openedPatchPath")!;
+                testView.treeDataProvider?.refreshSubTree(openedPatchPath);
+              }
+
+              // Initialize action commands of diagnostics made after analysis:
+              initActionCommands(context);
+
+              resolve();
+              logging.LogInfoAndShowInformationMessage(
+                "===== Finished analysis. =====",
+                "Finished analysis of file!"
+              );
+
+              process.exit();
+          } catch (e) {
+            if (typeof e === "string") {
+                logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
+            } else if (e instanceof Error) {
+              logging.LogErrorAndShowErrorMessage(e.message, e.message)
             }
-
-            // Initialize action commands of diagnostics made after analysis:
-            initActionCommands(context);
-
             resolve();
-            logging.LogInfoAndShowInformationMessage(
-              "===== Finished analysis. =====",
-              "Finished analysis of file!"
-            );
-
             process.exit();
+          }
           });
       } catch (e) {
         if (typeof e === "string") {
@@ -520,14 +548,15 @@ export function init(
         } else if (e instanceof Error) {
           logging.LogErrorAndShowErrorMessage(e.message, e.message)
         }
+        resolve();
+        process.exit();
       }
-      }
+    }
     });
   }
 
   async function openUpFile(patchPath: string) {
     logging.LogInfo("===== Executing openUpFile command. =====");
-
 
     let project_folder = PROJECT_FOLDER;
     let patch_folder = PATCH_FOLDER;
@@ -545,6 +574,7 @@ export function init(
     try {
       logging.LogInfo("Reading patch from " + patch_folder + "/" + patchPath);
       patch = readFileSync(upath.join(patch_folder, patchPath), "utf8");
+      context.workspaceState.update("openedPatchPath", upath.join(patch_folder, patchPath));
     } catch (err) {
       logging.LogErrorAndShowErrorMessage(
         String(err),
@@ -612,6 +642,7 @@ export function init(
       targetTextRange["endColumn"]
     );
     editor!.selection = newSelection;
+    editor!.revealRange(editor!.document.lineAt(targetTextRange["startLine"] - 1).range);
   }
 
   function loadPatch(patchPath: string) {
@@ -711,6 +742,11 @@ export function init(
         logging.LogInfo("Applied '" + patchPath + "' to '" + sourceFile + "'");
       }
 
+      context.workspaceState.update(
+        "openedPatchPath",
+        JSON.stringify(patchPath)
+      );
+
       logging.LogInfo("Opening Diff view.");
       showDiff({
         patchPath: patchPath,
@@ -729,7 +765,7 @@ export function init(
         .then((document) => {
           context.workspaceState.update(
             "openedPatchPath",
-            JSON.stringify(path.join(PATCH_FOLDER, patchPath))
+            path.join(PATCH_FOLDER, patchPath)
           );
           vscode.window.showTextDocument(document);
         });
@@ -857,9 +893,7 @@ export function init(
       // 4. Hide navbar buttons (applyPatch, declinePatch, nextDiff, prevDiff).
 
       // 1.
-      var patchFilepath = JSON.parse(
-        context.workspaceState.get<string>("openedPatchPath")!
-      );
+      var patchFilepath = context.workspaceState.get<string>("openedPatchPath")!
       var patchFileContent = readFileSync(
         path.normalize(patchFilepath),
         "utf8"
@@ -993,9 +1027,7 @@ export function init(
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
       // TODO: DO it with patch file
       let activeEditor = vscode.window.activeTextEditor!.document.uri.fsPath;
-      var patchFilepath = JSON.parse(
-        context.workspaceState.get<string>("openedPatchPath")!
-      );
+      var patchFilepath = context.workspaceState.get<string>("openedPatchPath")!
       var patchFileContent = readFileSync(patchFilepath, "utf8");
       var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
       var sourceFile: string;
@@ -1094,7 +1126,9 @@ export function init(
       issueListPath = vscode.workspace.getConfiguration().get<string>("aifix4seccode.analyzer.issuesPath");
       try{
         var jsonListContent = readFileSync(issueListPath!, utf8Stream);
-        var patchJsonPaths = jsonListContent.split('\n');
+        var patchJsonPaths: string[] = []
+        if (jsonListContent)
+          patchJsonPaths = jsonListContent.split('\n');
         filePath = upath.normalize(filePath);
         patchJsonPaths = patchJsonPaths.filter(path => path.length);
         if (patchJsonPaths.length){
@@ -1162,6 +1196,11 @@ export function init(
         }
       });
 
+      context.workspaceState.update(
+        "openedPatchPath",
+        JSON.stringify(fixes[nextFixId].path)
+      );
+
       if (requiredWebview) {
         requiredWebview!.webViewPanel.reveal(vscode.ViewColumn.One, false);
       } else {
@@ -1178,9 +1217,7 @@ export function init(
       }
       currentFixId = nextFixId;
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
-      var patchFilepath = JSON.parse(
-        context.workspaceState.get<string>("openedPatchPath")!
-      );
+      var patchFilepath = context.workspaceState.get<string>("openedPatchPath")!
       var patchFileContent = readFileSync(patchFilepath, "utf8");
       var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
       var sourceFile: string;
@@ -1211,7 +1248,7 @@ export function init(
         vscode.window.showTextDocument(document).then(() => {
           context.workspaceState.update(
             "openedPatchPath",
-            JSON.stringify(fixPath)
+            fixPath
           );
         });
       });

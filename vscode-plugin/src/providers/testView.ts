@@ -7,12 +7,13 @@ import { isObjectLiteralExpression } from "typescript";
 import { writeFileSync } from "fs";
 import { workspace } from "vscode";
 import * as logging from "../services/logging";
-import { PATCH_FOLDER, PROJECT_FOLDER, utf8Stream } from "../constants";
+import { ANALYZER_EXE_PATH, PATCH_FOLDER, PROJECT_FOLDER, utf8Stream } from "../constants";
 var stringify = require("json-stringify");
 const util = require("util");
 const fs = require("fs");
 const parseJson = require("parse-json");
 var upath = require("upath");
+var isEqual = require('lodash.isequal');
 import { readFileSync } from 'fs';
 
 let tree: any;
@@ -145,8 +146,8 @@ class NodeWithIdTreeDataProvider
     this._onDidChangeTreeData.fire();
   }
 
-  refreshSubTree(openedFile: string): void {
-    updateTreeWithSubTree(openedFile);
+  refreshSubTree(openedPatchPath: string): void {
+    updateTreeWithSubTree(openedPatchPath);
     this._onDidChangeTreeData.fire();
   }
 
@@ -304,19 +305,15 @@ function filterTree(patchPath: string) {
           issue.patches.forEach((patch: any) => {
               if(patch.path === patchPath || patchPath.includes(patch.path))
               {
-                  issue.patches.splice(issue.patches.indexOf(patch), 1);
-                  if(!issue.patches.length){
                     tree[key].splice(tree[key].indexOf(issue), 1);
                     if(!tree[key].length){
                         delete tree[key];
                     }
                 }
-              }
           })
       })
   }
     let issuesStr = stringify(tree);
-    console.log(issuesStr);
 
     let issuesPath: string | undefined = "";
     if (
@@ -332,7 +329,7 @@ function filterTree(patchPath: string) {
 });
 }
 
-function updateTreeWithSubTree(openedFilePath: string){
+function updateTreeWithSubTree(openedPatchPath: string){
   let issuesPath: string | undefined = "";
   if (
     workspace
@@ -348,47 +345,18 @@ function updateTreeWithSubTree(openedFilePath: string){
   Object.values(tree).forEach((issueGroup: any) => {
     issueGroup.forEach((issue: any) => {
       issue.patches.forEach((patchObj: any) => {
-        const patchPath = patchObj.path;
-        var patch = '';
-        var patch_folder = PATCH_FOLDER;
+        var patchPath = patchObj.path;
 
         if(process.platform === 'win32'){
-            if(patch_folder[0] === '/' || patch_folder[0] === '\\'){
-            patch_folder = patch_folder.substring(1);
+            if(openedPatchPath[0] === '/' || openedPatchPath[0] === '\\'){
+              openedPatchPath = openedPatchPath.substring(1);
+            }
+            if(patchPath[0] === '/' || patchPath[0] === '\\'){
+              patchPath = patchPath.substring(1);
             }
         }
 
-        try {
-            patch = readFileSync(upath.join(patch_folder, patchPath), "utf8");
-        } catch (err) {
-            console.log(err);
-        }
-
-        var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patch);
-        var sourceFilePath: string;
-
-        if (sourceFileMatch && sourceFileMatch[1]) {
-            sourceFilePath = sourceFileMatch[1];
-        } else {
-            throw Error("Unable to find source file in '" + patch + "'");
-        }
-
-        sourceFilePath = upath.normalize(upath.join(PROJECT_FOLDER, vscode.Uri.file(sourceFilePath).fsPath).toLowerCase())
-        openedFilePath = upath.normalize(vscode.Uri.file(openedFilePath!).fsPath.toLowerCase())
-        if(process.platform === 'linux' || process.platform === 'darwin'){
-            if(sourceFilePath![0] !== '/')
-              sourceFilePath = '/' + sourceFilePath
-            if(openedFilePath![0] !== '/')
-              openedFilePath = '/' + openedFilePath
-        }
-        
-        if(process.platform === 'win32'){
-            if(sourceFilePath[0] === '/' || sourceFilePath[0] === '\\'){
-              sourceFilePath = sourceFilePath.substring(1);
-            }
-        }
-
-        if(sourceFilePath === openedFilePath){
+        if(patchPath === openedPatchPath || patchPath === upath.basename(openedPatchPath)){
           filterTree(patchPath);
         }
       })
@@ -396,24 +364,54 @@ function updateTreeWithSubTree(openedFilePath: string){
   })
   try{
     var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
-    var patchJsonPaths = jsonListContent.split('\n');
-    if (patchJsonPaths.length){
-      patchJsonPaths.forEach((path:any) => {
-        if(path.length){
-          var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
-          tree = {...tree, ...patchJson};
-        }
-      });
-    }
   } catch (e){
     if (typeof e === "string") {
       logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
     } else if (e instanceof Error) {
       logging.LogErrorAndShowErrorMessage(e.message, e.message)
+      if('code' in e){
+        if((e as any).code.toString() === 'ENOENT'){
+          var adjustedIssuesPath = upath.join(upath.dirname(ANALYZER_EXE_PATH), 'results', 'jsons.lists')
+          jsonListContent = fs.readFileSync(adjustedIssuesPath!, utf8Stream);
+        }
+      }
     }
   }
+  var patchJsonPaths: string[] = []
+  if (jsonListContent)
+    patchJsonPaths = jsonListContent.split('\n');
+  var _issuesJson : any = {}
+  if (patchJsonPaths.length){
+    patchJsonPaths.forEach((path:any) => {
+      if(path.length){
+        var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
+        Object.keys(patchJson).forEach((key:any) => {
+          if(_issuesJson!.hasOwnProperty(key)){
+            patchJson[key].forEach((issue: any) => {
+              if((_issuesJson as any)[key].indexOf(issue) === -1){
+                (_issuesJson as any)[key].push(issue);
+              }
+            })
+          } else {
+            (_issuesJson as any)[key] = patchJson[key];
+          }
+        })
+      }
+    });
+    Object.keys(_issuesJson).forEach((key: any) => {
+      if(tree.hasOwnProperty(key)){
+        _issuesJson[key].forEach((_issue:any) => {
+            if(!tree[key].some((treeIssue:any) => isEqual(treeIssue, _issue))){
+              tree[key].push(_issue);
+            }
+          })
+      } else {
+        tree[key] = _issuesJson[key]
+      }
+    })
+  }
+  // tree = {...tree, ...patchJson};
 }
-
 class Key {
   constructor(readonly key: string) {}
 }
