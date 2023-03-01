@@ -11,7 +11,7 @@ let disposableAnalyzerProvider : vscode.Disposable;
 let disposableAnalyzerInfoProvider : vscode.Disposable;
 
 async function initIssues() {
-    issueGroups = await getIssues();
+    issueGroups = await getIssues(true);
     console.log(issueGroups);
 }
 
@@ -62,11 +62,11 @@ export class Analyzer implements vscode.CodeActionProvider {
     public static readonly providedCodeActionKinds = [
         vscode.CodeActionKind.QuickFix
     ];
-
+    // called whenever the user selects text or places the cursor in an area that contains a Diagnostic:
     public async provideCodeActions(document: vscode.TextDocument, range: vscode.Range): Promise<vscode.CodeAction[] | undefined> {
 
         let commandActions: vscode.CodeAction[] = [];
-        issueGroups = await getIssues();
+        issueGroups = await getIssues(true);
         if (issueGroups) {
             Object.values(issueGroups).forEach((issues: any) => {
                 issues.forEach((issue: any) => {

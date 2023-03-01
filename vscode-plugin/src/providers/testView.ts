@@ -401,7 +401,7 @@ function updateTreeWithSubTree(openedPatchPath: string){
     Object.keys(_issuesJson).forEach((key: any) => {
       if(tree.hasOwnProperty(key)){
         _issuesJson[key].forEach((_issue:any) => {
-            if(!tree[key].some((treeIssue:any) => isEqual(treeIssue, _issue))){
+            if(!tree[key].some((treeIssue:any) => isEqual(treeIssue.textRange, _issue.textRange))){
               tree[key].push(_issue);
             }
           })

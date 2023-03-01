@@ -22,7 +22,7 @@ var isEqual = require('lodash.isequal');
 //export let issues = '';
 export let issuesJson: any = {};
 
-export async function getIssues() {
+export async function getIssues(updateOriginalTree: boolean = false) {
   const readFile = util.promisify(fs.readFile);
   let issuesPath: string | undefined = "";
   if (
@@ -68,10 +68,14 @@ export async function getIssues() {
         })
       }
     });
+
+    if(updateOriginalTree)
+      return issuesJson;
+
     Object.keys(_issuesJson).forEach((key: any) => {
       if(issuesJson.hasOwnProperty(key)){
         _issuesJson[key].forEach((_issue:any) => {
-            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue, _issue))){
+            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue.textRange, _issue.textRange))){
               issuesJson[key].push(_issue);
             }
           })
@@ -150,7 +154,7 @@ export function getIssuesSync() {
     Object.keys(_issuesJson).forEach((key: any) => {
       if(issuesJson.hasOwnProperty(key)){
         _issuesJson[key].forEach((_issue:any) => {
-            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue, _issue))){
+            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue.textRange, _issue.textRange))){
               issuesJson[key].push(_issue);
             }
           })

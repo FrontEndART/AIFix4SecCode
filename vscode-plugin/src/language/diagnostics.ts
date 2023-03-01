@@ -10,7 +10,7 @@ var upath = require("upath");
 let issueGroups = {};
 
 async function initIssues() {
-  issueGroups = await getIssues();
+  issueGroups = await getIssues(true);
 }
 
 export async function refreshDiagnostics(
