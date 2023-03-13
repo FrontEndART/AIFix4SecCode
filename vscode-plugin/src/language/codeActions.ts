@@ -72,6 +72,7 @@ export class Analyzer implements vscode.CodeActionProvider {
                 issues.forEach((issue: any) => {
                 if(issue.textRange.startLine - 1 === range.start.line){
                 const fixRange = issues.textRange;
+                issue.patches.sort((a:any, b:any) => b.score - a.score);
                 issue.patches.forEach((fix: IFix) => {
                     const fixText = fix.explanation;
                     const patchPath = fix.path;

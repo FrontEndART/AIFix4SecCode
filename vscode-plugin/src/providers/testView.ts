@@ -395,6 +395,7 @@ function updateTreeWithSubTree(openedPatchPath: string){
           } else {
             (_issuesJson as any)[key] = patchJson[key];
           }
+          (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
         })
       }
     });
@@ -408,6 +409,7 @@ function updateTreeWithSubTree(openedPatchPath: string){
       } else {
         tree[key] = _issuesJson[key]
       }
+      tree[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
     })
   }
   // tree = {...tree, ...patchJson};

@@ -65,6 +65,7 @@ export async function getIssues(updateOriginalTree: boolean = false) {
           } else {
             (_issuesJson as any)[key] = patchJson[key];
           }
+          (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
         })
       }
     });
@@ -82,6 +83,7 @@ export async function getIssues(updateOriginalTree: boolean = false) {
       } else {
         issuesJson[key] = _issuesJson[key]
       }
+      (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
     })
     //issuesJson = {...issuesJson, ..._issuesJson}
     
@@ -148,6 +150,7 @@ export function getIssuesSync() {
           } else {
             (_issuesJson as any)[key] = patchJson[key];
           }
+          (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
         })
       }
     });
@@ -161,6 +164,7 @@ export function getIssuesSync() {
       } else {
         issuesJson[key] = _issuesJson[key]
       }
+      (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
     })
     //issuesJson = {...issuesJson, ..._issuesJson}
   //let result = fs.readFileSync(issuesPath!, utf8Stream);
