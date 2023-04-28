@@ -26,7 +26,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
 import static eu.assuremoss.utils.Configuration.*;
 
 public class Utils {
@@ -37,7 +36,7 @@ public class Utils {
         File[] files = new File(patchSavePath).listFiles(fileFilter);
         for (File file : files) {
             try {
-                MLOG.fInfo("Deleting" + file.getName());
+                MLogger.getActiveLogger().fInfo("Deleting " + file.getName());
                 Files.delete(Path.of(file.getAbsolutePath()));
             } catch (IOException e) {
                 LOG.error(e);
@@ -125,17 +124,34 @@ public class Utils {
 
     public static String getConfigFile(String[] args) {
         if (args.length > 0) {
-            return args[0];
+            for(int i=0;i<args.length;i++) {
+                if (args[i].startsWith("-config=")) {
+                    return (args[i].split("="))[1];
+                }
+            }
         }
-
         return DEFAULT_CONFIG_FILE_NAME;
+    }
+
+    public static String getCUFromArguments(String[] args) {
+        if (args.length > 0) {
+            for(int i=0;i<args.length;i++) {
+                if (args[i].startsWith("-cu=")) {
+                    return (args[i].split("="))[1];
+                }
+            }
+        }
+        return null;
     }
 
     public static String getMappingFile(String[] args) {
         if (args.length > 1) {
-            return args[1];
+            for(int i=0;i<args.length;i++) {
+                if (args[i].startsWith("-mapping=")) {
+                    return (args[i].split("="))[1];
+                }
+            }
         }
-
         return DEFAULT_MAPPING_FILE_NAME;
     }
 
@@ -222,6 +238,23 @@ public class Utils {
         return result;
     }
 
+    public static Set<String> getSupportedProblemTypes(Properties properties) {
+        Set<String> result = new HashSet<>();
+
+        Enumeration<String> en = (Enumeration<String>) properties.propertyNames();
+
+        while (en.hasMoreElements()) {
+            String propName = en.nextElement();
+            String propValue = properties.getProperty(propName);
+
+            if (propName.startsWith("mapping")) {
+                result.add(propValue);
+            }
+        }
+
+        return result;
+    }
+
     public static void saveElapsedTime(Date startTime) {
         Date endTime = new Date();
         long diff = endTime.getTime() - startTime.getTime();
@@ -237,7 +270,7 @@ public class Utils {
 
         long millis = TimeUnit.MILLISECONDS.toMillis(diff);
 
-        MLOG.ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
+        MLogger.getActiveLogger().ninfo(String.format("Total elapsed time: %02d:%02d:%02d.%s", hours, minutes, seconds, millis));
     }
 
     public static NodeList getNodeList(Optional<CodeModel> codeModel, String tagName) throws DataFormatException {
@@ -248,5 +281,46 @@ public class Utils {
             LOG.error(e);
             throw new DataFormatException("Error occurred while getting nodeList for: " + codeModel + "\ntagName: "+ tagName);
         }
+    }
+
+    public static NodeList getNodeList(String xmlAbsolutPath, String tagName) throws DataFormatException {
+        try {
+            Document xml = Utils.getXML(xmlAbsolutPath);
+            return xml.getElementsByTagName(tagName);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            LOG.error(e);
+            throw new DataFormatException("Error occurred while getting nodeList for: " + xmlAbsolutPath + "\ntagName: "+ tagName);
+        }
+    }
+
+    public static String getOsName() {
+        String OS_NAME = System.getProperty("os.name");
+        if (OS_NAME.contains("Windows")) return "Windows";
+        if (OS_NAME.contains("Linux")) return "Linux";
+        return OS_NAME;
+    }
+
+    public static String getWorkingDir() {
+        return System.getProperty("user.dir");
+    }
+
+    public static Optional<CodeModel> getCodeModel(List<CodeModel> analysisResults, CodeModel.MODEL_TYPES CodeModelType) throws DataFormatException {
+        Optional<CodeModel> codeModel = analysisResults.stream().filter(cm -> cm.getType() == CodeModelType).findFirst();
+        if (codeModel.isEmpty()) throw new DataFormatException("Could not locate " + CodeModelType + " analysis results, no vulnerabilities were retrieved.");
+        return codeModel;
+    }
+    /**
+     * Creates all resource files (directories, log files)
+     *
+     * @param props - a properties object that specifies the creation path of the files
+     * @param path - a pathHandler object that specifies the creation path of the files
+     */
+    public static void initResourceFiles(Properties props, PathHandler path) {
+        Utils.createDirectory(props.getProperty(RESULTS_PATH_KEY));
+        Utils.createDirectory(props.getProperty(VALIDATION_RESULTS_PATH_KEY));
+        Utils.createDirectory(path.logsDir());
+        Utils.createDirectory(path.buildDir());
+
+        Utils.createEmptyLogFile(props);
     }
 }

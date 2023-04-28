@@ -1,0 +1,21 @@
+--- src/main/java/example/ArrayDemo.java
++++ src/main/java/example/ArrayDemo.java
+@@ -29,11 +29,11 @@
+         this.permissionsToNeeded = permissionsToNeeded;
+         return this;
+-    }
+-
+-    public ArrayDemo withPermissionsToNotNeeded(String[] permissionsToNotNeeded) {
+-        this.permissionsToNotNeeded = permissionsToNotNeeded;
+-        return this;
+-    }
+-
++    }
++
++    public ArrayDemo withPermissionsToNotNeeded(String[] permissionsToNotNeeded) {
++        this.permissionsToNotNeeded = permissionsToNotNeeded.clone();
++        return this;
++    }
++
+ 
+     public ArrayDemo withActions(String[] actions) {

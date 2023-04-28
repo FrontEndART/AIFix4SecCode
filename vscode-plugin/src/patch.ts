@@ -4,11 +4,10 @@ import { getIssues } from './services/fakeAiFixCode';
 import { getSafeFsPath } from './path';
 import { utf8Stream, PROJECT_FOLDER, ANALYZER_USE_DIFF_MODE } from './constants';
 import { env } from 'process';
-import { workspace, Uri, window, ProgressLocation, commands } from 'vscode';
+import { workspace, Uri, window, ProgressLocation } from 'vscode';
 import { testView } from './commands';
 import { analysisDiagnostics } from './extension';
 import { updateUserDecisions } from './commands';
-import { getVSCodeDownloadUrl } from 'vscode-test/out/util';
 
 
 var stringify = require('json-stringify');
@@ -98,35 +97,34 @@ export function applyPatchToFile(leftPath: string, rightContent: string, patchPa
               });
             });
             }
+            console.log(issueGroups);
 
             let issuesStr = stringify(issueGroups);
+            console.log(issuesStr);
+
             let issuesPath : string | undefined = '';
             if(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')){
               issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');
             }
-            //writeFileSync(issuesPath!, issuesStr, utf8Stream);
+            writeFileSync(issuesPath!, issuesStr, utf8Stream);
 
             // 3.
-            testView.treeDataProvider?.refresh(patchPath);
             workspace.openTextDocument(leftPath).then(document => {
               window.showTextDocument(document).then(() => {
                 window.withProgress({ location: ProgressLocation.Notification, title: 'Loading Diagnostics...' }, async () => {
+                  // 4.
+                  await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
+                  
                   // User decisions are updated here in patch mode (and at extendedWebview in diff mode):
                   if(ANALYZER_USE_DIFF_MODE == "view Patch files"){
-                    updateUserDecisions('applied', patchPath, leftPath).then(() => {
-                      commands.executeCommand("aifix4seccode-vscode.getOutputFromAnalyzerPerFile");
-                      // 4.
-                      async () => {
-                        await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
-                      }
-                    })
+                    updateUserDecisions('applied', patchPath, leftPath);
                   }
-                  
-
                 });
               });
             });
+
           });
+
           window.showInformationMessage('Content saved to path: ' + leftPath);
           return leftPath;
         }

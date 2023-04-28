@@ -1,0 +1,689 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<BugCollection version="4.2.2" sequence="0" timestamp="1669887247827" analysisTimestamp="1669887476314" release="">
+  <Project projectName="">
+    <Jar>D:\Work\jasy\github\AIFix4SecCode\test-project\target\classes</Jar>
+  </Project>
+  <BugInstance type="EI_EXPOSE_REP2" priority="2" rank="18" abbrev="EI2" category="MALICIOUS_CODE" instanceHash="e7ce47c00ff5f7bf8a3747913c20bb70" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="374">
+    <ShortMessage>May expose internal representation by incorporating reference to mutable object</ShortMessage>
+    <LongMessage>example.ArrayDemo.withActions(String[]) may expose internal representation by storing an externally mutable object into ArrayDemo.actions</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Method classname="example.ArrayDemo" name="withActions" signature="([Ljava/lang/String;)Lexample/ArrayDemo;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="40" end="41" startBytecode="0" endBytecode="62" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java"/>
+      <Message>In method example.ArrayDemo.withActions(String[])</Message>
+    </Method>
+    <Field classname="example.ArrayDemo" name="actions" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.actions</Message>
+    </Field>
+    <LocalVariable name="actions" register="1" pc="2" role="LOCAL_VARIABLE_NAMED">
+      <Message>Local variable named actions</Message>
+    </LocalVariable>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="40" end="40" startBytecode="2" endBytecode="2" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 40]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="EI_EXPOSE_REP2" priority="2" rank="18" abbrev="EI2" category="MALICIOUS_CODE" instanceHash="6b1b956d085bb1400d5d564f4d4113f4" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="374">
+    <ShortMessage>May expose internal representation by incorporating reference to mutable object</ShortMessage>
+    <LongMessage>example.ArrayDemo.withPermissionsToGive(String[]) may expose internal representation by storing an externally mutable object into ArrayDemo.permissionsToGive</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Method classname="example.ArrayDemo" name="withPermissionsToGive" signature="([Ljava/lang/String;)Lexample/ArrayDemo;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="24" end="25" startBytecode="0" endBytecode="62" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java"/>
+      <Message>In method example.ArrayDemo.withPermissionsToGive(String[])</Message>
+    </Method>
+    <Field classname="example.ArrayDemo" name="permissionsToGive" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.permissionsToGive</Message>
+    </Field>
+    <LocalVariable name="permissionsToGive" register="1" pc="2" role="LOCAL_VARIABLE_NAMED">
+      <Message>Local variable named permissionsToGive</Message>
+    </LocalVariable>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="24" end="24" startBytecode="2" endBytecode="2" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 24]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="EI_EXPOSE_REP2" priority="2" rank="18" abbrev="EI2" category="MALICIOUS_CODE" instanceHash="c0d9713066dd781ac2ef4eaa105f25a3" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="374">
+    <ShortMessage>May expose internal representation by incorporating reference to mutable object</ShortMessage>
+    <LongMessage>example.ArrayDemo.withPermissionsToNeeded(String[]) may expose internal representation by storing an externally mutable object into ArrayDemo.permissionsToNeeded</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Method classname="example.ArrayDemo" name="withPermissionsToNeeded" signature="([Ljava/lang/String;)Lexample/ArrayDemo;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="29" end="30" startBytecode="0" endBytecode="62" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java"/>
+      <Message>In method example.ArrayDemo.withPermissionsToNeeded(String[])</Message>
+    </Method>
+    <Field classname="example.ArrayDemo" name="permissionsToNeeded" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.permissionsToNeeded</Message>
+    </Field>
+    <LocalVariable name="permissionsToNeeded" register="1" pc="2" role="LOCAL_VARIABLE_NAMED">
+      <Message>Local variable named permissionsToNeeded</Message>
+    </LocalVariable>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="29" end="29" startBytecode="2" endBytecode="2" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 29]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="EI_EXPOSE_REP2" priority="2" rank="18" abbrev="EI2" category="MALICIOUS_CODE" instanceHash="c3ce65d31f86c2fad00affdc3c61db66" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="374">
+    <ShortMessage>May expose internal representation by incorporating reference to mutable object</ShortMessage>
+    <LongMessage>example.ArrayDemo.withPermissionsToNotNeeded(String[]) may expose internal representation by storing an externally mutable object into ArrayDemo.permissionsToNotNeeded</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Method classname="example.ArrayDemo" name="withPermissionsToNotNeeded" signature="([Ljava/lang/String;)Lexample/ArrayDemo;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="34" end="35" startBytecode="0" endBytecode="62" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java"/>
+      <Message>In method example.ArrayDemo.withPermissionsToNotNeeded(String[])</Message>
+    </Method>
+    <Field classname="example.ArrayDemo" name="permissionsToNotNeeded" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.permissionsToNotNeeded</Message>
+    </Field>
+    <LocalVariable name="permissionsToNotNeeded" register="1" pc="2" role="LOCAL_VARIABLE_NAMED">
+      <Message>Local variable named permissionsToNotNeeded</Message>
+    </LocalVariable>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="34" end="34" startBytecode="2" endBytecode="2" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 34]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="URF_UNREAD_FIELD" priority="2" rank="18" abbrev="UrF" category="PERFORMANCE" instanceHash="38f7a5ded9765267f2ecd470aa8c5ef8" instanceOccurrenceNum="0" instanceOccurrenceMax="0">
+    <ShortMessage>Unread field</ShortMessage>
+    <LongMessage>Unread field: example.ArrayDemo.actions</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Field classname="example.ArrayDemo" name="actions" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.actions</Message>
+    </Field>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="16" end="16" startBytecode="30" endBytecode="30" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 16]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="URF_UNREAD_FIELD" priority="2" rank="18" abbrev="UrF" category="PERFORMANCE" instanceHash="fdb7d56a8ceaed9cb88eead8084c493" instanceOccurrenceNum="0" instanceOccurrenceMax="0">
+    <ShortMessage>Unread field</ShortMessage>
+    <LongMessage>Unread field: example.ArrayDemo.permissionsToGive</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Field classname="example.ArrayDemo" name="permissionsToGive" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.permissionsToGive</Message>
+    </Field>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="13" end="13" startBytecode="6" endBytecode="6" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 13]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="URF_UNREAD_FIELD" priority="2" rank="18" abbrev="UrF" category="PERFORMANCE" instanceHash="733fc1c78a99c6c8bd3d3eafc6115481" instanceOccurrenceNum="0" instanceOccurrenceMax="0">
+    <ShortMessage>Unread field</ShortMessage>
+    <LongMessage>Unread field: example.ArrayDemo.permissionsToNeeded</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Field classname="example.ArrayDemo" name="permissionsToNeeded" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.permissionsToNeeded</Message>
+    </Field>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="14" end="14" startBytecode="14" endBytecode="14" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 14]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="URF_UNREAD_FIELD" priority="2" rank="18" abbrev="UrF" category="PERFORMANCE" instanceHash="d99e9fb5c5d68f6cfd7d051aa7f275e0" instanceOccurrenceNum="0" instanceOccurrenceMax="0">
+    <ShortMessage>Unread field</ShortMessage>
+    <LongMessage>Unread field: example.ArrayDemo.permissionsToNotNeeded</LongMessage>
+    <Class classname="example.ArrayDemo" primary="true">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>In class example.ArrayDemo</Message>
+    </Class>
+    <Field classname="example.ArrayDemo" name="permissionsToNotNeeded" signature="[Ljava/lang/String;" isStatic="false" primary="true">
+      <SourceLine classname="example.ArrayDemo" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>In ArrayDemo.java</Message>
+      </SourceLine>
+      <Message>Field example.ArrayDemo.permissionsToNotNeeded</Message>
+    </Field>
+    <SourceLine classname="example.ArrayDemo" primary="true" start="15" end="15" startBytecode="22" endBytecode="22" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+      <Message>At ArrayDemo.java:[line 15]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="FI_PUBLIC_SHOULD_BE_PROTECTED" priority="2" rank="18" abbrev="FI" category="MALICIOUS_CODE" instanceHash="a28973c391126b5631fe5515f4fdc096" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="583">
+    <ShortMessage>Finalizer should be protected, not public</ShortMessage>
+    <LongMessage>example.FinalizeExample.finalize() is public; should be protected</LongMessage>
+    <Class classname="example.FinalizeExample" primary="true">
+      <SourceLine classname="example.FinalizeExample" start="2" end="17" sourcefile="FinalizeExample.java" sourcepath="example/FinalizeExample.java">
+        <Message>At FinalizeExample.java:[lines 2-17]</Message>
+      </SourceLine>
+      <Message>In class example.FinalizeExample</Message>
+    </Class>
+    <Method classname="example.FinalizeExample" name="finalize" signature="()V" isStatic="false" primary="true">
+      <SourceLine classname="example.FinalizeExample" start="16" end="17" startBytecode="0" endBytecode="54" sourcefile="FinalizeExample.java" sourcepath="example/FinalizeExample.java"/>
+      <Message>In method example.FinalizeExample.finalize()</Message>
+    </Method>
+    <SourceLine classname="example.FinalizeExample" start="16" end="17" startBytecode="0" endBytecode="54" sourcefile="FinalizeExample.java" sourcepath="example/FinalizeExample.java" synthetic="true">
+      <Message>At FinalizeExample.java:[lines 16-17]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="MS_SHOULD_BE_FINAL" priority="1" rank="16" abbrev="MS" category="MALICIOUS_CODE" instanceHash="c320b11787be7805f74acb9569bf3738" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="218">
+    <ShortMessage>Field isn&apos;t final but should be</ShortMessage>
+    <LongMessage>example.Main.MY_CONSTANT isn&apos;t final but should be</LongMessage>
+    <Class classname="example.Main" primary="true">
+      <SourceLine classname="example.Main" start="2" end="14" sourcefile="Main.java" sourcepath="example/Main.java">
+        <Message>At Main.java:[lines 2-14]</Message>
+      </SourceLine>
+      <Message>In class example.Main</Message>
+    </Class>
+    <Field classname="example.Main" name="MY_CONSTANT" signature="Ljava/lang/String;" isStatic="true" primary="true">
+      <SourceLine classname="example.Main" sourcefile="Main.java" sourcepath="example/Main.java">
+        <Message>In Main.java</Message>
+      </SourceLine>
+      <Message>Field example.Main.MY_CONSTANT</Message>
+    </Field>
+    <SourceLine classname="example.Main" primary="true" start="3" end="3" startBytecode="2" endBytecode="2" sourcefile="Main.java" sourcepath="example/Main.java">
+      <Message>At Main.java:[line 3]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="UC_USELESS_OBJECT" priority="2" rank="17" abbrev="UC" category="STYLE" instanceHash="615d97ea085490fc7b7446193aeee507" instanceOccurrenceNum="0" instanceOccurrenceMax="0">
+    <ShortMessage>Useless object created</ShortMessage>
+    <LongMessage>Useless object stored in variable ad of method example.Main.main(String[])</LongMessage>
+    <Class classname="example.Main" primary="true">
+      <SourceLine classname="example.Main" start="2" end="14" sourcefile="Main.java" sourcepath="example/Main.java">
+        <Message>At Main.java:[lines 2-14]</Message>
+      </SourceLine>
+      <Message>In class example.Main</Message>
+    </Class>
+    <Method classname="example.Main" name="main" signature="([Ljava/lang/String;)V" isStatic="true" primary="true">
+      <SourceLine classname="example.Main" start="6" end="14" startBytecode="0" endBytecode="137" sourcefile="Main.java" sourcepath="example/Main.java"/>
+      <Message>In method example.Main.main(String[])</Message>
+    </Method>
+    <String value="ad">
+      <Message>Value ad</Message>
+    </String>
+    <Type descriptor="Lexample/ArrayDemo;">
+      <SourceLine classname="example.ArrayDemo" start="13" end="41" sourcefile="ArrayDemo.java" sourcepath="example/ArrayDemo.java">
+        <Message>At ArrayDemo.java:[lines 13-41]</Message>
+      </SourceLine>
+      <Message>Type example.ArrayDemo</Message>
+    </Type>
+    <SourceLine classname="example.Main" primary="true" start="12" end="12" startBytecode="41" endBytecode="41" sourcefile="Main.java" sourcepath="example/Main.java">
+      <Message>At Main.java:[line 12]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="EI_EXPOSE_REP" priority="2" rank="18" abbrev="EI" category="MALICIOUS_CODE" instanceHash="47c01b841cd1b8d00354c199d8cf9be" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="374">
+    <ShortMessage>May expose internal representation by returning reference to mutable object</ShortMessage>
+    <LongMessage>example.MyDate.getDate() may expose internal representation by returning MyDate.date</LongMessage>
+    <Class classname="example.MyDate" primary="true">
+      <SourceLine classname="example.MyDate" start="7" end="20" sourcefile="MyDate.java" sourcepath="example/MyDate.java">
+        <Message>At MyDate.java:[lines 7-20]</Message>
+      </SourceLine>
+      <Message>In class example.MyDate</Message>
+    </Class>
+    <Method classname="example.MyDate" name="getDate" signature="()Ljava/util/Date;" isStatic="false" primary="true">
+      <SourceLine classname="example.MyDate" start="12" end="12" startBytecode="0" endBytecode="46" sourcefile="MyDate.java" sourcepath="example/MyDate.java"/>
+      <Message>In method example.MyDate.getDate()</Message>
+    </Method>
+    <Field classname="example.MyDate" name="date" signature="Ljava/util/Date;" isStatic="false" primary="true">
+      <SourceLine classname="example.MyDate" sourcefile="MyDate.java" sourcepath="example/MyDate.java">
+        <Message>In MyDate.java</Message>
+      </SourceLine>
+      <Message>Field example.MyDate.date</Message>
+    </Field>
+    <SourceLine classname="example.MyDate" primary="true" start="12" end="12" startBytecode="4" endBytecode="4" sourcefile="MyDate.java" sourcepath="example/MyDate.java">
+      <Message>At MyDate.java:[line 12]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="EI_EXPOSE_REP2" priority="2" rank="18" abbrev="EI2" category="MALICIOUS_CODE" instanceHash="edaa4e28038cfb7e8857cbae76cd05b3" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="374">
+    <ShortMessage>May expose internal representation by incorporating reference to mutable object</ShortMessage>
+    <LongMessage>example.MyDate.setDate(Date) may expose internal representation by storing an externally mutable object into MyDate.date</LongMessage>
+    <Class classname="example.MyDate" primary="true">
+      <SourceLine classname="example.MyDate" start="7" end="20" sourcefile="MyDate.java" sourcepath="example/MyDate.java">
+        <Message>At MyDate.java:[lines 7-20]</Message>
+      </SourceLine>
+      <Message>In class example.MyDate</Message>
+    </Class>
+    <Method classname="example.MyDate" name="setDate" signature="(Ljava/util/Date;)V" isStatic="false" primary="true">
+      <SourceLine classname="example.MyDate" start="16" end="17" startBytecode="0" endBytecode="61" sourcefile="MyDate.java" sourcepath="example/MyDate.java"/>
+      <Message>In method example.MyDate.setDate(Date)</Message>
+    </Method>
+    <Field classname="example.MyDate" name="date" signature="Ljava/util/Date;" isStatic="false" primary="true">
+      <SourceLine classname="example.MyDate" sourcefile="MyDate.java" sourcepath="example/MyDate.java">
+        <Message>In MyDate.java</Message>
+      </SourceLine>
+      <Message>Field example.MyDate.date</Message>
+    </Field>
+    <LocalVariable name="date" register="1" pc="2" role="LOCAL_VARIABLE_NAMED">
+      <Message>Local variable named date</Message>
+    </LocalVariable>
+    <SourceLine classname="example.MyDate" primary="true" start="16" end="16" startBytecode="2" endBytecode="2" sourcefile="MyDate.java" sourcepath="example/MyDate.java">
+      <Message>At MyDate.java:[line 16]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="NP_NULL_ON_SOME_PATH" priority="1" rank="6" abbrev="NP" category="CORRECTNESS" instanceHash="5b79b1bed7cdadc1b452d0b43a661d69" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="476">
+    <ShortMessage>Possible null pointer dereference</ShortMessage>
+    <LongMessage>Possible null pointer dereference of null in example.NullPath.foo(String)</LongMessage>
+    <Class classname="example.NullPath" primary="true">
+      <SourceLine classname="example.NullPath" start="3" end="20" sourcefile="NullPath.java" sourcepath="example/NullPath.java">
+        <Message>At NullPath.java:[lines 3-20]</Message>
+      </SourceLine>
+      <Message>In class example.NullPath</Message>
+    </Class>
+    <Method classname="example.NullPath" name="foo" signature="(Ljava/lang/String;)I" isStatic="true" primary="true">
+      <SourceLine classname="example.NullPath" start="5" end="12" startBytecode="0" endBytecode="148" sourcefile="NullPath.java" sourcepath="example/NullPath.java"/>
+      <Message>In method example.NullPath.foo(String)</Message>
+    </Method>
+    <String value="null" role="STRING_NONSTRING_CONSTANT">
+      <Message>Constant value null</Message>
+    </String>
+    <SourceLine classname="example.NullPath" primary="true" start="7" end="7" startBytecode="12" endBytecode="12" sourcefile="NullPath.java" sourcepath="example/NullPath.java" role="SOURCE_LINE_DEREF">
+      <Message>Dereferenced at NullPath.java:[line 7]</Message>
+    </SourceLine>
+    <SourceLine classname="example.NullPath" start="6" end="6" startBytecode="10" endBytecode="10" sourcefile="NullPath.java" sourcepath="example/NullPath.java" role="SOURCE_LINE_KNOWN_NULL">
+      <Message>Known null at NullPath.java:[line 6]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="NP_NULL_PARAM_DEREF" priority="2" rank="8" abbrev="NP" category="CORRECTNESS" instanceHash="c21e7c785a75a909ccbe269c82563cf" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="476">
+    <ShortMessage>Method call passes null for non-null parameter</ShortMessage>
+    <LongMessage>Null passed for non-null parameter of foo(String) in example.NullPath.main(String[])</LongMessage>
+    <Class classname="example.NullPath" primary="true">
+      <SourceLine classname="example.NullPath" start="3" end="20" sourcefile="NullPath.java" sourcepath="example/NullPath.java">
+        <Message>At NullPath.java:[lines 3-20]</Message>
+      </SourceLine>
+      <Message>In class example.NullPath</Message>
+    </Class>
+    <Method classname="example.NullPath" name="main" signature="([Ljava/lang/String;)V" isStatic="true" primary="true">
+      <SourceLine classname="example.NullPath" start="16" end="20" startBytecode="0" endBytecode="98" sourcefile="NullPath.java" sourcepath="example/NullPath.java"/>
+      <Message>In method example.NullPath.main(String[])</Message>
+    </Method>
+    <Method classname="example.NullPath" name="foo" signature="(Ljava/lang/String;)I" isStatic="true" role="METHOD_CALLED">
+      <SourceLine classname="example.NullPath" start="5" end="12" startBytecode="0" endBytecode="148" sourcefile="NullPath.java" sourcepath="example/NullPath.java"/>
+      <Message>Called method example.NullPath.foo(String)</Message>
+    </Method>
+    <Int value="1" role="INT_MAYBE_NULL_ARG">
+      <Message>Argument 1 might be null but must not be null</Message>
+    </Int>
+    <LocalVariable name="str" register="1" pc="4" role="LOCAL_VARIABLE_VALUE_OF">
+      <Message>Value loaded from str</Message>
+    </LocalVariable>
+    <SourceLine classname="example.NullPath" primary="true" start="19" end="19" startBytecode="12" endBytecode="12" sourcefile="NullPath.java" sourcepath="example/NullPath.java" role="SOURCE_LINE_INVOKED">
+      <Message>Method invoked at NullPath.java:[line 19]</Message>
+    </SourceLine>
+    <SourceLine classname="example.NullPath" start="16" end="16" startBytecode="0" endBytecode="0" sourcefile="NullPath.java" sourcepath="example/NullPath.java" role="SOURCE_LINE_NULL_VALUE">
+      <Message>Null value at NullPath.java:[line 16]</Message>
+    </SourceLine>
+    <SourceLine classname="example.NullPath" start="17" end="17" startBytecode="5" endBytecode="5" sourcefile="NullPath.java" sourcepath="example/NullPath.java" role="SOURCE_LINE_KNOWN_NULL">
+      <Message>Known null at NullPath.java:[line 17]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="MS_MUTABLE_ARRAY" priority="1" rank="16" abbrev="MS" category="MALICIOUS_CODE" instanceHash="b6d1f3cfcff88f297a82214aa2b5dbb5" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="218">
+    <ShortMessage>Field is a mutable array</ShortMessage>
+    <LongMessage>example.a.Mutable.array is a mutable array</LongMessage>
+    <Class classname="example.a.Mutable" primary="true">
+      <SourceLine classname="example.a.Mutable" start="6" end="31" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>At Mutable.java:[lines 6-31]</Message>
+      </SourceLine>
+      <Message>In class example.a.Mutable</Message>
+    </Class>
+    <Field classname="example.a.Mutable" name="array" signature="[Ljava/lang/String;" isStatic="true" primary="true">
+      <SourceLine classname="example.a.Mutable" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>In Mutable.java</Message>
+      </SourceLine>
+      <Message>Field example.a.Mutable.array</Message>
+    </Field>
+    <SourceLine classname="example.a.Mutable" primary="true" start="9" end="9" startBytecode="34" endBytecode="34" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+      <Message>At Mutable.java:[line 9]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="MS_MUTABLE_COLLECTION" priority="1" rank="16" abbrev="MS" category="MALICIOUS_CODE" instanceHash="d4f20c77d78223e3b9750c018d2004d6" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="218">
+    <ShortMessage>Field is a mutable collection</ShortMessage>
+    <LongMessage>example.a.Mutable.mySet is a mutable collection</LongMessage>
+    <Class classname="example.a.Mutable" primary="true">
+      <SourceLine classname="example.a.Mutable" start="6" end="31" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>At Mutable.java:[lines 6-31]</Message>
+      </SourceLine>
+      <Message>In class example.a.Mutable</Message>
+    </Class>
+    <Field classname="example.a.Mutable" name="mySet" signature="Ljava/util/Set;" isStatic="true" primary="true">
+      <SourceLine classname="example.a.Mutable" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>In Mutable.java</Message>
+      </SourceLine>
+      <Message>Field example.a.Mutable.mySet</Message>
+    </Field>
+    <SourceLine classname="example.a.Mutable" primary="true" start="7" end="7" startBytecode="7" endBytecode="7" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+      <Message>At Mutable.java:[line 7]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="MS_MUTABLE_COLLECTION_PKGPROTECT" priority="2" rank="18" abbrev="MS" category="MALICIOUS_CODE" instanceHash="fb470d52e44e87c98870f1756a1a7d75" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="218">
+    <ShortMessage>Field is a mutable collection which should be package protected</ShortMessage>
+    <LongMessage>example.a.Mutable.mySet2 is a mutable collection which should be package protected</LongMessage>
+    <Class classname="example.a.Mutable" primary="true">
+      <SourceLine classname="example.a.Mutable" start="6" end="31" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>At Mutable.java:[lines 6-31]</Message>
+      </SourceLine>
+      <Message>In class example.a.Mutable</Message>
+    </Class>
+    <Field classname="example.a.Mutable" name="mySet2" signature="Ljava/util/Set;" isStatic="true" primary="true">
+      <SourceLine classname="example.a.Mutable" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>In Mutable.java</Message>
+      </SourceLine>
+      <Message>Field example.a.Mutable.mySet2</Message>
+    </Field>
+    <SourceLine classname="example.a.Mutable" primary="true" start="8" end="8" startBytecode="17" endBytecode="17" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+      <Message>At Mutable.java:[line 8]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="MS_PKGPROTECT" priority="2" rank="18" abbrev="MS" category="MALICIOUS_CODE" instanceHash="3ee9382387be610e6c71dd708dd39c65" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="218">
+    <ShortMessage>Field should be package protected</ShortMessage>
+    <LongMessage>example.a.Mutable.array2 should be package protected</LongMessage>
+    <Class classname="example.a.Mutable" primary="true">
+      <SourceLine classname="example.a.Mutable" start="6" end="31" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>At Mutable.java:[lines 6-31]</Message>
+      </SourceLine>
+      <Message>In class example.a.Mutable</Message>
+    </Class>
+    <Field classname="example.a.Mutable" name="array2" signature="[Ljava/lang/String;" isStatic="true" primary="true">
+      <SourceLine classname="example.a.Mutable" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+        <Message>In Mutable.java</Message>
+      </SourceLine>
+      <Message>Field example.a.Mutable.array2</Message>
+    </Field>
+    <SourceLine classname="example.a.Mutable" primary="true" start="10" end="10" startBytecode="51" endBytecode="51" sourcefile="Mutable.java" sourcepath="example/a/Mutable.java">
+      <Message>At Mutable.java:[line 10]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="MS_MUTABLE_COLLECTION" priority="1" rank="16" abbrev="MS" category="MALICIOUS_CODE" instanceHash="6be56244a59e674f6f7192fa5969e730" instanceOccurrenceNum="0" instanceOccurrenceMax="0" cweid="218">
+    <ShortMessage>Field is a mutable collection</ShortMessage>
+    <LongMessage>example.a.MutableInit.mySet2 is a mutable collection</LongMessage>
+    <Class classname="example.a.MutableInit" primary="true">
+      <SourceLine classname="example.a.MutableInit" start="7" end="13" sourcefile="MutableInit.java" sourcepath="example/a/MutableInit.java">
+        <Message>At MutableInit.java:[lines 7-13]</Message>
+      </SourceLine>
+      <Message>In class example.a.MutableInit</Message>
+    </Class>
+    <Field classname="example.a.MutableInit" name="mySet2" signature="Ljava/util/Set;" isStatic="true" primary="true">
+      <SourceLine classname="example.a.MutableInit" sourcefile="MutableInit.java" sourcepath="example/a/MutableInit.java">
+        <Message>In MutableInit.java</Message>
+      </SourceLine>
+      <Message>Field example.a.MutableInit.mySet2</Message>
+    </Field>
+    <SourceLine classname="example.a.MutableInit" primary="true" start="8" end="8" startBytecode="24" endBytecode="24" sourcefile="MutableInit.java" sourcepath="example/a/MutableInit.java">
+      <Message>At MutableInit.java:[line 8]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugInstance type="URF_UNREAD_FIELD" priority="2" rank="18" abbrev="UrF" category="PERFORMANCE" instanceHash="31ecf2272a27be32d9d029524f5d6c9f" instanceOccurrenceNum="0" instanceOccurrenceMax="0">
+    <ShortMessage>Unread field</ShortMessage>
+    <LongMessage>Unread field: example.a.MutableInit.list2</LongMessage>
+    <Class classname="example.a.MutableInit" primary="true">
+      <SourceLine classname="example.a.MutableInit" start="7" end="13" sourcefile="MutableInit.java" sourcepath="example/a/MutableInit.java">
+        <Message>At MutableInit.java:[lines 7-13]</Message>
+      </SourceLine>
+      <Message>In class example.a.MutableInit</Message>
+    </Class>
+    <Field classname="example.a.MutableInit" name="list2" signature="Ljava/util/List;" isStatic="false" primary="true">
+      <SourceLine classname="example.a.MutableInit" sourcefile="MutableInit.java" sourcepath="example/a/MutableInit.java">
+        <Message>In MutableInit.java</Message>
+      </SourceLine>
+      <Message>Field example.a.MutableInit.list2</Message>
+    </Field>
+    <SourceLine classname="example.a.MutableInit" primary="true" start="9" end="9" startBytecode="14" endBytecode="14" sourcefile="MutableInit.java" sourcepath="example/a/MutableInit.java">
+      <Message>At MutableInit.java:[line 9]</Message>
+    </SourceLine>
+  </BugInstance>
+  <BugCategory category="MALICIOUS_CODE">
+    <Description>Malicious code vulnerability</Description>
+  </BugCategory>
+  <BugCategory category="PERFORMANCE">
+    <Description>Performance</Description>
+  </BugCategory>
+  <BugCategory category="CORRECTNESS">
+    <Description>Correctness</Description>
+  </BugCategory>
+  <BugCategory category="STYLE">
+    <Description>Dodgy code</Description>
+  </BugCategory>
+  <BugPattern type="FI_PUBLIC_SHOULD_BE_PROTECTED" abbrev="FI" category="MALICIOUS_CODE" cweid="583">
+    <ShortDescription>Finalizer should be protected, not public</ShortDescription>
+    <Details><![CDATA[
+
+  <p> A class's <code>finalize()</code> method should have protected access,
+   not public.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="EI_EXPOSE_REP2" abbrev="EI2" category="MALICIOUS_CODE" cweid="374">
+    <ShortDescription>May expose internal representation by incorporating reference to mutable object</ShortDescription>
+    <Details><![CDATA[
+
+  <p> This code stores a reference to an externally mutable object into the
+  internal representation of the object.&nbsp;
+   If instances
+   are accessed by untrusted code, and unchecked changes to
+   the mutable object would compromise security or other
+   important properties, you will need to do something different.
+  Storing a copy of the object is better approach in many situations.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="MS_MUTABLE_COLLECTION" abbrev="MS" category="MALICIOUS_CODE">
+    <ShortDescription>Field is a mutable collection</ShortDescription>
+    <Details><![CDATA[
+
+ <p>A mutable collection instance is assigned to a final static field,
+   thus can be changed by malicious code or by accident from another package.
+   Consider wrapping this field into Collections.unmodifiableSet/List/Map/etc.
+   to avoid this vulnerability.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="EI_EXPOSE_REP" abbrev="EI" category="MALICIOUS_CODE" cweid="374">
+    <ShortDescription>May expose internal representation by returning reference to mutable object</ShortDescription>
+    <Details><![CDATA[
+
+  <p> Returning a reference to a mutable object value stored in one of the object's fields
+  exposes the internal representation of the object.&nbsp;
+   If instances
+   are accessed by untrusted code, and unchecked changes to
+   the mutable object would compromise security or other
+   important properties, you will need to do something different.
+  Returning a new copy of the object is better approach in many situations.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="NP_NULL_ON_SOME_PATH" abbrev="NP" category="CORRECTNESS">
+    <ShortDescription>Possible null pointer dereference</ShortDescription>
+    <Details><![CDATA[
+
+<p> There is a branch of statement that, <em>if executed,</em>  guarantees that
+a null value will be dereferenced, which
+would generate a <code>NullPointerException</code> when the code is executed.
+Of course, the problem might be that the branch or statement is infeasible and that
+the null pointer exception can't ever be executed; deciding that is beyond the ability of SpotBugs.
+</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="MS_MUTABLE_COLLECTION_PKGPROTECT" abbrev="MS" category="MALICIOUS_CODE">
+    <ShortDescription>Field is a mutable collection which should be package protected</ShortDescription>
+    <Details><![CDATA[
+
+ <p>A mutable collection instance is assigned to a final static field,
+   thus can be changed by malicious code or by accident from another package.
+   The field could be made package protected to avoid this vulnerability.
+   Alternatively you may wrap this field into Collections.unmodifiableSet/List/Map/etc.
+   to avoid this vulnerability.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="NP_NULL_PARAM_DEREF" abbrev="NP" category="CORRECTNESS">
+    <ShortDescription>Method call passes null for non-null parameter</ShortDescription>
+    <Details><![CDATA[
+      
+      <p>
+      This method call passes a null value for a non-null method parameter.
+    Either the parameter is annotated as a parameter that should
+    always be non-null, or analysis has shown that it will always be
+    dereferenced.
+      </p>
+      
+   ]]></Details>
+  </BugPattern>
+  <BugPattern type="MS_SHOULD_BE_FINAL" abbrev="MS" category="MALICIOUS_CODE">
+    <ShortDescription>Field isn&apos;t final but should be</ShortDescription>
+    <Details><![CDATA[
+
+   <p>
+This static field public but not final, and
+could be changed by malicious code or
+        by accident from another package.
+        The field could be made final to avoid
+        this vulnerability.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="UC_USELESS_OBJECT" abbrev="UC" category="STYLE">
+    <ShortDescription>Useless object created</ShortDescription>
+    <Details><![CDATA[
+
+<p>Our analysis shows that this object is useless.
+It's created and modified, but its value never go outside of the method or produce any side-effect.
+Either there is a mistake and object was intended to be used or it can be removed.</p>
+<p>This analysis rarely produces false-positives. Common false-positive cases include:</p>
+<p>- This object used to implicitly throw some obscure exception.</p>
+<p>- This object used as a stub to generalize the code.</p>
+<p>- This object used to hold strong references to weak/soft-referenced objects.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="URF_UNREAD_FIELD" abbrev="UrF" category="PERFORMANCE">
+    <ShortDescription>Unread field</ShortDescription>
+    <Details><![CDATA[
+
+  <p> This field is never read.&nbsp; Consider removing it from the class.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="MS_MUTABLE_ARRAY" abbrev="MS" category="MALICIOUS_CODE">
+    <ShortDescription>Field is a mutable array</ShortDescription>
+    <Details><![CDATA[
+
+<p> A final static field references an array
+   and can be accessed by malicious code or
+        by accident from another package.
+   This code can freely modify the contents of the array.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugPattern type="MS_PKGPROTECT" abbrev="MS" category="MALICIOUS_CODE">
+    <ShortDescription>Field should be package protected</ShortDescription>
+    <Details><![CDATA[
+
+  <p> A mutable static field could be changed by malicious code or
+   by accident.
+   The field could be made package protected to avoid
+   this vulnerability.</p>
+
+    ]]></Details>
+  </BugPattern>
+  <BugCode abbrev="NP" cweid="476">
+    <Description>Null pointer dereference</Description>
+  </BugCode>
+  <BugCode abbrev="FI" cweid="586">
+    <Description>Incorrect use of finalizers</Description>
+  </BugCode>
+  <BugCode abbrev="EI">
+    <Description>Method returning array may expose internal representation</Description>
+  </BugCode>
+  <BugCode abbrev="MS" cweid="218">
+    <Description>Mutable static field</Description>
+  </BugCode>
+  <BugCode abbrev="UrF">
+    <Description>Unread field</Description>
+  </BugCode>
+  <BugCode abbrev="UC">
+    <Description>Useless code</Description>
+  </BugCode>
+  <BugCode abbrev="EI2">
+    <Description>Storing reference to mutable object</Description>
+  </BugCode>
+  <Errors errors="0" missingClasses="0"></Errors>
+  <FindBugsSummary timestamp="Thu, 1 Dec 2022 10:34:07 +0100" total_classes="8" referenced_classes="27" total_bugs="21" total_size="124" num_packages="3" java_version="11.0.8" vm_version="11.0.8+10-LTS" cpu_seconds="14.80" clock_seconds="3.42" peak_mbytes="295.20" alloc_mbytes="768.00" gc_seconds="0.00" priority_2="16" priority_1="5">
+    <FileStats path="example/ArrayDemo.java" bugCount="8" size="26" bugHash="9ac88c358654d14fc6b15d70dcae540f"/>
+    <FileStats path="example/FinalizeExample.java" bugCount="1" size="13" bugHash="b9de09ddcc3afe93032d92e25a4778e1"/>
+    <FileStats path="example/Main.java" bugCount="2" size="14" bugHash="1d9b6a8f03efd00dc488ced9cb3f17e4"/>
+    <FileStats path="example/MyDate.java" bugCount="2" size="12" bugHash="7d39fdaf662f49b516e016e27088449e"/>
+    <FileStats path="example/NullPath.java" bugCount="2" size="16" bugHash="ad6713ead373238a1889e8432399cef6"/>
+    <FileStats path="example/a/Mutable.java" bugCount="4" size="23" bugHash="881f9b5ae2ce80743253833740d6d661"/>
+    <FileStats path="example/a/MutableInit.java" bugCount="2" size="10" bugHash="3914f9f848f4c6255442221554c55e74"/>
+    <FileStats path="example/b/B.java" bugCount="0" size="10"/>
+    <PackageStats package="example" total_bugs="15" total_types="5" total_size="81" priority_2="13" priority_1="2">
+      <ClassStats class="example.ArrayDemo" sourceFile="ArrayDemo.java" interface="false" size="26" bugs="8" priority_2="8"/>
+      <ClassStats class="example.FinalizeExample" sourceFile="FinalizeExample.java" interface="false" size="13" bugs="1" priority_2="1"/>
+      <ClassStats class="example.Main" sourceFile="Main.java" interface="false" size="14" bugs="2" priority_2="1" priority_1="1"/>
+      <ClassStats class="example.MyDate" sourceFile="MyDate.java" interface="false" size="12" bugs="2" priority_2="2"/>
+      <ClassStats class="example.NullPath" sourceFile="NullPath.java" interface="false" size="16" bugs="2" priority_2="1" priority_1="1"/>
+    </PackageStats>
+    <PackageStats package="example.a" total_bugs="6" total_types="2" total_size="33" priority_2="3" priority_1="3">
+      <ClassStats class="example.a.Mutable" sourceFile="Mutable.java" interface="false" size="23" bugs="4" priority_2="2" priority_1="2"/>
+      <ClassStats class="example.a.MutableInit" sourceFile="MutableInit.java" interface="false" size="10" bugs="2" priority_2="1" priority_1="1"/>
+    </PackageStats>
+    <PackageStats package="example.b" total_bugs="0" total_types="1" total_size="10">
+      <ClassStats class="example.b.B" sourceFile="B.java" interface="false" size="10" bugs="0"/>
+    </PackageStats>
+    <FindBugsProfile>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine" totalMilliseconds="739" invocations="449" avgMicrosecondsPerInvocation="1647" maxMicrosecondsPerInvocation="26161" standardDeviationMicrosecondsPerInvocation="3270"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FieldItemSummary" totalMilliseconds="202" invocations="27" avgMicrosecondsPerInvocation="7496" maxMicrosecondsPerInvocation="37532" standardDeviationMicrosecondsPerInvocation="10884"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FindNoSideEffectMethods" totalMilliseconds="158" invocations="27" avgMicrosecondsPerInvocation="5879" maxMicrosecondsPerInvocation="42427" standardDeviationMicrosecondsPerInvocation="9911"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.ClassDataAnalysisEngine" totalMilliseconds="154" invocations="451" avgMicrosecondsPerInvocation="342" maxMicrosecondsPerInvocation="8282" standardDeviationMicrosecondsPerInvocation="443"/>
+      <ClassProfile name="edu.umd.cs.findbugs.OpcodeStack$JumpInfoFactory" totalMilliseconds="119" invocations="151" avgMicrosecondsPerInvocation="790" maxMicrosecondsPerInvocation="14944" standardDeviationMicrosecondsPerInvocation="1400"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.MethodGenFactory" totalMilliseconds="70" invocations="30" avgMicrosecondsPerInvocation="2347" maxMicrosecondsPerInvocation="62341" standardDeviationMicrosecondsPerInvocation="11144"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.NoteDirectlyRelevantTypeQualifiers" totalMilliseconds="69" invocations="27" avgMicrosecondsPerInvocation="2590" maxMicrosecondsPerInvocation="20658" standardDeviationMicrosecondsPerInvocation="4483"/>
+      <ClassProfile name="edu.umd.cs.findbugs.util.TopologicalSort" totalMilliseconds="66" invocations="414" avgMicrosecondsPerInvocation="160" maxMicrosecondsPerInvocation="2440" standardDeviationMicrosecondsPerInvocation="295"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FunctionsThatMightBeMistakenForProcedures" totalMilliseconds="60" invocations="27" avgMicrosecondsPerInvocation="2253" maxMicrosecondsPerInvocation="11313" standardDeviationMicrosecondsPerInvocation="3341"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.JavaClassAnalysisEngine" totalMilliseconds="50" invocations="47" avgMicrosecondsPerInvocation="1066" maxMicrosecondsPerInvocation="22236" standardDeviationMicrosecondsPerInvocation="3328"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.OverridingEqualsNotSymmetrical" totalMilliseconds="47" invocations="27" avgMicrosecondsPerInvocation="1762" maxMicrosecondsPerInvocation="15694" standardDeviationMicrosecondsPerInvocation="3409"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.BuildStringPassthruGraph" totalMilliseconds="46" invocations="27" avgMicrosecondsPerInvocation="1721" maxMicrosecondsPerInvocation="12550" standardDeviationMicrosecondsPerInvocation="3014"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.BuildObligationPolicyDatabase" totalMilliseconds="42" invocations="27" avgMicrosecondsPerInvocation="1567" maxMicrosecondsPerInvocation="8819" standardDeviationMicrosecondsPerInvocation="2150"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.TypeDataflowFactory" totalMilliseconds="39" invocations="30" avgMicrosecondsPerInvocation="1330" maxMicrosecondsPerInvocation="19299" standardDeviationMicrosecondsPerInvocation="3410"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.IsNullValueDataflowFactory" totalMilliseconds="39" invocations="30" avgMicrosecondsPerInvocation="1324" maxMicrosecondsPerInvocation="16778" standardDeviationMicrosecondsPerInvocation="2990"/>
+      <ClassProfile name="edu.umd.cs.findbugs.ba.npe.NullDerefAndRedundantComparisonFinder" totalMilliseconds="38" invocations="30" avgMicrosecondsPerInvocation="1288" maxMicrosecondsPerInvocation="7590" standardDeviationMicrosecondsPerInvocation="1598"/>
+    </FindBugsProfile>
+  </FindBugsSummary>
+  <ClassFeatures></ClassFeatures>
+  <History></History>
+</BugCollection>

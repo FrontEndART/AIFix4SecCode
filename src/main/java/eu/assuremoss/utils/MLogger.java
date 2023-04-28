@@ -1,24 +1,63 @@
 package eu.assuremoss.utils;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import static eu.assuremoss.utils.Configuration.RESULTS_PATH_KEY;
 
 public class MLogger {
-    public Writer fileWriter;
-    public String logFileName;
+    public static MLogger activeLogger = null;
+    private PrintStream fileWriter;
+    private PrintStream unitTestInfoWriter;
+    private String logFileDir;
+    private String logFileName;
     public String logFilePath;
+    private final String unitTestsPathes;
 
-    public MLogger(Properties props, String logFileName) throws IOException {
+
+    public MLogger(String logFileName, PathHandler path, boolean isTestingEnabled) throws IOException {
         this.logFileName = logFileName;
-        this.logFilePath = logFilePath(props);
-        this.fileWriter = new FileWriter(logFilePath);
+        //this.logFilePath = logFilePath(Paths.get(resultDir/*props.getProperty(RESULTS_PATH_KEY))*/));
+        this.logFilePath = String.valueOf(Paths.get(path.getResultsPath(), "logs", logFileName));
+        this.fileWriter = new PrintStream(logFilePath);
+        if (isTestingEnabled/*Configuration.isTestingEnabled(props)*/)
+           unitTestsPathes = path.patchUnitTests();
+        else unitTestsPathes = null;
+        activeLogger = this;
+    }
+
+    public MLogger(String file) {
+        unitTestsPathes = null;
+        logFileName = null;
+        logFilePath = null;
+        try {
+            this.fileWriter = new PrintStream(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        activeLogger = this;
+    }
+
+    public static void setActiveLogger(MLogger active) {
+        activeLogger = active;
+    }
+
+    public static MLogger getActiveLogger() {
+        activeLogger.flush();
+        return activeLogger;
+    }
+
+    public PrintStream getFileWriter() {
+        return fileWriter;
+    }
+
+    public void flush() {
+        fileWriter.flush();
     }
 
     public void info(String message) {
@@ -45,37 +84,38 @@ public class MLogger {
     }
 
     private void logIntoFile(String message) {
-        try {
-            fileWriter.write(message);
-            fileWriter.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        fileWriter.print(message);
+        fileWriter.flush();
     }
 
-    private String logFilePath(Properties props) {
-        return String.valueOf(Paths.get(props.getProperty(RESULTS_PATH_KEY), "logs", logFileName));
-    }
-
-    public void openFile(boolean append) {
-        try {
-            this.fileWriter = new FileWriter(logFilePath, append);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void openFile() {
-        openFile(false);
-    }
-
+    /*public String logFilePath(Path resultsDir) {
+        return String.valueOf(resultsDir, "logs", logFileName);
+    }*/
 
     public void closeFile() {
-        try {
-            this.fileWriter.close();
-            this.fileWriter = null;
-        } catch (IOException e) {
-            e.printStackTrace();
+        this.fileWriter.close();
+        this.fileWriter = null;
+    }
+
+    public void saveUnitTestInformation(String line) {
+        if (unitTestsPathes == null) return;
+
+        String regex = "Tests run: [\\d]+, Failures: [\\d]+, Errors: [\\d]+, Skipped: [\\d]+";
+
+        if (Pattern.matches(regex, line)) {
+            if (unitTestInfoWriter == null) {
+                try {
+                    unitTestInfoWriter = new PrintStream(unitTestsPathes);
+                    unitTestInfoWriter.println(TestInfoExtractor.getUnitTestHeaderCSV());
+                } catch (IOException e) {
+                    error("Could not open: " + unitTestsPathes);
+                }
+            }
+
+            
+            unitTestInfoWriter.println(TestInfoExtractor.getUnitTestRowCSV(logFileName, line));
+            unitTestInfoWriter.flush();
+            
         }
     }
 
@@ -88,5 +128,11 @@ public class MLogger {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         Date date = new Date();
         return formatter.format(date);
+    }
+
+
+    // Getters
+    public String getLogFilePath() {
+        return logFilePath;
     }
 }

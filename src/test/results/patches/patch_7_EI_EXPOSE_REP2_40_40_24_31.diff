@@ -1,0 +1,21 @@
+--- src/main/java/example/ArrayDemo.java
++++ src/main/java/example/ArrayDemo.java
+@@ -35,11 +35,11 @@
+         return this;
+     }
+-
+-
+-    public ArrayDemo withActions(String[] actions) {
+-        this.actions = actions;
+-        return this;
+-    }
+-
++
++
++    public ArrayDemo withActions(String[] actions) {
++        this.actions = actions.clone();
++        return this;
++    }
++
+ 
+ }

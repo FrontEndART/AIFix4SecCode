@@ -5,21 +5,11 @@ import { getIssues } from "../services/fakeAiFixCode";
 import { objectify } from "tslint/lib/utils";
 import { isObjectLiteralExpression } from "typescript";
 import { writeFileSync } from "fs";
-import { workspace } from "vscode";
-import * as logging from "../services/logging";
-import { ANALYZER_EXE_PATH, PATCH_FOLDER, PROJECT_FOLDER, utf8Stream } from "../constants";
+import { utf8Stream } from "../constants";
 var stringify = require("json-stringify");
-const util = require("util");
-const fs = require("fs");
-const parseJson = require("parse-json");
-var upath = require("upath");
-var isEqual = require('lodash.isequal');
-import { readFileSync } from 'fs';
 
 let tree: any;
 
-let revealChangeHandle : vscode.Disposable | null = null;
-let changeTitleRevealHandle : vscode.Disposable | null = null;
 export class TestView {
   public treeDataProvider: NodeWithIdTreeDataProvider | undefined;
   constructor(context: vscode.ExtensionContext) {
@@ -30,29 +20,8 @@ export class TestView {
         showCollapseAll: true,
       });
       context.subscriptions.push(view);
-      // Check if commands already exist:
-      var existingRevealCommand = false;
-      var existingChangeTitleCommand = false;
 
-      var extension = vscode.extensions.getExtension('searchlab.aifix4seccode-vscode');
-        let commands = extension!.packageJSON.contributes?.commands;
-        if (Array.isArray(commands)) {
-          existingRevealCommand = commands.find((command: any) => command.command == 'testView.reveal') !== undefined
-          existingChangeTitleCommand = commands.find((command: any) => command.command == 'testView.changeTitle') !== undefined
-        }
-      if(existingRevealCommand){
-        if(revealChangeHandle){
-          (revealChangeHandle as any).dispose();
-          revealChangeHandle = null;
-        }
-      }
-      if(existingChangeTitleCommand){
-        if(changeTitleRevealHandle){
-          (changeTitleRevealHandle as any).dispose();
-          changeTitleRevealHandle = null;
-        }
-      }
-      revealChangeHandle = vscode.commands.registerCommand("testView.reveal", async () => {
+      vscode.commands.registerCommand("testView.reveal", async () => {
         const key = await vscode.window.showInputBox({
           placeHolder: "Type the label of the item to reveal",
         });
@@ -63,7 +32,7 @@ export class TestView {
           );
         }
       });
-      changeTitleRevealHandle = vscode.commands.registerCommand("testView.changeTitle", async () => {
+      vscode.commands.registerCommand("testView.changeTitle", async () => {
         const title = await vscode.window.showInputBox({
           prompt: "Type the new title for the Test View",
           placeHolder: view.title,
@@ -143,11 +112,6 @@ class NodeWithIdTreeDataProvider
     if (patchPath && patchPath !== "") {
       filterTree(patchPath);
     }
-    this._onDidChangeTreeData.fire();
-  }
-
-  refreshSubTree(openedPatchPath: string): void {
-    updateTreeWithSubTree(openedPatchPath);
     this._onDidChangeTreeData.fire();
   }
 
@@ -300,20 +264,22 @@ function getNode(key: any): { key: string } {
 
 function filterTree(patchPath: string) {
   Object.keys(tree).forEach((key) => {
-    if(Array.isArray(tree[key])){
-      tree[key].forEach((issue: any) => {
-          issue.patches.forEach((patch: any) => {
-              if(patch.path === patchPath || patchPath.includes(patch.path))
-              {
-                    tree[key].splice(tree[key].indexOf(issue), 1);
-                    if(!tree[key].length){
-                        delete tree[key];
-                    }
-                }
-          })
-      })
-  }
+    tree[key].forEach((issue: any) => {
+        issue.patches.forEach((patch: any) => {
+            if(patch.path === patchPath || patchPath.includes(patch.path))
+            {
+                issue.patches.splice(issue.patches.indexOf(patch), 1);
+                if(!issue.patches.length){
+                  tree[key].splice(tree[key].indexOf(issue), 1);
+                  if(!tree[key].length){
+                      delete tree[key];
+                  }
+              }
+            }
+        })
+    })
     let issuesStr = stringify(tree);
+    console.log(issuesStr);
 
     let issuesPath: string | undefined = "";
     if (
@@ -325,95 +291,11 @@ function filterTree(patchPath: string) {
         .getConfiguration()
         .get<string>("aifix4seccode.analyzer.issuesPath");
     }
-    //writeFileSync(issuesPath!, issuesStr, utf8Stream);
+    writeFileSync(issuesPath!, issuesStr, utf8Stream);
 });
+console.log(tree);
 }
 
-function updateTreeWithSubTree(openedPatchPath: string){
-  let issuesPath: string | undefined = "";
-  if (
-    workspace
-      .getConfiguration()
-      .get<string>("aifix4seccode.analyzer.issuesPath")
-  ) {
-    issuesPath = workspace
-      .getConfiguration()
-      .get<string>("aifix4seccode.analyzer.issuesPath");
-  }
-
-  // delete all previous tree-items that are pointing to the file:
-  Object.values(tree).forEach((issueGroup: any) => {
-    issueGroup.forEach((issue: any) => {
-      issue.patches.forEach((patchObj: any) => {
-        var patchPath = patchObj.path;
-
-        if(process.platform === 'win32'){
-            if(openedPatchPath[0] === '/' || openedPatchPath[0] === '\\'){
-              openedPatchPath = openedPatchPath.substring(1);
-            }
-            if(patchPath[0] === '/' || patchPath[0] === '\\'){
-              patchPath = patchPath.substring(1);
-            }
-        }
-
-        if(patchPath === openedPatchPath || patchPath === upath.basename(openedPatchPath)){
-          filterTree(patchPath);
-        }
-      })
-    })
-  })
-  try{
-    var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
-  } catch (e){
-    if (typeof e === "string") {
-      logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
-    } else if (e instanceof Error) {
-      logging.LogErrorAndShowErrorMessage(e.message, e.message)
-      if('code' in e){
-        if((e as any).code.toString() === 'ENOENT'){
-          var adjustedIssuesPath = upath.join(upath.dirname(ANALYZER_EXE_PATH), 'results', 'jsons.lists')
-          jsonListContent = fs.readFileSync(adjustedIssuesPath!, utf8Stream);
-        }
-      }
-    }
-  }
-  var patchJsonPaths: string[] = []
-  if (jsonListContent)
-    patchJsonPaths = jsonListContent.split('\n');
-  var _issuesJson : any = {}
-  if (patchJsonPaths.length){
-    patchJsonPaths.forEach((path:any) => {
-      if(path.length){
-        var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
-        Object.keys(patchJson).forEach((key:any) => {
-          if(_issuesJson!.hasOwnProperty(key)){
-            patchJson[key].forEach((issue: any) => {
-              if((_issuesJson as any)[key].indexOf(issue) === -1){
-                (_issuesJson as any)[key].push(issue);
-              }
-            })
-          } else {
-            (_issuesJson as any)[key] = patchJson[key];
-          }
-          (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
-        })
-      }
-    });
-    Object.keys(_issuesJson).forEach((key: any) => {
-      if(tree.hasOwnProperty(key)){
-        _issuesJson[key].forEach((_issue:any) => {
-            if(!tree[key].some((treeIssue:any) => isEqual(treeIssue.textRange, _issue.textRange))){
-              tree[key].push(_issue);
-            }
-          })
-      } else {
-        tree[key] = _issuesJson[key]
-      }
-      tree[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
-    })
-  }
-  // tree = {...tree, ...patchJson};
-}
 class Key {
   constructor(readonly key: string) {}
 }

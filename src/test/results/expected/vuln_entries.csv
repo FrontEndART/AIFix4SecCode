@@ -1,0 +1,13 @@
+ID,Type,VulnType,Variable,StartLine,EndLine,StartCol,EndCol,Path,Description
+1,EI_EXPOSE_REP2,null,actions,40,40,24,31,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\ArrayDemo.java,May expose internal representation by incorporating reference to mutable object
+2,EI_EXPOSE_REP2,null,permissionsToGive,24,24,34,51,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\ArrayDemo.java,May expose internal representation by incorporating reference to mutable object
+3,EI_EXPOSE_REP2,null,permissionsToNeeded,29,29,36,55,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\ArrayDemo.java,May expose internal representation by incorporating reference to mutable object
+4,EI_EXPOSE_REP2,null,permissionsToNotNeeded,34,34,39,61,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\ArrayDemo.java,May expose internal representation by incorporating reference to mutable object
+5,FI_PUBLIC_SHOULD_BE_PROTECTED,null,finalize,14,14,17,25,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\FinalizeExample.java,Finalizer should be protected  not public
+6,MS_SHOULD_BE_FINAL,null,MY_CONSTANT,3,3,26,37,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\Main.java,Field isn't final but should be
+7,EI_EXPOSE_REP,null,date,12,12,16,20,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\MyDate.java,May expose internal representation by returning reference to mutable object
+8,EI_EXPOSE_REP2,null,date,16,16,21,25,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\MyDate.java,May expose internal representation by incorporating reference to mutable object
+9,NP_NULL_ON_SOME_PATH,null,null,7,7,20,23,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\NullPath.java,Possible null pointer dereference
+10,MS_MUTABLE_COLLECTION,null,mySet,7,7,37,42,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\a\Mutable.java,Field is a mutable collection
+11,MS_PKGPROTECT,null,array2,10,10,32,38,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\a\Mutable.java,Field should be package protected
+12,MS_MUTABLE_COLLECTION,null,mySet2,8,8,37,43,d:\Work\jasy\github\AIFix4SecCode\test-project\src\main\java\example\a\MutableInit.java,Field is a mutable collection

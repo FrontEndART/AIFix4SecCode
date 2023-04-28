@@ -1,6 +1,9 @@
 package eu.assuremoss.utils;
 
 import eu.assuremoss.framework.model.VulnerabilityEntry;
+import eu.assuremoss.framework.modules.compiler.MavenPatchCompiler;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -9,13 +12,14 @@ import java.io.Writer;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static eu.assuremoss.VulnRepairDriver.MLOG;
+import static eu.assuremoss.utils.Configuration.*;
 
 /**
  * Class for creating statistics on the results
  */
 public class Statistics {
-    private final PathHandler path;
+    private static final Logger LOG = LogManager.getLogger(MavenPatchCompiler.class);
+    public PathHandler path;
 
     public Statistics(PathHandler path) {
         this.path = path;
@@ -87,8 +91,8 @@ public class Statistics {
      *
      * @param vulnEntries the vulnerability entries used in the statistics
      */
-    public void createResultStatistics(List<VulnerabilityEntry> vulnEntries) {
-        createRepairedVulnSum(vulnEntries, path.generatedPatches(), path.vulnFoundResult());
+    public void createResultStatistics(Properties props, List<VulnerabilityEntry> vulnEntries) {
+        createRepairedVulnSum(vulnEntries, path.generatedPatches(), path.joinPath(props.getProperty(RESULTS_PATH_KEY), LOGS_DIR , VULN_FOUND_RESULT_TXT));
         createVulnStatistic(vulnEntries, path.generatedPatches());
     }
 
@@ -106,7 +110,7 @@ public class Statistics {
 
         try (Writer writer = new FileWriter(resultPath)) {
             if (!directory.exists()) {
-                MLOG.error("Generated patches were not found: " + patchesPath);
+                LOG.error("Generated patches were not found: " + patchesPath);
                 return;
             }
 
@@ -117,12 +121,12 @@ public class Statistics {
             for (String vulnType : vulnTypes) {
                 int foundVuln = Collections.frequency(allVulnTypes, vulnType);
                 int repairedVuln = countRepairedVuln(directory.listFiles(), vulnType);
-                String status = foundVuln == repairedVuln ? "✔" : "✖";
+                String status = foundVuln == repairedVuln ? "OK" : "X";
                 writer.write(String.format(" - %s %d/%d %s\n", status, repairedVuln, foundVuln, vulnType));
             }
 
         } catch (IOException e) {
-            MLOG.error("Statistics could not be created!");
+            LOG.error("Statistics could not be created!");
             e.printStackTrace();
         }
     }
@@ -138,24 +142,24 @@ public class Statistics {
 
         try (Writer writer = new FileWriter(path.vulnEntryStatistics())) {
             if (!directory.exists()) {
-                MLOG.error("Generated patches were not found: " + patchesPath);
+                LOG.error("Generated patches were not found: " + patchesPath);
                 return;
             }
 
             if (directory.listFiles() == null) {
-                MLOG.fInfo("Patch files were not generated!");
+                LOG.error("Patch files were not generated!");
                 return;
             }
 
             writer.write(statisticsCSVHeader());
             for (int i = 0; i < vulnEntries.size(); i++) {
                 VulnerabilityEntry vulnEntry = vulnEntries.get(i);
-                String status = isPatchGeneratedForVuln(directory.listFiles(), vulnEntry) ? "✔" : "✖";
+                String status = isPatchGeneratedForVuln(directory.listFiles(), vulnEntry) ? "OK" : "X";
                 writer.write(statisticsCSVFormat(i + 1, vulnEntry, status));
             }
 
         } catch (IOException e) {
-            MLOG.error("Statistics could not be appended!");
+            LOG.error("Statistics could not be appended!");
             e.printStackTrace();
         }
     }

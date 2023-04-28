@@ -23,7 +23,6 @@ import {
   ANALYZER_USE_DIFF_MODE,
   SetProjectFolder,
   utf8Stream,
-  CONFIG_PATH,
 } from "./constants";
 import { IChange, IFix, Iissue, IProjectAnalysis } from "./interfaces";
 import {
@@ -55,8 +54,6 @@ let activeDiffPanelWebviews = getActiveDiffPanelWebviews();
 export let testView: TestView;
 
 let issues: any;
-
-var currentFilePath = "";
 
 async function initIssues() {
   issues = await fakeAiFixCode.getIssues();
@@ -154,10 +151,6 @@ export function init(
       getOutputFromAnalyzer
     ),
     vscode.commands.registerCommand(
-      "aifix4seccode-vscode.getOutputFromAnalyzerPerFile",
-      getOutputFromAnalyzerOfAFile
-    ),
-    vscode.commands.registerCommand(
       "aifix4seccode-vscode.redoLastFix",
       redoLastFix
     ),
@@ -205,38 +198,18 @@ export function init(
     );
   }
 
-  var isAnalysisAlreadyRunning: boolean = false;
-
   async function getOutputFromAnalyzer() {
-    if (!isAnalysisAlreadyRunning) {
-      logging.LogInfo("===== Analysis started from command. =====");
-      vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: "Analyzing project!",
-          cancellable: false,
-        },
-        async () => {
-          return startAnalyzingProjectSync();
-        }
-      );
-    }
-  }
-
-  async function getOutputFromAnalyzerOfAFile() {
-    if (!isAnalysisAlreadyRunning) {
-      logging.LogInfo("===== Analysis of a file started from command. =====");
-      vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: "Analyzing file!",
-          cancellable: false,
-        },
-        async () => {
-          return startAnalyzingFileSync();
-        }
-      );
-    }
+    logging.LogInfo("===== Analysis started from command. =====");
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: "Analyzing project!",
+        cancellable: false,
+      },
+      async () => {
+        return startAnalyzingProjectSync();
+      }
+    );
   }
 
   async function redoLastFix() {
@@ -256,18 +229,10 @@ export function init(
     );
 
     // Set content of issues:
-    try {
-      writeFileSync(lastIssuesPath, lastIssuesContent);
+    writeFileSync(lastIssuesPath, lastIssuesContent);
 
-      // Set content of edited file and focus on it:
-      writeFileSync(lastFilePath, lastFileContent);
-    } catch (e) {
-      if (typeof e === "string") {
-        logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase());
-      } else if (e instanceof Error) {
-        logging.LogErrorAndShowErrorMessage(e.message, e.message);
-      }
-    }
+    // Set content of edited file and focus on it:
+    writeFileSync(lastFilePath, lastFileContent);
 
     vscode.workspace.openTextDocument(lastFilePath).then((document) => {
       vscode.window.showTextDocument(document).then(() => {
@@ -279,13 +244,12 @@ export function init(
               "Undo was requested by user.",
               path.normalize(webview.params.patchPath!),
               lastFilePath
-            ).then(() => {
-              getOutputFromAnalyzerOfAFile();
-            });
+            );
           }
+          getOutputFromAnalyzer();
         } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
           var patchFilepath = path.normalize(
-            context.workspaceState.get<string>("openedPatchPath")!
+            JSON.parse(context.workspaceState.get<string>("openedPatchPath")!)
           );
 
           // Update user decisions of the revert fix:
@@ -293,9 +257,9 @@ export function init(
             "Undo was requested by user.",
             patchFilepath,
             lastFilePath
-          ).then(() => {
-            getOutputFromAnalyzerOfAFile();
-          });
+          );
+
+          getOutputFromAnalyzer();
         }
       });
     });
@@ -320,262 +284,46 @@ export function init(
       } else {
         // run analyzer with terminal (read params and analyzer path from config):
         logging.LogInfo("Analyzer executable started.");
+        logging.LogInfo("Running " + ANALYZER_PARAMETERS);
 
-        var currentFolderPath = "";
-        var editor = vscode.window.activeTextEditor;
-        const config_path = CONFIG_PATH;
-
-        if (!config_path || !config_path.length) {
-          logging.LogErrorAndShowErrorMessage(
-            "Unable to run analyzer! config.properties file is missing from the executable folder.",
-            "Unable to run analyzer! config.properties file is missing from the executable folder."
-          );
-        }
-
-        if (!editor) {
-          currentFolderPath = vscode.workspace.workspaceFolders![0].uri.path;
-        } else {
-          currentFolderPath = upath.dirname(
-            upath.normalize(vscode.window.activeTextEditor!.document.uri.path)
-          );
-        }
-
-        if (process.platform === "win32") {
-          if (currentFolderPath[0] === "/" || currentFolderPath[0] === "\\") {
-            currentFolderPath = currentFolderPath.substring(1);
-          }
-        }
-
-        let combined_parameters =
-          ANALYZER_PARAMETERS + " -config=" + config_path;
-        logging.LogInfo("Running " + combined_parameters);
-        isAnalysisAlreadyRunning = true;
-        try {
-          var child = cp.exec(
-            combined_parameters,
-            { cwd: ANALYZER_EXE_PATH },
-            (error) => {
-              if (error) {
-                isAnalysisAlreadyRunning = false;
-                if (error.code?.toString() === "ENOENT") {
-                  logging.LogErrorAndShowErrorMessage(
-                    error.toString(),
-                    "Unable to run analyzer! The given analyzer's executable path does not likely have the correct archive. Please check your extension settings. " +
-                      error.toString()
-                  );
-                } else {
-                  logging.LogErrorAndShowErrorMessage(
-                    error.toString(),
-                    "Unable to run analyzer! " + error.toString()
-                  );
-                }
-                resolve();
-              }
-            }
-          );
-          child.stdout.pipe(process.stdout);
-
-          var extensionLog = vscode.window.createOutputChannel("AiFix4SecCode");
-          extensionLog.show();
-          child.stdout.on("data", (chunk) => {
-            extensionLog.appendLine(chunk.toString());
-          });
-
-          // waiting for analyzer to finish, only then read the output.
-          child.on("exit", function () {
-            try {
-              isAnalysisAlreadyRunning = false;
-              // if executable has finished:
-              logging.LogInfo("Analyzer executable finished.");
-              // Get Output from analyzer:
-              let output = fakeAiFixCode.getIssuesSync();
-              logging.LogInfo(
-                "issues got from analyzer output: " + JSON.stringify(output)
+        var child = cp.exec(
+          ANALYZER_PARAMETERS,
+          { cwd: ANALYZER_EXE_PATH },
+          (error) => {
+            if (error) {
+              logging.LogErrorAndShowErrorMessage(
+                error.toString(),
+                "Unable to run analyzer! " + error.toString()
               );
-
-              // Show issues treeView:
-              // tslint:disable-next-line: no-unused-expression
-              testView = new TestView(context);
-
-              // Initialize action commands of diagnostics made after analysis:
-              initActionCommands(context);
-
-              resolve();
-              logging.LogInfoAndShowInformationMessage(
-                "===== Finished analysis. =====",
-                "Finished analysis of project!"
-              );
-
-              process.exit();
-            } catch (e) {
-              if (typeof e === "string") {
-                logging.LogErrorAndShowErrorMessage(
-                  e.toUpperCase(),
-                  e.toUpperCase()
-                );
-              } else if (e instanceof Error) {
-                logging.LogErrorAndShowErrorMessage(e.message, e.message);
-              }
-              resolve();
-              process.exit();
             }
-          });
-        } catch (e) {
-          if (typeof e === "string") {
-            logging.LogErrorAndShowErrorMessage(
-              e.toUpperCase(),
-              e.toUpperCase()
-            );
-          } else if (e instanceof Error) {
-            logging.LogErrorAndShowErrorMessage(e.message, e.message);
           }
-          resolve();
-        }
-      }
-    });
-  }
-
-  function startAnalyzingFileSync() {
-    return new Promise<void>((resolve) => {
-      if (!ANALYZER_EXE_PATH) {
-        logging.LogErrorAndShowErrorMessage(
-          "Unable to run analyzer! Analyzer executable path is missing.",
-          "Unable to run analyzer! Analyzer executable path is missing."
         );
-        resolve();
-      } else if (!ANALYZER_PARAMETERS) {
-        logging.LogErrorAndShowErrorMessage(
-          "Unable to run analyzer! Analyzer parameters are missing.",
-          "Unable to run analyzer! Analyzer parameters are missing."
-        );
-        resolve();
-      } else {
-        // run analyzer with terminal (read params and analyzer path from config):
-        logging.LogInfo("Analyzer executable started.");
-
-        var editor = vscode.window.activeTextEditor;
-        const config_path = CONFIG_PATH;
-
-        if (!config_path || !config_path.length) {
-          logging.LogErrorAndShowErrorMessage(
-            "Unable to run analyzer! config.properties file is missing from the executable folder.",
-            "Unable to run analyzer! config.properties file is missing from the executable folder."
+        child.stdout.pipe(process.stdout);
+        // waiting for analyzer to finish, only then read the output.
+        child.on("exit", function () {
+          // if executable has finished:
+          logging.LogInfo("Analyzer executable finished.");
+          // Get Output from analyzer:
+          let output = fakeAiFixCode.getIssuesSync();
+          logging.LogInfo(
+            "issues got from analyzer output: " + JSON.stringify(output)
           );
-        }
 
-        if (!editor) {
-          logging.LogErrorAndShowErrorMessage(
-            "Unable to run analyzer! Make sure that the desired file is currently open in the editor!",
-            "Unable to run analyzer! Make sure that the desired file is currently open in the editor!"
-          );
+          // Show issues treeView:
+          // tslint:disable-next-line: no-unused-expression
+          testView = new TestView(context);
+
+          // Initialize action commands of diagnostics made after analysis:
+          initActionCommands(context);
+
           resolve();
-          return;
-        } else if (editor.document.languageId !== "java") {
-          logging.LogErrorAndShowErrorMessage(
-            "Unable to run analyzer! Not supported file extension!",
-            "Unable to run analyzer! Not supported file extension!\n Make sure to set the focus on your source code!"
+          logging.LogInfoAndShowInformationMessage(
+            "===== Finished analysis. =====",
+            "Finished analysis of project!"
           );
-          resolve();
-          return;
-        } else {
-          currentFilePath = upath.normalize(
-            vscode.window.activeTextEditor!.document.uri.path
-          );
-        }
 
-        if (process.platform === "win32") {
-          if (currentFilePath[0] === "/" || currentFilePath[0] === "\\") {
-            currentFilePath = currentFilePath.substring(1);
-          }
-        }
-
-        let combined_parameters =
-          ANALYZER_PARAMETERS +
-          " -config=" +
-          config_path +
-          " -cu=" +
-          currentFilePath;
-        logging.LogInfo("Running " + combined_parameters);
-        isAnalysisAlreadyRunning = true;
-        try {
-          var child = cp.exec(
-            combined_parameters,
-            { cwd: ANALYZER_EXE_PATH },
-            (error) => {
-              if (error) {
-                isAnalysisAlreadyRunning = false;
-                logging.LogErrorAndShowErrorMessage(
-                  error.toString(),
-                  "Unable to run analyzer! " + error.toString()
-                );
-              }
-            }
-          );
-          child.stdout.pipe(process.stdout);
-
-          var extensionLog = vscode.window.createOutputChannel("AiFix4SecCode");
-          extensionLog.show();
-          child.stdout.on("data", (chunk) => {
-            extensionLog.appendLine(chunk.toString());
-          });
-
-          // waiting for analyzer to finish, only then read the output.
-          child.on("exit", function () {
-            try {
-              isAnalysisAlreadyRunning = false;
-              // if executable has finished:
-              logging.LogInfo("Analyzer executable finished.");
-              // Get Output from analyzer:
-              let output = fakeAiFixCode.getIssuesSync();
-              logging.LogInfo(
-                "issues got from analyzer output: " + JSON.stringify(output)
-              );
-
-              // Show issues treeView:
-              if (!testView) {
-                // tslint:disable-next-line: no-unused-expression
-                testView = new TestView(context);
-              } else {
-                var openedPatchPath =
-                  context.workspaceState.get<string>("openedPatchPath")!;
-                testView.treeDataProvider?.refreshSubTree(openedPatchPath);
-              }
-
-              // Initialize action commands of diagnostics made after analysis:
-              initActionCommands(context);
-
-              resolve();
-              logging.LogInfoAndShowInformationMessage(
-                "===== Finished analysis. =====",
-                "Finished analysis of file!"
-              );
-
-              process.exit();
-            } catch (e) {
-              if (typeof e === "string") {
-                logging.LogErrorAndShowErrorMessage(
-                  e.toUpperCase(),
-                  e.toUpperCase()
-                );
-              } else if (e instanceof Error) {
-                logging.LogErrorAndShowErrorMessage(e.message, e.message);
-              }
-              resolve();
-              process.exit();
-            }
-          });
-        } catch (e) {
-          if (typeof e === "string") {
-            logging.LogErrorAndShowErrorMessage(
-              e.toUpperCase(),
-              e.toUpperCase()
-            );
-          } else if (e instanceof Error) {
-            logging.LogErrorAndShowErrorMessage(e.message, e.message);
-          }
-          resolve();
           process.exit();
-        }
+        });
       }
     });
   }
@@ -583,26 +331,17 @@ export function init(
   async function openUpFile(patchPath: string) {
     logging.LogInfo("===== Executing openUpFile command. =====");
 
+
     let project_folder = PROJECT_FOLDER;
     let patch_folder = PATCH_FOLDER;
     if (!PROJECT_FOLDER) {
       SetProjectFolder(vscode.workspace.workspaceFolders![0].uri.path);
     }
 
-    if (process.platform === "win32") {
-      if (patch_folder[0] === "/" || patch_folder[0] === "\\") {
-        patch_folder = patch_folder.substring(1);
-      }
-    }
-
     var patch = "";
     try {
-      logging.LogInfo("Reading patch from " + patch_folder + "/" + patchPath);
-      patch = readFileSync(upath.join(patch_folder, patchPath), "utf8");
-      context.workspaceState.update(
-        "openedPatchPath",
-        upath.join(patch_folder, patchPath)
-      );
+      logging.LogInfo("Reading patch from " + PATCH_FOLDER + "/" + patchPath);
+      patch = readFileSync(upath.join(PATCH_FOLDER, patchPath), "utf8");
     } catch (err) {
       logging.LogErrorAndShowErrorMessage(
         String(err),
@@ -670,9 +409,6 @@ export function init(
       targetTextRange["endColumn"]
     );
     editor!.selection = newSelection;
-    editor!.revealRange(
-      editor!.document.lineAt(targetTextRange["startLine"] - 1).range
-    );
   }
 
   function loadPatch(patchPath: string) {
@@ -772,11 +508,6 @@ export function init(
         logging.LogInfo("Applied '" + patchPath + "' to '" + sourceFile + "'");
       }
 
-      context.workspaceState.update(
-        "openedPatchPath",
-        JSON.stringify(patchPath)
-      );
-
       logging.LogInfo("Opening Diff view.");
       showDiff({
         patchPath: patchPath,
@@ -795,7 +526,7 @@ export function init(
         .then((document) => {
           context.workspaceState.update(
             "openedPatchPath",
-            path.join(PATCH_FOLDER, patchPath)
+            JSON.stringify(path.join(PATCH_FOLDER, patchPath))
           );
           vscode.window.showTextDocument(document);
         });
@@ -871,29 +602,26 @@ export function init(
               );
             }
 
-            testView.treeDataProvider?.refresh(patchPath);
-
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
                 if (
                   "leftPath" in webview.params &&
                   "patchPath" in webview.params
                 ) {
-                  //filterOutIssues(webview.params.patchPath!).then(() => {
-                  vscode.window.withProgress(
-                    {
-                      location: vscode.ProgressLocation.Notification,
-                      title: "Loading Diagnostics...",
-                    },
-                    async () => {
-                      getOutputFromAnalyzerOfAFile();
-                      await refreshDiagnostics(
-                        vscode.window.activeTextEditor!.document,
-                        analysisDiagnostics
-                      );
-                    }
-                  );
-                  //});
+                  filterOutIssues(webview.params.patchPath!).then(() => {
+                    vscode.window.withProgress(
+                      {
+                        location: vscode.ProgressLocation.Notification,
+                        title: "Loading Diagnostics...",
+                      },
+                      async () => {
+                        await refreshDiagnostics(
+                          vscode.window.activeTextEditor!.document,
+                          analysisDiagnostics
+                        );
+                      }
+                    );
+                  });
                 }
               });
             });
@@ -923,8 +651,9 @@ export function init(
       // 4. Hide navbar buttons (applyPatch, declinePatch, nextDiff, prevDiff).
 
       // 1.
-      var patchFilepath =
-        context.workspaceState.get<string>("openedPatchPath")!;
+      var patchFilepath = JSON.parse(
+        context.workspaceState.get<string>("openedPatchPath")!
+      );
       var patchFileContent = readFileSync(
         path.normalize(patchFilepath),
         "utf8"
@@ -968,21 +697,7 @@ export function init(
 
       // 3.
       applyPatchToFile(path.normalize(sourceFile), patched, patchFilepath);
-      //filterOutIssues(patchFilepath).then(() => {
-      vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: "Loading Diagnostics...",
-        },
-        async () => {
-          // await getOutputFromAnalyzer();
-          await refreshDiagnostics(
-            vscode.window.activeTextEditor!.document,
-            analysisDiagnostics
-          );
-        }
-      );
-      //});
+      filterOutIssues(patchFilepath);
 
       // 4.
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
@@ -1025,21 +740,18 @@ export function init(
 
             vscode.workspace.openTextDocument(openFilePath).then((document) => {
               vscode.window.showTextDocument(document).then(() => {
-                //filterOutIssues(patchPath).then(() => {
                 vscode.window.withProgress(
                   {
                     location: vscode.ProgressLocation.Notification,
                     title: "Loading Diagnostics...",
                   },
                   async () => {
-                    // await getOutputFromAnalyzer();
                     await refreshDiagnostics(
                       vscode.window.activeTextEditor!.document,
                       analysisDiagnostics
                     );
                   }
                 );
-                //});
               });
             });
           }
@@ -1058,8 +770,9 @@ export function init(
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
       // TODO: DO it with patch file
       let activeEditor = vscode.window.activeTextEditor!.document.uri.fsPath;
-      var patchFilepath =
-        context.workspaceState.get<string>("openedPatchPath")!;
+      var patchFilepath = JSON.parse(
+        context.workspaceState.get<string>("openedPatchPath")!
+      );
       var patchFileContent = readFileSync(patchFilepath, "utf8");
       var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
       var sourceFile: string;
@@ -1086,7 +799,6 @@ export function init(
               title: "Loading Diagnostics...",
             },
             async () => {
-              // await getOutputFromAnalyzer();
               // 4.
               await refreshDiagnostics(
                 vscode.window.activeTextEditor!.document,
@@ -1120,6 +832,9 @@ export function init(
           });
         });
       });
+      // if (!tree[key].patches.length) {
+      //     delete tree[key];
+      // }
     }
     let issuesStr = stringify(issues);
     console.log(issuesStr);
@@ -1134,86 +849,39 @@ export function init(
         .getConfiguration()
         .get<string>("aifix4seccode.analyzer.issuesPath");
     }
-    try {
-      writeFileSync(issuesPath!, issuesStr, utf8Stream);
-    } catch (e) {
-      if (typeof e === "string") {
-        logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase());
-      } else if (e instanceof Error) {
-        logging.LogErrorAndShowErrorMessage(e.message, e.message);
-      }
-    }
+    writeFileSync(issuesPath!, issuesStr, utf8Stream);
   }
 
   function saveFileAndFixesToState(filePath: string) {
     logging.LogInfo(filePath);
 
-    let issueListPath: string | undefined = "";
     let issuesPath: string | undefined = "";
     if (
       vscode.workspace
         .getConfiguration()
         .get<string>("aifix4seccode.analyzer.issuesPath")
     ) {
-      issueListPath = vscode.workspace
+      issuesPath = vscode.workspace
         .getConfiguration()
         .get<string>("aifix4seccode.analyzer.issuesPath");
-      try {
-        var jsonListContent = readFileSync(issueListPath!, utf8Stream);
-        var patchJsonPaths: string[] = [];
-        if (jsonListContent) patchJsonPaths = jsonListContent.split("\n");
-        filePath = upath.normalize(filePath);
-        patchJsonPaths = patchJsonPaths.filter((path) => path.length);
-        if (patchJsonPaths.length) {
-          issuesPath = patchJsonPaths.find((path) =>
-            upath
-              .normalize(path!)
-              .toLowerCase()
-              .includes(
-                upath.normalize(
-                  filePath.replace(PROJECT_FOLDER!, "").toLowerCase()!
-                )
-              )
-          );
-        }
-      } catch (e) {
-        if (typeof e === "string") {
-          logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase());
-        } else if (e instanceof Error) {
-          logging.LogErrorAndShowErrorMessage(e.message, e.message);
-        }
-      }
     }
 
-    try {
-      var originalFileContent = readFileSync(filePath!, "utf8");
-      var originalIssuesContent = "";
-      if (issuesPath) originalIssuesContent = readFileSync(issuesPath!, "utf8");
-      context.workspaceState.update(
-        "lastFileContent",
-        JSON.stringify(originalFileContent)
-      );
-      context.workspaceState.update("lastFilePath", JSON.stringify(filePath));
-      if (issuesPath) {
-        context.workspaceState.update(
-          "lastIssuesContent",
-          JSON.stringify(originalIssuesContent)
-        );
+    var originalFileContent = readFileSync(filePath!, "utf8");
+    var originalIssuesContent = readFileSync(issuesPath!, "utf8");
+    context.workspaceState.update(
+      "lastFileContent",
+      JSON.stringify(originalFileContent)
+    );
+    context.workspaceState.update("lastFilePath", JSON.stringify(filePath));
 
-        context.workspaceState.update(
-          "lastIssuesPath",
-          JSON.stringify(issuesPath)
-        );
-        logging.LogInfo(filePath);
-      }
-    } catch (e) {
-      if (typeof e === "string") {
-        logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase());
-      } else if (e instanceof Error) {
-        logging.LogErrorAndShowErrorMessage(e.message, e.message);
-      }
-    }
+    context.workspaceState.update(
+      "lastIssuesContent",
+      JSON.stringify(originalIssuesContent)
+    );
+    context.workspaceState.update("lastIssuesPath", JSON.stringify(issuesPath));
+    logging.LogInfo(filePath);
   }
+
   let currentFixId = 0;
 
   async function navigateDiff(step: number) {
@@ -1243,11 +911,6 @@ export function init(
         }
       });
 
-      context.workspaceState.update(
-        "openedPatchPath",
-        JSON.stringify(fixes[nextFixId].path)
-      );
-
       if (requiredWebview) {
         requiredWebview!.webViewPanel.reveal(vscode.ViewColumn.One, false);
       } else {
@@ -1264,8 +927,9 @@ export function init(
       }
       currentFixId = nextFixId;
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
-      var patchFilepath =
-        context.workspaceState.get<string>("openedPatchPath")!;
+      var patchFilepath = JSON.parse(
+        context.workspaceState.get<string>("openedPatchPath")!
+      );
       var patchFileContent = readFileSync(patchFilepath, "utf8");
       var sourceFileMatch = /--- ([^ \n\r\t]+).*/.exec(patchFileContent);
       var sourceFile: string;
@@ -1294,7 +958,10 @@ export function init(
 
       vscode.workspace.openTextDocument(fixPath).then((document) => {
         vscode.window.showTextDocument(document).then(() => {
-          context.workspaceState.update("openedPatchPath", fixPath);
+          context.workspaceState.update(
+            "openedPatchPath",
+            JSON.stringify(fixPath)
+          );
         });
       });
       currentFixId = nextFixId;
