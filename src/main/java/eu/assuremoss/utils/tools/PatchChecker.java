@@ -61,13 +61,14 @@ public class PatchChecker {
         return candidatePatches;
     }
 
-    public JSONObject generateFixEntity(Properties props, VulnerabilityEntry vulnEntry, List<Pair<File, Pair<Patch<String>, String>>> candidatePatches) {
+    public JSONObject generateFixEntity(Properties props, VulnerabilityEntry vulnEntry, List<Pair<Pair<File, Pair<Patch<String>, String>>, Double>> candidatePatches) {
         JSONArray patchesArray = new JSONArray();
         JSONObject issueObject = new JSONObject();
         for (int i = 0; i < candidatePatches.size(); i++) {
-            File path = candidatePatches.get(i).getA();
-            Patch<String> patch = candidatePatches.get(i).getB().getA();
-            String explanation = candidatePatches.get(i).getB().getB();
+            File path = candidatePatches.get(i).getA().getA();
+            Patch<String> patch = candidatePatches.get(i).getA().getB().getA();
+            String explanation = candidatePatches.get(i).getA().getB().getB();
+            double score = candidatePatches.get(i).getB();
 
             // Dump the patch and generate the necessary meta-info json as well with vulnerability/patch candidate mapping for the VS Code plug-in
             String patchName = MessageFormat.format("patch_{0}_{1}_{2}_{3}_{4}_{5}.diff", patchCounter++, vulnEntry.getType(), vulnEntry.getStartLine(), vulnEntry.getEndLine(), vulnEntry.getStartCol(), vulnEntry.getEndCol());
@@ -97,7 +98,7 @@ public class PatchChecker {
                 JSONObject patchObject = new JSONObject();
                 patchObject.put("path", patchName);
                 patchObject.put("explanation", explanation);
-                patchObject.put("score", 10);
+                patchObject.put("score", score);
                 patchesArray.add(patchObject);
             } catch (IOException e) {
                 LOG.error("Failed to save candidate patch: " + patch);

@@ -153,7 +153,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>${project.build.finalName}.lib/</classpathPrefix>
-                            <mainClass>eu.assuremoss.VulnRepairDriver</mainClass>
+                            <mainClass>eu.assuremoss.VulnerabilityRepairDriver</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -41,6 +41,9 @@ public class Configuration {
     public static final String SPOTBUGS_LISTFILE = "fb_file_list.txt";
     public static final String SPOTBUGS_RESULTFILE = "spotbugs.xml";
 
+    public static final String PRIORITIZER_PATH_KEY = "config.prioritizer_path";
+    public static final String PRIORITIZER_MODE_KEY = "config.prioritizer_mode";
+
     // Directories
     public static final String PATCHES_DIR = "patches";
     public static final String LOGS_DIR = "logs";

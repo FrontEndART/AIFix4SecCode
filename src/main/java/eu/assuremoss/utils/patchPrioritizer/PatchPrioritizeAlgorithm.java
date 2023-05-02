@@ -7,5 +7,5 @@ import java.io.File;
 import java.util.List;
 
 public interface PatchPrioritizeAlgorithm {
-    void prioritize(List<Pair<File, Pair<Patch<String>, String>>> patches);
+    List<Pair<Pair<File, Pair<Patch<String>, String>>, Double>> prioritize(List<Pair<File, Pair<Patch<String>, String>>> patches);
 }
