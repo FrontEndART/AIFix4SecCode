@@ -2,7 +2,7 @@
   "name": "aifix4seccode-vscode",
   "displayName": "AIFix4SecCode",
   "description": "Fixes security vulnerabilities with the help of AI in your code.",
-  "version": "1.0.12",
+  "version": "1.0.30",
   "license": "",
   "keywords": [
     "vulnerability",
@@ -53,6 +53,7 @@
     "istextorbinary": "^3.0.0",
     "json-stringify": "^1.0.0",
     "jsonc-parser": "^3.0.0",
+    "lodash.isequal": "^4.5.0",
     "mocha": "^6.1.4",
     "parse-diff": "^0.8.1",
     "parse-json": "^5.2.0",
@@ -124,6 +125,10 @@
       {
         "title": "[AIFix4SecCode] Get Output From Analyzer",
         "command": "aifix4seccode-vscode.getOutputFromAnalyzer"
+      },
+      {
+        "title": "[AIFix4SecCode] Get Output From Analyzer per file",
+        "command": "aifix4seccode-vscode.getOutputFromAnalyzerPerFile"
       },
       {
         "title": "[AIFix4SecCode] Redo Last Fix",
@@ -224,6 +229,11 @@
           "default": "",
           "description": "Specifies the analyzer tool's executable parameters. (f.e.: java -jar Main.jar)"
         },
+        "aifix4seccode.analyzer.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "The path of the configuration file that the executable needs to use. The name of this file needs to be config.properties. If no path is given by the user, the plugin will search for it in the executable folder by default."
+        },
         "aifix4seccode.analyzer.issuesPath": {
           "type": "string",
           "default": "",
@@ -232,12 +242,17 @@
         "aifix4seccode.analyzer.subjectProjectPath": {
           "type": "string",
           "default": "",
-          "description": "The path of the project where the analyzation will take place."
+          "description": "The path of the project where the analyzation will take place. \r\n(Leave it empty if the currently opened workspace needs to be analyzed.)"
         },
         "aifix4seccode.analyzer.generatedPatchesPath": {
           "type": "string",
           "default": "",
           "description": "The path of the patch files that will be generated as analysis output."
+        },
+        "aifix4seccode.analyzer.extraCommandParameters": {
+          "type": "string",
+          "default": "",
+          "description": "Add extra parameters to the executable parameters here."
         }
       }
     }

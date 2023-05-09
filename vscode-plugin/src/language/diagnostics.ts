@@ -7,10 +7,10 @@ import * as logging from "../services/logging";
 var path = require("path");
 var upath = require("upath");
 
-let issueGroups: Iissue | undefined;
+let issueGroups = {};
 
 async function initIssues() {
-  issueGroups = await getIssues();
+  issueGroups = await getIssues(true);
 }
 
 export async function refreshDiagnostics(
@@ -22,16 +22,23 @@ export async function refreshDiagnostics(
     initIssues().then(() => {
       // for each issue we create a diagnosctic.
       if (issueGroups) {
-        Object.values(issueGroups).forEach((issues) => {
+        Object.values(issueGroups).forEach((issues: any) => {
           issues.forEach((issue: any) => {
             const fixRange = issue.textRange;
             issue.patches.forEach((fix: IFix) => {
               const fixText = fix.explanation;
               const patchPath = fix.path;
               var patch = "";
+              var patch_folder = PATCH_FOLDER;
+
+              if(process.platform === 'win32'){
+                if(patch_folder[0] === '/' || patch_folder[0] === '\\'){
+                  patch_folder = patch_folder.substring(1);
+                }
+              }
 
               try {
-                patch = readFileSync(PATCH_FOLDER + "/" + patchPath, "utf8");
+                patch = readFileSync(upath.join(patch_folder, patchPath), "utf8");
               } catch (err) {
                 logging.LogErrorAndShowErrorMessage(
                   "Error with readFileSync patch file: " + err,
@@ -73,6 +80,12 @@ export async function refreshDiagnostics(
                   sourceFilePath = "/" + sourceFilePath;
                 if (openedFilePath![0] !== "/")
                   openedFilePath = "/" + openedFilePath;
+              }
+
+              if(process.platform === 'win32'){
+                if(sourceFilePath[0] === '/' || sourceFilePath[0] === '\\'){
+                  sourceFilePath = sourceFilePath.substring(1);
+                }
               }
 
               if (sourceFilePath === openedFilePath) {

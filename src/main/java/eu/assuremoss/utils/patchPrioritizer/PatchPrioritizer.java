@@ -2,6 +2,7 @@ package eu.assuremoss.utils.patchPrioritizer;
 
 
 import com.github.difflib.patch.Patch;
+import eu.assuremoss.utils.MLogger;
 import eu.assuremoss.utils.Pair;
 
 import java.io.File;
@@ -14,7 +15,8 @@ public class PatchPrioritizer {
         this.patchPrioritizeAlgorithm = patchPrioritizeAlgorithm;
     }
 
-    public void prioritize(List<Pair<File, Pair<Patch<String>, String>>> patches) {
-        this.patchPrioritizeAlgorithm.prioritize(patches);
+    public List<Pair<Pair<File, Pair<Patch<String>, String>>, Double>> prioritize(List<Pair<File, Pair<Patch<String>, String>>> patches) {
+        List<Pair<Pair<File, Pair<Patch<String>, String>>, Double>> result = this.patchPrioritizeAlgorithm.prioritize(patches);
+        return result;
     }
 }

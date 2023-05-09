@@ -122,7 +122,7 @@ export class ExtendedWebview {
         path = await this._saveListener(e, this.params);
         if (path) {
           this.params.rightPath = path;
-          this.setPanelTitle();
+          // this.setPanelTitle();
         }
       } else {
         log('webview is not listening on "save"');
