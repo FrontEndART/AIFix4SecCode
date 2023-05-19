@@ -151,6 +151,10 @@ export function init(
       getOutputFromAnalyzer
     ),
     vscode.commands.registerCommand(
+      "aifix4seccode-vscode.getOutputFromAnalyzerPerFile",
+      getOutputFromAnalyzerOfAFile
+    ),
+    vscode.commands.registerCommand(
       "aifix4seccode-vscode.redoLastFix",
       redoLastFix
     ),
@@ -159,16 +163,16 @@ export function init(
       openUpFile
     ),
     // treeview
-    vscode.commands.registerCommand("jsonOutline.refresh", () =>
+    vscode.commands.registerCommand("aifix4seccode-vscode_jsonOutline.refresh", () =>
       jsonOutlineProvider.refresh()
     ),
-    vscode.commands.registerCommand("jsonOutline.refreshNode", (offset) =>
+    vscode.commands.registerCommand("aifix4seccode-vscode_jsonOutline.refreshNode", (offset) =>
       jsonOutlineProvider.refresh(offset)
     ),
-    vscode.commands.registerCommand("jsonOutline.renameNode", (offset) =>
+    vscode.commands.registerCommand("aifix4seccode-vscode_jsonOutline.renameNode", (offset) =>
       jsonOutlineProvider.rename(offset)
     ),
-    vscode.commands.registerCommand("extension.openJsonSelection", (range) =>
+    vscode.commands.registerCommand("aifix4seccode-vscode_extension.openJsonSelection", (range) =>
       jsonOutlineProvider.select(range)
     )
   );
@@ -212,6 +216,20 @@ export function init(
     );
   }
 
+  async function getOutputFromAnalyzerOfAFile() {
+    logging.LogInfo("===== Analysis of a file started from command. =====");
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: "Analyzing file!",
+        cancellable: false,
+      },
+      async () => {
+        return await startAnalyzingFileSync();
+      }
+    );
+  }
+
   async function redoLastFix() {
     logging.LogInfo("===== Redo Last Fix started from command. =====");
 
@@ -244,9 +262,25 @@ export function init(
               "Undo was requested by user.",
               path.normalize(webview.params.patchPath!),
               lastFilePath
-            );
+            ).then(() => {
+              getOutputFromAnalyzerOfAFile();
+              async () => {
+
+                vscode.window.withProgress(
+                  {
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Loading Diagnostics...",
+                  },
+                  async () => {
+                    await refreshDiagnostics(
+                      vscode.window.activeTextEditor!.document,
+                      analysisDiagnostics
+                    );
+                  }
+                );
+              }
+            });
           }
-          getOutputFromAnalyzer();
         } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
           var patchFilepath = path.normalize(
             JSON.parse(context.workspaceState.get<string>("openedPatchPath")!)
@@ -257,9 +291,9 @@ export function init(
             "Undo was requested by user.",
             patchFilepath,
             lastFilePath
-          );
-
-          getOutputFromAnalyzer();
+          ).then(() => {
+            getOutputFromAnalyzerOfAFile();
+          });
         }
       });
     });
@@ -316,6 +350,101 @@ export function init(
           // Initialize action commands of diagnostics made after analysis:
           initActionCommands(context);
 
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Loading Diagnostics...",
+            },
+            async () => {
+              await refreshDiagnostics(
+                vscode.window.activeTextEditor!.document,
+                analysisDiagnostics
+              );
+            }
+          );
+
+          resolve();
+          logging.LogInfoAndShowInformationMessage(
+            "===== Finished analysis. =====",
+            "Finished analysis of project!"
+          );
+
+          process.exit();
+        });
+      }
+    });
+  }
+
+  function startAnalyzingFileSync() {
+    return new Promise<void>((resolve) => {
+      if (!ANALYZER_EXE_PATH) {
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to run analyzer! Analyzer executable path is missing.",
+          "Unable to run analyzer! Analyzer executable path is missing."
+        );
+        resolve();
+      } else if (!ANALYZER_PARAMETERS) {
+        logging.LogErrorAndShowErrorMessage(
+          "Unable to run analyzer! Analyzer parameters are missing.",
+          "Unable to run analyzer! Analyzer parameters are missing."
+        );
+        resolve();
+      } else {
+        var currentFilePath = upath.normalize(
+          vscode.window.activeTextEditor!.document.uri.path
+        );
+
+        if (process.platform === "win32" && currentFilePath.startsWith("/")) {
+          currentFilePath = currentFilePath.substring(1);
+        }
+
+        // run analyzer with terminal (read params and analyzer path from config):
+        logging.LogInfo("Analyzer executable started.");
+        logging.LogInfo("Running " + ANALYZER_PARAMETERS + " -cu=" + currentFilePath);
+
+        var child = cp.exec(
+          ANALYZER_PARAMETERS + " -cu=" + currentFilePath,
+          { cwd: ANALYZER_EXE_PATH },
+          (error) => {
+            if (error) {
+              logging.LogErrorAndShowErrorMessage(
+                error.toString(),
+                "Unable to run analyzer! " + error.toString()
+              );
+            }
+          }
+        );
+        child.stdout.pipe(process.stdout);
+        // waiting for analyzer to finish, only then read the output.
+        child.on("exit", function () {
+          // if executable has finished:
+          logging.LogInfo("Analyzer executable finished.");
+          // Get Output from analyzer:
+          let output = fakeAiFixCode.getIssuesSync();
+          logging.LogInfo(
+            "issues got from analyzer output: " + JSON.stringify(output)
+          );
+
+          // Show issues treeView:
+          // tslint:disable-next-line: no-unused-expression
+          testView = new TestView(context);
+
+          // Initialize action commands of diagnostics made after analysis:
+          initActionCommands(context);
+
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Loading Diagnostics...",
+            },
+            async () => {
+              await refreshDiagnostics(
+                vscode.window.activeTextEditor!.document,
+                analysisDiagnostics
+              );
+            }
+          );
+
           resolve();
           logging.LogInfoAndShowInformationMessage(
             "===== Finished analysis. =====",
@@ -330,7 +459,6 @@ export function init(
 
   async function openUpFile(patchPath: string) {
     logging.LogInfo("===== Executing openUpFile command. =====");
-
 
     let project_folder = PROJECT_FOLDER;
     let patch_folder = PATCH_FOLDER;
@@ -497,12 +625,12 @@ export function init(
       } else if (sourceFile !== destinationFile) {
         logging.LogInfo(
           "Applied '" +
-            patchPath +
-            "' to '" +
-            sourceFile +
-            "' and stored it as '" +
-            destinationFile +
-            "'"
+          patchPath +
+          "' to '" +
+          sourceFile +
+          "' and stored it as '" +
+          destinationFile +
+          "'"
         );
       } else {
         logging.LogInfo("Applied '" + patchPath + "' to '" + sourceFile + "'");
@@ -609,18 +737,8 @@ export function init(
                   "patchPath" in webview.params
                 ) {
                   filterOutIssues(webview.params.patchPath!).then(() => {
-                    vscode.window.withProgress(
-                      {
-                        location: vscode.ProgressLocation.Notification,
-                        title: "Loading Diagnostics...",
-                      },
-                      async () => {
-                        await refreshDiagnostics(
-                          vscode.window.activeTextEditor!.document,
-                          analysisDiagnostics
-                        );
-                      }
-                    );
+
+                    getOutputFromAnalyzerOfAFile();
                   });
                 }
               });
@@ -644,6 +762,7 @@ export function init(
       if ("patchPath" in webview.params && webview.params.patchPath) {
         patchPath = webview.params.patchPath;
       }
+
     } else if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
       // 1. Get the content of the original file
       // 2. Apply the patch to it's content.
@@ -701,6 +820,8 @@ export function init(
 
       // 4.
       vscode.commands.executeCommand("setContext", "patchApplyEnabled", false);
+      getOutputFromAnalyzerOfAFile();
+
     }
     logging.LogInfo("===== Finished applyPatch command. =====");
   }

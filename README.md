@@ -20,10 +20,13 @@ git clone https://github.com/FrontEndART/AIFix4SecCode.git
 cd AIFix4SecCode
 mvn install:install-file -Dfile=src\\main\\resources\\CodeRepair-1.0.3-SNAPSHOT-jar-with-dependencies.jar -DgroupId=com.fea -DartifactId=coderepair -Dversion=1.0.1 -Dpackaging=jar -DgeneratePom=true
 mvn package
+python -m pip install -r requirements.txt
 cd vscode-plugin
 npm install
 ```
 Npm is installed with Node.js. This means that you have to install Node.js to get npm installed on your computer. You can download it from here: https://nodejs.org/
+
+Python 3.10 or higher is required for the Sorter modul to run properly.
 
 Next, you need to download and extract the [latest release](https://github.com/sed-inf-u-szeged/OpenStaticAnalyzer/releases) of the OpenStaticAnalyzer.
 
@@ -44,6 +47,8 @@ config.validation_results_path=FOLDER TO PUT VALIDATION ANALYSIS RESULTS # e.g. 
 config.archive_enabled=ARCHIVE THE GENERATED RESULTS OR NOT # true or false
 config.archive_path=FOLDER TO PUT ARCHIVED DATA # e.g. d:\\AIFix4SecCode\\test-project\\archive
 config.jsons_listfile=THE PATH OF THE RESULTED LIST FILE # e.g. d:\\AIFix4SecCode\\test-project\\results\\json.list
+config.prioritizer_path=d:\\AIFix4SecCode\\sorter\\sorter.py
+config.prioritizer_mode=word2vec
 
 #Analyzer settings
 config.osa_path=PATH TO THE JAVA OPEN STATIC ANALYZER # e.g. d:\\OpenStaticAnalyzer-4.1.0-x64-Windows\\Java

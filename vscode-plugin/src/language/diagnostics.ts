@@ -10,7 +10,7 @@ var upath = require("upath");
 let issueGroups = {};
 
 async function initIssues() {
-  issueGroups = await getIssues(true);
+  issueGroups = await getIssues();
 }
 
 export async function refreshDiagnostics(
@@ -31,8 +31,8 @@ export async function refreshDiagnostics(
               var patch = "";
               var patch_folder = PATCH_FOLDER;
 
-              if(process.platform === 'win32'){
-                if(patch_folder[0] === '/' || patch_folder[0] === '\\'){
+              if (process.platform === 'win32') {
+                if (patch_folder[0] === '/' || patch_folder[0] === '\\') {
                   patch_folder = patch_folder.substring(1);
                 }
               }
@@ -43,7 +43,7 @@ export async function refreshDiagnostics(
                 logging.LogErrorAndShowErrorMessage(
                   "Error with readFileSync patch file: " + err,
                   "Cannot refresh diagnostics! There was a problem with patch file: " +
-                    err
+                  err
                 );
               }
 
@@ -82,8 +82,8 @@ export async function refreshDiagnostics(
                   openedFilePath = "/" + openedFilePath;
               }
 
-              if(process.platform === 'win32'){
-                if(sourceFilePath[0] === '/' || sourceFilePath[0] === '\\'){
+              if (process.platform === 'win32') {
+                if (sourceFilePath[0] === '/' || sourceFilePath[0] === '\\') {
                   sourceFilePath = sourceFilePath.substring(1);
                 }
               }
@@ -107,12 +107,6 @@ export async function refreshDiagnostics(
     );
   }
 }
-
-// const isChildOf = (child : string, parent : string) => {
-//   if (child === parent) return false
-//   const parentTokens = parent.split(path.sep).filter(i => i.length)
-//   return parentTokens.every((t, i) => child.split(path.sep)[i] === t)
-// }
 
 function createDiagnostic(
   doc: vscode.TextDocument,
@@ -138,4 +132,4 @@ function createDiagnostic(
 export function subscribeToDocumentChanges(
   context: vscode.ExtensionContext,
   emojiDiagnostics: vscode.DiagnosticCollection
-): void {}
+): void { }

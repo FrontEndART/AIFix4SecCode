@@ -76,57 +76,57 @@ export function patchToCodes(patch: string) {
 // 2.: Updates the issues.json so the fix will no longer show up.
 // 3.: Opens up the file that has been patched in the editor.
 // 4.: Refreshes the diagnosis on the file to show the remaining suggestions.
-export function applyPatchToFile(leftPath: string, rightContent: string, patchPath: string){
+export function applyPatchToFile(leftPath: string, rightContent: string, patchPath: string) {
   if (leftPath) {
-    
-          if(!rightContent){
-            window.showErrorMessage('Failed to apply patch to source file! \n Make sure that your configuration is correct. Also make sure that the source file has not been patched already by this patch before! This issue may occour if the patch syntax is incorrect.'); 
-            return;
-          }
 
-          // 1.
-          writeFileSync(leftPath, rightContent, utf8Stream);
-          // 2.
-          initIssues().then(() => {
-            if (issueGroups) {
-              Object.values(issueGroups).forEach((issues: any) => {
-                issues.forEach((issue: any) => {
-                if (issue.patches.some((x: any) => x.path === patchPath || patchPath.includes(x.path))) {
-                  delete issueGroups[issues];
-                }
-              });
-            });
+    if (!rightContent) {
+      window.showErrorMessage('Failed to apply patch to source file! \n Make sure that your configuration is correct. Also make sure that the source file has not been patched already by this patch before! This issue may occour if the patch syntax is incorrect.');
+      return;
+    }
+
+    // 1.
+    writeFileSync(leftPath, rightContent, utf8Stream);
+    // 2.
+    initIssues().then(() => {
+      if (issueGroups) {
+        Object.values(issueGroups).forEach((issues: any) => {
+          issues.forEach((issue: any) => {
+            if (issue.patches.some((x: any) => x.path === patchPath || patchPath.includes(x.path))) {
+              delete issueGroups[issues];
             }
-            console.log(issueGroups);
-
-            let issuesStr = stringify(issueGroups);
-            console.log(issuesStr);
-
-            let issuesPath : string | undefined = '';
-            if(workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')){
-              issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');
-            }
-            writeFileSync(issuesPath!, issuesStr, utf8Stream);
-
-            // 3.
-            workspace.openTextDocument(leftPath).then(document => {
-              window.showTextDocument(document).then(() => {
-                window.withProgress({ location: ProgressLocation.Notification, title: 'Loading Diagnostics...' }, async () => {
-                  // 4.
-                  await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
-                  
-                  // User decisions are updated here in patch mode (and at extendedWebview in diff mode):
-                  if(ANALYZER_USE_DIFF_MODE == "view Patch files"){
-                    updateUserDecisions('applied', patchPath, leftPath);
-                  }
-                });
-              });
-            });
-
           });
+        });
+      }
+      console.log(issueGroups);
 
-          window.showInformationMessage('Content saved to path: ' + leftPath);
-          return leftPath;
-        }
-        return '';
+      let issuesStr = stringify(issueGroups);
+      console.log(issuesStr);
+
+      let issuesPath: string | undefined = '';
+      if (workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath')) {
+        issuesPath = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.issuesPath');
+      }
+      writeFileSync(issuesPath!, issuesStr, utf8Stream);
+
+      // 3.
+      workspace.openTextDocument(leftPath).then(document => {
+        window.showTextDocument(document).then(() => {
+          window.withProgress({ location: ProgressLocation.Notification, title: 'Loading Diagnostics...' }, async () => {
+            // 4.
+            //await refreshDiagnostics(window.activeTextEditor!.document, analysisDiagnostics);
+
+            // User decisions are updated here in patch mode (and at extendedWebview in diff mode):
+            if (ANALYZER_USE_DIFF_MODE == "view Patch files") {
+              updateUserDecisions('applied', patchPath, leftPath);
+            }
+          });
+        });
+      });
+
+    });
+
+    window.showInformationMessage('Content saved to path: ' + leftPath);
+    return leftPath;
+  }
+  return '';
 }

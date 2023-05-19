@@ -1,0 +1,13 @@
+jsonargparse[jsonnet]==4.21.1
+antlr4-python3-runtime==4.10
+numpy==1.24.3
+scikit-learn==1.2.2
+gensim==4.3.1
+javalang==0.13.0
+unidiff==0.7.5
+scipy==1.10.1
+smart-open==6.3.0
+node==1.2.1
+treebuilder==0.13
+listener==2.0.0a1
+typing==3.7.4.3

@@ -20,86 +20,9 @@ var upath = require("upath");
 var isEqual = require('lodash.isequal');
 
 //export let issues = '';
-export let issuesJson: any = {};
+let issuesJson: any = {};
 
-export async function getIssues(updateOriginalTree: boolean = false) {
-  const readFile = util.promisify(fs.readFile);
-  let issuesPath: string | undefined = "";
-  if (
-    workspace
-      .getConfiguration()
-      .get<string>("aifix4seccode.analyzer.issuesPath")
-  ) {
-    issuesPath = workspace
-      .getConfiguration()
-      .get<string>("aifix4seccode.analyzer.issuesPath");
-  }
-
-  async function loadIssues() {
-    return await readFile(issuesPath!, utf8Stream);
-  }
-  try{
-    var jsonListContent = await loadIssues();
-  } catch (e){
-    if (typeof e === "string") {
-      logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
-    } else if (e instanceof Error) {
-      logging.LogErrorAndShowErrorMessage(e.message, e.message)
-    }
-  }
-  var patchJsonPaths: string[] = []
-        if (jsonListContent)
-          patchJsonPaths = jsonListContent.split('\n');
-  var _issuesJson : any = {};
-  if (patchJsonPaths.length){
-    patchJsonPaths.forEach((path:any) => {
-      if(path.length){
-        var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
-        Object.keys(patchJson).forEach((key:any) => {
-          if(_issuesJson!.hasOwnProperty(key)){
-            patchJson[key].forEach((issue: any) => {
-              if((_issuesJson as any)[key].indexOf(issue) === -1){
-                (_issuesJson as any)[key].push(issue);
-              }
-            })
-          } else {
-            (_issuesJson as any)[key] = patchJson[key];
-          }
-          (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
-        })
-      }
-    });
-
-    if(updateOriginalTree)
-      return issuesJson;
-
-    Object.keys(_issuesJson).forEach((key: any) => {
-      if(issuesJson.hasOwnProperty(key)){
-        _issuesJson[key].forEach((_issue:any) => {
-            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue.textRange, _issue.textRange))){
-              issuesJson[key].push(_issue);
-            }
-          })
-      } else {
-        issuesJson[key] = _issuesJson[key]
-      }
-      (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
-    })
-    //issuesJson = {...issuesJson, ..._issuesJson}
-    
-  // let result = await loadIssues();
-  // try {
-  //   issuesJson = parseJson(result);
-  // } catch (err) {
-  //   console.log(err);
-  // }
-  // if (issuesJson) {
-  //   if (issuesJson.fixes) {
-  //     issuesJson.fixes = issuesJson.fixes.sort((i) => i.score);
-  //   }
-  // }
-  // return issuesJson;
-}
+export async function getIssues() {
   return issuesJson;
 }
 
@@ -116,16 +39,15 @@ export function getIssuesSync() {
   }
 
   // read content of list file - get all the json paths that are in that file and merge them into one json object.
-  // issuesJson = {};
-  try{
+  try {
     var jsonListContent = fs.readFileSync(issuesPath!, utf8Stream);
-  } catch (e){
+  } catch (e) {
     if (typeof e === "string") {
       logging.LogErrorAndShowErrorMessage(e.toUpperCase(), e.toUpperCase())
     } else if (e instanceof Error) {
       logging.LogErrorAndShowErrorMessage(e.message, e.message)
-      if('code' in e){
-        if((e as any).code.toString() === 'ENOENT'){
+      if ('code' in e) {
+        if ((e as any).code.toString() === 'ENOENT') {
           var adjustedIssuesPath = upath.join(upath.dirname(ANALYZER_EXE_PATH), 'results', 'jsons.lists')
           jsonListContent = fs.readFileSync(adjustedIssuesPath!, utf8Stream);
         }
@@ -133,52 +55,45 @@ export function getIssuesSync() {
     }
   }
   var patchJsonPaths: string[] = []
-        if (jsonListContent)
-          patchJsonPaths = jsonListContent.split('\n');
-  var _issuesJson : any = {};
-  if (patchJsonPaths.length){
-    patchJsonPaths.forEach((path:any) => {
-      if(path.length){
+  if (jsonListContent)
+    patchJsonPaths = jsonListContent.split('\n');
+  if (patchJsonPaths.length) {
+    patchJsonPaths.forEach((path: any) => {
+      if (path.length) {
         var patchJson = parseJson(fs.readFileSync(path!, utf8Stream));
-        Object.keys(patchJson).forEach((key:any) => {
-          if(_issuesJson!.hasOwnProperty(key)){
+        var fileName = path.split(/[\/\\]/).pop().replace(".json", "");
+        Object.keys(issuesJson).forEach((key: any) => {
+          var i = issuesJson[key].length
+          while (i--) {
+            if (issuesJson[key][i]["JavaFileName"] === fileName) {
+              issuesJson[key].splice(i, 1);
+            }
+          }
+          if (!issuesJson[key].length) {
+            delete issuesJson[key];
+          }
+        });
+        Object.keys(patchJson).forEach((key: any) => {
+          if (issuesJson!.hasOwnProperty(key)) {
             patchJson[key].forEach((issue: any) => {
-              if((_issuesJson as any)[key].indexOf(issue) === -1){
-                (_issuesJson as any)[key].push(issue);
+              if ((issuesJson as any)[key].indexOf(issue) === -1) {
+                issue["JavaFileName"] = fileName;
+                (issuesJson as any)[key].push(issue);
               }
             })
           } else {
-            (_issuesJson as any)[key] = patchJson[key];
+            (issuesJson as any)[key] = patchJson[key];
+            (issuesJson as any)[key].forEach((issue: any) => issue["JavaFileName"] = fileName);
           }
-          (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
+          (issuesJson as any)[key].forEach((issue: any) => issue.patches.sort((a: any, b: any) => b.bscore - a.score));
         })
       }
     });
-    Object.keys(_issuesJson).forEach((key: any) => {
-      if(issuesJson.hasOwnProperty(key)){
-        _issuesJson[key].forEach((_issue:any) => {
-            if(!issuesJson[key].some((treeIssue:any) => isEqual(treeIssue.textRange, _issue.textRange))){
-              issuesJson[key].push(_issue);
-            }
-          })
-      } else {
-        issuesJson[key] = _issuesJson[key]
-      }
-      (_issuesJson as any)[key].forEach((issue:any) => issue.patches.sort((a:any, b:any) => b.score - a.score))
-    })
-    //issuesJson = {...issuesJson, ..._issuesJson}
-  //let result = fs.readFileSync(issuesPath!, utf8Stream);
-  // try {
-  //   issuesJson = parseJson(result);
-  // } catch (err) {
-  //   console.log(err);
-  // }
-  // if (issuesJson) {
-  //   if (issuesJson.fixes) {
-  //     issuesJson.fixes = issuesJson.fixes.sort((i) => i.score);
-  //   }
-  // }
-  // return issuesJson;
+
+    Object.keys(issuesJson).forEach((key: any) => {
+      issuesJson[key].sort((a: any, b: any) => a["textRange"]["startLine"] - b["textRange"]["startLine"]);
+      issuesJson[key].sort((a: any, b: any) => a["JavaFileName"].localeCompare(b["JavaFileName"]));
+    });
   }
   return issuesJson;
 }
@@ -190,7 +105,7 @@ export async function getFixes(leftPath: string, patchPath: string) {
   if (issueGroups) {
     Object.values(issueGroups).forEach((issues: any) => {
       issues.forEach((issue: any) => {
-        if(issue.patches.find((fix: IFix) => fix.path === upath.basename(patchPath))){
+        if (issue.patches.find((fix: IFix) => fix.path === upath.basename(patchPath))) {
           issue.patches.forEach((fix: IFix) => {
             var patch = "";
             try {
