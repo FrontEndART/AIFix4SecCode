@@ -7,7 +7,7 @@ var os = require('os');
 
 export var PROJECT_FOLDER = workspace.getConfiguration().get<string>('aifix4seccode.analyzer.subjectProjectPath');
 
-export function SetProjectFolder(path: string){
+export function SetProjectFolder(path: string) {
   PROJECT_FOLDER = upath.normalize(path);
   PROJECT_FOLDER_LOG = 'plugin.subject_project_path' + '=' + PROJECT_FOLDER + os.EOL;
 }

@@ -2,7 +2,7 @@
   "name": "aifix4seccode-vscode",
   "displayName": "AIFix4SecCode",
   "description": "Fixes security vulnerabilities with the help of AI in your code.",
-  "version": "1.0.30",
+  "version": "1.0.32",
   "license": "",
   "keywords": [
     "vulnerability",
@@ -71,7 +71,7 @@
     "views": {
       "explorer": [
         {
-          "id": "jsonOutline",
+          "id": "aifix4seccode-vscode_jsonOutline",
           "name": "Json Outline",
           "when": "jsonOutlineEnabled"
         },
@@ -175,7 +175,7 @@
         }
       },
       {
-        "command": "jsonOutline.refresh",
+        "command": "aifix4seccode-vscode_jsonOutline.refresh",
         "title": "Refresh",
         "icon": {
           "light": "resources/light/refresh.svg",
@@ -183,7 +183,7 @@
         }
       },
       {
-        "command": "jsonOutline.refreshNode",
+        "command": "aifix4seccode-vscode_jsonOutline.refreshNode",
         "title": "Refresh",
         "icon": {
           "light": "resources/light/refresh.svg",
@@ -191,7 +191,7 @@
         }
       },
       {
-        "command": "jsonOutline.renameNode",
+        "command": "aifix4seccode-vscode_jsonOutline.renameNode",
         "title": "Rename"
       },
       {

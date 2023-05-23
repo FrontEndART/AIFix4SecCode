@@ -5,7 +5,7 @@ import { getIssues } from "../services/fakeAiFixCode";
 import { objectify } from "tslint/lib/utils";
 import { isObjectLiteralExpression } from "typescript";
 import { writeFileSync } from "fs";
-import { utf8Stream } from "../constants";
+import { ISSUE, utf8Stream } from "../constants";
 var stringify = require("json-stringify");
 
 let tree: any;
@@ -137,8 +137,8 @@ function getChildren(key: string) {
   if (!key) {
     return Object.keys(tree);
   } else {
-    //tree[key].map((issue: any) => patches = patches.concat(issue.patches.map((patch: any) => patch["path"])))
-    return Object.keys(tree[key]).map((index: any) => key + '#' + (parseInt(index) + 1).toString());
+    var issueswithFileName = Object.keys(tree[key]).map((index: any) => key + "-" + tree[key][parseInt(index)]["JavaFileName"].toString() + '#' + (parseInt(index) + 1).toString());
+    return issueswithFileName;
   }
 }
 
@@ -162,11 +162,11 @@ function getTreeItem(key: string): vscode.TreeItem {
     return {
       label: itemLabel,
       tooltip,
-      command: {
+      /*command: {
         title: "Open patch",
         command: "aifix4seccode-vscode.openUpFile",
         arguments: [treeElement[0].patches[0].path],
-      },
+      },*/
       collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
       iconPath: {
         light: path.join(
@@ -244,13 +244,7 @@ function getTreeElement(element: any) {
   if (!parent) {
     //
     let issues: any = Object.values(tree);
-    //let patch = undefined;
-    //let i = 0;
-    //while (patch === undefined) {
-      //patch = issues[i].map((issue: any) => issue.patches.find((patch: any) => patch.path === element)).filter((x: any) => x !== undefined)[0]
-      //i++;
-    //}
-    return issues[Object.keys(tree).indexOf(element.split('#')[0])][element.split('#')[1] - 1].patches[0];
+    return issues[Object.keys(tree).indexOf(element.split('-')[0])][element.split('#')[1] - 1].patches[0];
   }
   return parent;
 }
@@ -265,18 +259,17 @@ function getNode(key: any): { key: string } {
 function filterTree(patchPath: string) {
   Object.keys(tree).forEach((key) => {
     tree[key].forEach((issue: any) => {
-        issue.patches.forEach((patch: any) => {
-            if(patch.path === patchPath || patchPath.includes(patch.path))
-            {
-                issue.patches.splice(issue.patches.indexOf(patch), 1);
-                if(!issue.patches.length){
-                  tree[key].splice(tree[key].indexOf(issue), 1);
-                  if(!tree[key].length){
-                      delete tree[key];
-                  }
-              }
+      issue.patches.forEach((patch: any) => {
+        if (patch.path === patchPath || patchPath.includes(patch.path)) {
+          issue.patches.splice(issue.patches.indexOf(patch), 1);
+          if (!issue.patches.length) {
+            tree[key].splice(tree[key].indexOf(issue), 1);
+            if (!tree[key].length) {
+              delete tree[key];
             }
-        })
+          }
+        }
+      })
     })
     let issuesStr = stringify(tree);
     console.log(issuesStr);
@@ -292,10 +285,10 @@ function filterTree(patchPath: string) {
         .get<string>("aifix4seccode.analyzer.issuesPath");
     }
     writeFileSync(issuesPath!, issuesStr, utf8Stream);
-});
-console.log(tree);
+  });
+  console.log(tree);
 }
 
 class Key {
-  constructor(readonly key: string) {}
+  constructor(readonly key: string) { }
 }
