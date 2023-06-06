@@ -98,6 +98,24 @@ public class SpotBugsParser {
         asgParser.vulnarabilityInfoClarification(entry);
     }
 
+    private boolean checkNULL(Node bugInstance) {
+        String bugType = getNodeAttribute(bugInstance, "type");
+        if (!bugType.startsWith("NP_NULL_ON_SOME_PATH")) {
+            return false;
+        }
+        NodeList warnAttributes = bugInstance.getChildNodes();
+        for (int j = 0; j < warnAttributes.getLength(); j++) {
+            if (warnAttributes.item(j).getAttributes() != null) {
+                Node node =   warnAttributes.item(j);
+
+                switch(node.getNodeName()) {
+                    case "LocalVariable":
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
     private void readBugInstanceInfo(VulnerabilityEntry entry, Node bugInstance) {
         NodeList warnAttributes = bugInstance.getChildNodes();
         entry.setType(bugInstance.getAttributes().getNamedItem("type").getNodeValue());
@@ -135,6 +153,8 @@ public class SpotBugsParser {
         for (Node bugInstance : bugInstances) {
             String bugType = getNodeAttribute(bugInstance, "type");
             if (!supportedProblemTypes.contains(bugType)) continue;
+            if (checkNULL(bugInstance))
+                continue;
             VulnerabilityEntry entry = new VulnerabilityEntry();
             readBugInstanceInfo (entry, bugInstance);
             if (needAnalysis && needColumnInfo) {
