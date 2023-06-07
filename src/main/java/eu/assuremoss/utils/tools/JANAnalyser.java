@@ -51,9 +51,9 @@ public class JANAnalyser {
                 "-i",
                 compilationUnitPath,
                 "-o",
-                jsiName,
+                jsiName/*,
                 "-x",
-                xmlName
+                xmlName*/
         };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         ProcessRunner.run(processBuilder);

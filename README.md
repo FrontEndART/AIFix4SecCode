@@ -47,8 +47,8 @@ config.validation_results_path=FOLDER TO PUT VALIDATION ANALYSIS RESULTS # e.g. 
 config.archive_enabled=ARCHIVE THE GENERATED RESULTS OR NOT # true or false
 config.archive_path=FOLDER TO PUT ARCHIVED DATA # e.g. d:\\AIFix4SecCode\\test-project\\archive
 config.jsons_listfile=THE PATH OF THE RESULTED LIST FILE # e.g. d:\\AIFix4SecCode\\test-project\\results\\json.list
-config.prioritizer_path=d:\\AIFix4SecCode\\sorter\\sorter.py
-config.prioritizer_mode=word2vec
+config.prioritizer_path=THE PATH OF THE SORTER TOOL # e.g. d:\\AIFix4SecCode\\sorter\\sorter.py
+config.prioritizer_mode=NAME OF THE SORTER ALGORITHM # word2vec / glove / binaryast / doc2vec / token / bagofwords
 
 #Analyzer settings
 config.osa_path=PATH TO THE JAVA OPEN STATIC ANALYZER # e.g. d:\\OpenStaticAnalyzer-4.1.0-x64-Windows\\Java
@@ -90,7 +90,7 @@ You can install the plugin to visual studio code from the command line:
 ```
 code --install-extension <extension-vsix-path>
 ```
-You can find the .vsix file in the vscode-plugin subdirectory of the project e.g. d:\\AIFix4SecCode\\vscode-plugin\\aifix4seccode-vscode-1.0.26.vsix
+You can find the .vsix file in the vscode-plugin subdirectory of the project e.g. d:\\AIFix4SecCode\\vscode-plugin\\aifix4seccode-vscode-1.0.32.vsix
 
 ## Acknowledgement
 The development of the AIFix4SecCode framework was supported by the [AssureMOSS](https://assuremoss.eu) (Grant No.952647) EU-funded project.
