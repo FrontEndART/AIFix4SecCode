@@ -46,14 +46,13 @@ public class SpotBugsParser {
         if ("NP_NULL_ON_SOME_PATH".equals(entry.getType())) {
             if (visitedIssues.containsKey(entry)) {
                 VulnerabilityEntry v = visitedIssues.get(entry);
-                System.out.println(v.getVariable() + " " + entry.getVariable());
                 return false;
             } else {
                 visitedIssues.put(entry, entry);
             }
             return true;
         }
-        return false;
+        return true;
     }
 
     public SpotBugsParser(PathHandler path, Properties properties, File projectASG){
